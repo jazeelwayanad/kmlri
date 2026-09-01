@@ -870,4 +870,126 @@ export const api = {
       body: JSON.stringify({ entries }),
     });
   },
+
+  // Vendors
+  async getVendors(q?: string) {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    return this.fetchWithAuth(`/vendors${query}`);
+  },
+  async createVendor(data: { name: string; type?: string; contactPerson?: string; email?: string; phone?: string; notes?: string }) {
+    return this.fetchWithAuth('/vendors', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateVendor(id: string, data: any) {
+    return this.fetchWithAuth(`/vendors/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteVendor(id: string) {
+    return this.fetchWithAuth(`/vendors/${id}`, { method: 'DELETE' });
+  },
+
+  // Departments
+  async getDepartments() {
+    return this.fetchWithAuth('/departments');
+  },
+  async createDepartment(data: { name: string; headOfDepartment?: string; budget?: number; notes?: string }) {
+    return this.fetchWithAuth('/departments', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateDepartment(id: string, data: any) {
+    return this.fetchWithAuth(`/departments/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteDepartment(id: string) {
+    return this.fetchWithAuth(`/departments/${id}`, { method: 'DELETE' });
+  },
+
+  // Membership Types
+  async getMembershipTypes() {
+    return this.fetchWithAuth('/membership-types');
+  },
+  async createMembershipType(data: { name: string; maxBorrowLimit?: number; loanDurationDays?: number; description?: string }) {
+    return this.fetchWithAuth('/membership-types', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateMembershipType(id: string, data: any) {
+    return this.fetchWithAuth(`/membership-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteMembershipType(id: string) {
+    return this.fetchWithAuth(`/membership-types/${id}`, { method: 'DELETE' });
+  },
+
+  // Assets
+  async getAssets(q?: string) {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    return this.fetchWithAuth(`/assets${query}`);
+  },
+  async getAsset(id: string) {
+    return this.fetchWithAuth(`/assets/${id}`);
+  },
+  async createAsset(data: any) {
+    return this.fetchWithAuth('/assets', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateAsset(id: string, data: any) {
+    return this.fetchWithAuth(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteAsset(id: string) {
+    return this.fetchWithAuth(`/assets/${id}`, { method: 'DELETE' });
+  },
+  async addAssetMaintenance(id: string, data: { description: string; cost?: number; performedBy?: string; performedAt?: string }) {
+    return this.fetchWithAuth(`/assets/${id}/maintenance`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async addAssetAudit(id: string, data: { condition: string; notes?: string; auditedBy?: string }) {
+    return this.fetchWithAuth(`/assets/${id}/audits`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async getAllAssetMaintenance() {
+    return this.fetchWithAuth('/assets/maintenance');
+  },
+  async getAllAssetAudits() {
+    return this.fetchWithAuth('/assets/audits');
+  },
+
+  // Collections
+  async getCollections() {
+    return this.fetchWithAuth('/collections');
+  },
+  async createCollection(data: { name: string; description?: string }) {
+    return this.fetchWithAuth('/collections', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateCollection(id: string, data: any) {
+    return this.fetchWithAuth(`/collections/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteCollection(id: string) {
+    return this.fetchWithAuth(`/collections/${id}`, { method: 'DELETE' });
+  },
+
+  // Serials
+  async getSerials(q?: string) {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    return this.fetchWithAuth(`/serials${query}`);
+  },
+  async createSerial(data: { title: string; shelfmark?: string; frequency?: string; publisher?: string; notes?: string }) {
+    return this.fetchWithAuth('/serials', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateSerial(id: string, data: any) {
+    return this.fetchWithAuth(`/serials/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteSerial(id: string) {
+    return this.fetchWithAuth(`/serials/${id}`, { method: 'DELETE' });
+  },
+  async addSerialIssue(id: string, data: { issueLabel: string; expectedDate?: string }) {
+    return this.fetchWithAuth(`/serials/${id}/issues`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async checkInSerialIssue(issueId: string) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/check-in`, { method: 'PATCH' });
+  },
+  async markSerialIssueMissing(issueId: string) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/missing`, { method: 'PATCH' });
+  },
+
+  // Reproduction requests
+  async getReproductionRequests() {
+    return this.fetchWithAuth('/reproduction-requests');
+  },
+  async createReproductionRequest(data: { itemDescription: string; format?: string; purpose?: string }) {
+    return this.fetchWithAuth('/reproduction-requests', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateReproductionRequestStatus(id: string, status: string) {
+    return this.fetchWithAuth(`/reproduction-requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  },
 };

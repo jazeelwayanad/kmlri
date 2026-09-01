@@ -1,19 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Save, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Save, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { PageHeader, Card, Button, Badge } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+const SETTING_KEY = 'system.languages';
+
+const DEFAULT_LANGUAGE_PACKS = [
+  { code: 'en', name: 'English (UK / Academic)', direction: 'LTR', coverage: '100%', stringsCount: 1420, isDefault: true },
+  { code: 'ar', name: 'Arabic (العربية)', direction: 'RTL', coverage: '98.5%', stringsCount: 1398, isDefault: false },
+  { code: 'ml', name: 'Malayalam (മലയാളം)', direction: 'LTR', coverage: '96.2%', stringsCount: 1366, isDefault: false },
+  { code: 'am', name: 'Arabi-Malayalam Transliteration (അറബി-മലയാളം)', direction: 'RTL / LTR', coverage: '94.0%', stringsCount: 1335, isDefault: false },
+];
 
 export default function LanguagesAdminPage() {
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [search, setSearch] = useState('');
-
-  const languagePacks = [
-    { code: 'en', name: 'English (UK / Academic)', direction: 'LTR', coverage: '100%', stringsCount: 1420, isDefault: true },
-    { code: 'ar', name: 'Arabic (العربية)', direction: 'RTL', coverage: '98.5%', stringsCount: 1398, isDefault: false },
-    { code: 'ml', name: 'Malayalam (മലയാളം)', direction: 'LTR', coverage: '96.2%', stringsCount: 1366, isDefault: false },
-    { code: 'am', name: 'Arabi-Malayalam Transliteration (അറബി-മലയാളം)', direction: 'RTL / LTR', coverage: '94.0%', stringsCount: 1335, isDefault: false },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [languagePacks, setLanguagePacks] = useState(DEFAULT_LANGUAGE_PACKS);
 
   const translationKeys = [
     { key: 'nav.catalog', en: 'Library Catalog', ar: 'فهرس المكتبة', ml: 'ലൈബ്രറി കാറ്റലോഗ്' },
@@ -22,9 +28,36 @@ export default function LanguagesAdminPage() {
     { key: 'action.search', en: 'Search Collections', ar: 'البحث في المجموعات', ml: 'ശേഖരങ്ങളിൽ തിരയുക' },
   ];
 
-  const handleSave = () => {
-    setNotification('Multilingual localization strings saved and cache invalidated.');
-    setTimeout(() => setNotification(null), 4000);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const setting = await api.getSetting(SETTING_KEY);
+        if (!cancelled && Array.isArray(setting?.value)) {
+          setLanguagePacks(setting.value);
+        }
+      } catch (err: any) {
+        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load language pack settings.' });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.setSetting(SETTING_KEY, languagePacks, 'Supported locale / language pack list');
+      setNotification({ type: 'success', text: 'Multilingual localization strings saved and cache invalidated.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to save language pack settings.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   return (
@@ -35,16 +68,26 @@ export default function LanguagesAdminPage() {
         title="Multilingual Language Packs"
         description="Manage translations and RTL/LTR script rendering across English, Classical Arabic, Malayalam, and Arabi-Malayalam."
         actions={
-          <Button variant="dark" icon={Save} onClick={handleSave}>
-            Save Translations
+          <Button variant="dark" icon={Save} onClick={handleSave} disabled={saving || loading}>
+            {saving ? 'Saving…' : 'Save Translations'}
           </Button>
         }
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 rounded-lg text-sm font-semibold flex items-center gap-2 ring-1 ring-inset ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+              : 'bg-red-50 text-red-700 ring-red-600/20'
+          }`}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
+          <span>{notification.text}</span>
         </div>
       )}
 
@@ -86,9 +129,7 @@ export default function LanguagesAdminPage() {
                 <td className="py-3.5 px-2 text-base font-bold text-gray-900" dir="rtl">{k.ar}</td>
                 <td className="py-3.5 px-2 text-gray-900">{k.ml}</td>
                 <td className="py-3.5 px-2 text-right">
-                  <Button variant="outline" onClick={() => alert(`Edit translations for key: ${k.key}`)}>
-                    Edit
-                  </Button>
+                  <span className="text-[11px] text-gray-400 italic">Not yet connected</span>
                 </td>
               </tr>
             ))}
