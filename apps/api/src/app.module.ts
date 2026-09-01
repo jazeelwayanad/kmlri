@@ -14,6 +14,7 @@ import { AcquisitionsModule } from './acquisitions/acquisitions.module';
 import { ReadingListsModule } from './reading-lists/reading-lists.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { ReferenceQuestionsModule } from './reference-questions/reference-questions.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ReferenceQuestionsModule } from './reference-questions/reference-questi
     ReadingListsModule,
     SavedSearchesModule,
     ReferenceQuestionsModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

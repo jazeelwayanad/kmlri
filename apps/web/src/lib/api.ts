@@ -846,4 +846,28 @@ export const api = {
   async closeReferenceQuestion(id: string) {
     return this.fetchWithAuth(`/reference-questions/${id}/close`, { method: 'PATCH' });
   },
+
+  // Settings (generic key/value config store)
+  async getSettings(prefix?: string) {
+    const query = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '';
+    return this.fetchWithAuth(`/settings${query}`);
+  },
+
+  async getSetting(key: string) {
+    return this.fetchWithAuth(`/settings/${encodeURIComponent(key)}`);
+  },
+
+  async setSetting(key: string, value: any, description?: string) {
+    return this.fetchWithAuth(`/settings/${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value, description }),
+    });
+  },
+
+  async setSettings(entries: { key: string; value: any; description?: string }[]) {
+    return this.fetchWithAuth('/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ entries }),
+    });
+  },
 };
