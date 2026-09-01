@@ -36,16 +36,22 @@ export class ContentController {
     return this.contentService.register(id, body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
   @Post()
   create(@Body() body: any) {
     return this.contentService.create(body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: any) {
     return this.contentService.update(id, body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contentService.remove(id);

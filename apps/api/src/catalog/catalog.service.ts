@@ -202,26 +202,37 @@ export class CatalogService {
     return { success: true };
   }
 
-  async findOne(id: string) {
-    const record = await this.prisma.bibliographicRecord.findUnique({
-      where: { id },
-      include: {
-        copies: {
-          include: {
-            loans: {
-              where: { status: 'ACTIVE' },
-              select: { dueDate: true },
-            },
+  async findOne(idOrSlug: string) {
+    const include = {
+      copies: {
+        include: {
+          loans: {
+            where: { status: 'ACTIVE' as const },
+            select: { dueDate: true },
           },
         },
-        digitalFolios: {
-          orderBy: { folioNumber: 'asc' },
-        },
       },
+      digitalFolios: {
+        orderBy: { folioNumber: 'asc' as const },
+      },
+    };
+
+    let record = await this.prisma.bibliographicRecord.findUnique({
+      where: { id: idOrSlug },
+      include,
     });
 
+    // Public item pages use human-readable slugs (from shelfmark/title), not raw ids.
     if (!record) {
-      throw new NotFoundException(`Bibliographic record #${id} not found.`);
+      const candidates = await this.prisma.bibliographicRecord.findMany({ include });
+      record =
+        candidates.find(
+          (r) => this.slugify(r.shelfmark) === idOrSlug || this.slugify(r.titleLatin) === idOrSlug,
+        ) || null;
+    }
+
+    if (!record) {
+      throw new NotFoundException(`Bibliographic record #${idOrSlug} not found.`);
     }
 
     // Related items in same format/subject
@@ -344,6 +355,18 @@ export class CatalogService {
       chicago: `${authorStr}. ${title}. Malabar: KMLRI Archives (${shelf}), ${year}.`,
       bibtex: `@misc{kmlri_${record.id},\n  author = {${authorStr}},\n  title = {${title}},\n  year = {${year}},\n  note = {Shelfmark: ${shelf}, KMLRI}\n}`,
     };
+  }
+
+  private slugify(text?: string | null): string {
+    if (!text) return '';
+    const diacritics = new RegExp('[̀-ͯ]', 'g');
+    return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(diacritics, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
   }
 
   private safeJsonParse(val: string, fallback: any) {
