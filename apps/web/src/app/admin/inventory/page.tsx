@@ -1,75 +1,137 @@
 'use client';
 
-import { useState } from 'react';
-import { Boxes, Search, Scan, CheckCircle2, AlertTriangle, Play, RefreshCw, Printer, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Boxes, Search, CheckCircle2, AlertTriangle, AlertCircle, RefreshCw, Edit3, Save, X } from 'lucide-react';
 import { Badge, Card, PageHeader, Button, StatCard } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+type CopyStatus = 'AVAILABLE' | 'ON_LOAN' | 'RESERVED' | 'IN_CONSERVATION' | 'LOST' | 'WITHDRAWN';
+
+interface ItemCopy {
+  id: string;
+  barcode: string;
+  rfidTag?: string | null;
+  location: string;
+  status: CopyStatus;
+  copyNumber: number;
+}
+
+interface BibRecord {
+  id: string;
+  titleLatin: string;
+  shelfmark: string;
+  copies: ItemCopy[];
+}
+
+interface CopyRow {
+  bibRecordId: string;
+  title: string;
+  shelfmark: string;
+  copy: ItemCopy;
+}
+
+const STATUS_OPTIONS: CopyStatus[] = ['AVAILABLE', 'ON_LOAN', 'RESERVED', 'IN_CONSERVATION', 'LOST', 'WITHDRAWN'];
+
+const statusBadgeVariant = (status: CopyStatus) => {
+  switch (status) {
+    case 'AVAILABLE':
+      return 'success' as const;
+    case 'ON_LOAN':
+    case 'RESERVED':
+      return 'info' as const;
+    case 'IN_CONSERVATION':
+      return 'warning' as const;
+    case 'LOST':
+    case 'WITHDRAWN':
+      return 'danger' as const;
+    default:
+      return 'neutral' as const;
+  }
+};
 
 export default function InventoryAdminPage() {
-  const [activeTab, setActiveTab] = useState<'sessions' | 'scan' | 'discrepancies' | 'withdrawn'>('sessions');
-  const [barcodeInput, setBarcodeInput] = useState('');
-  const [scannedItems, setScannedItems] = useState<string[]>([]);
+  const [records, setRecords] = useState<BibRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
-  const inventorySessions = [
-    {
-      id: 'INV-2026-01',
-      name: 'Manuscript Vault Annual Stocktake',
-      section: 'Vault Section A-F',
-      totalExpected: 1240,
-      scannedCount: 1238,
-      missingCount: 2,
-      misplacedCount: 4,
-      status: 'IN_PROGRESS',
-      startDate: '25 Aug 2026',
-    },
-    {
-      id: 'INV-2026-02',
-      name: 'Rare Book Reading Room Audit',
-      section: 'Reading Room Racks 1-12',
-      totalExpected: 2100,
-      scannedCount: 2100,
-      missingCount: 0,
-      misplacedCount: 0,
-      status: 'COMPLETED',
-      startDate: '10 Aug 2026',
-    },
-  ];
+  const [editingCopyId, setEditingCopyId] = useState<string | null>(null);
+  const [editStatus, setEditStatus] = useState<CopyStatus>('AVAILABLE');
+  const [editLocation, setEditLocation] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const discrepancies = [
-    {
-      barcode: 'MS0142-02',
-      title: 'Bayān al-Fawāʾid (Duplicate Folio)',
-      shelfmark: 'MS 0142',
-      expectedShelf: 'Vault Rack 3, Shelf B',
-      currentLocation: 'Misplaced in Rare Books Rack 1',
-      status: 'MISPLACED',
-      reportedDate: '29 Aug 2026',
-    },
-    {
-      barcode: 'RB0411-01',
-      title: 'Voyage to Cochin (1884 Translation)',
-      shelfmark: 'RB 0411',
-      expectedShelf: 'Rare Book Stack 2',
-      currentLocation: 'Unaccounted / Missing from stack',
-      status: 'MISSING',
-      reportedDate: '26 Aug 2026',
-    },
-  ];
-
-  const handleScanSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barcodeInput) return;
-    setScannedItems([barcodeInput, ...scannedItems]);
-    setNotification(`Scanned copy [${barcodeInput}] verified against shelf inventory.`);
-    setBarcodeInput('');
-    setTimeout(() => setNotification(null), 3000);
+  const loadRecords = () => {
+    setLoading(true);
+    setError(null);
+    api
+      .searchCatalog({ limit: 200 })
+      .then((res) => setRecords(res.data || []))
+      .catch((err: any) => setError(err.message || 'Failed to load catalogue records'))
+      .finally(() => setLoading(false));
   };
 
-  const tabs: { key: typeof activeTab; label: string }[] = [
-    { key: 'sessions', label: 'Audit Sessions' },
-    { key: 'scan', label: 'Rapid Shelf Scanner' },
-    { key: 'discrepancies', label: 'Discrepancies & Missing (6)' },
-  ];
+  useEffect(() => {
+    loadRecords();
+  }, []);
+
+  const allCopies: CopyRow[] = useMemo(() => {
+    return records.flatMap((r) =>
+      (r.copies || []).map((c) => ({
+        bibRecordId: r.id,
+        title: r.titleLatin,
+        shelfmark: r.shelfmark,
+        copy: c,
+      }))
+    );
+  }, [records]);
+
+  const filtered = allCopies.filter((row) => {
+    const q = search.toLowerCase();
+    return (
+      row.title.toLowerCase().includes(q) ||
+      row.shelfmark.toLowerCase().includes(q) ||
+      row.copy.barcode.toLowerCase().includes(q) ||
+      row.copy.location.toLowerCase().includes(q)
+    );
+  });
+
+  const counts = useMemo(() => {
+    const total = allCopies.length;
+    const available = allCopies.filter((r) => r.copy.status === 'AVAILABLE').length;
+    const flagged = allCopies.filter((r) => r.copy.status === 'LOST' || r.copy.status === 'WITHDRAWN').length;
+    const conservation = allCopies.filter((r) => r.copy.status === 'IN_CONSERVATION').length;
+    return { total, available, flagged, conservation };
+  }, [allCopies]);
+
+  const startEdit = (row: CopyRow) => {
+    setEditingCopyId(row.copy.id);
+    setEditStatus(row.copy.status);
+    setEditLocation(row.copy.location);
+  };
+
+  const cancelEdit = () => {
+    setEditingCopyId(null);
+  };
+
+  const saveEdit = async (row: CopyRow) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.updateCatalogCopy(row.bibRecordId, row.copy.id, {
+        status: editStatus,
+        location: editLocation,
+      });
+      setNotification(`Copy [${row.copy.barcode}] updated — now ${editStatus.replace(/_/g, ' ')} at "${editLocation}".`);
+      setEditingCopyId(null);
+      loadRecords();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update item copy');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 font-sans pb-12">
@@ -77,17 +139,10 @@ export default function InventoryAdminPage() {
       <PageHeader
         eyebrow="Stock Verification & Shelf Control"
         title="Inventory & Shelf Auditing"
-        description="Conduct inventory stocktaking sessions, scan shelf barcodes & RFID tags, identify misplaced copies, and generate reconciliation reports."
+        description="Search real catalogue holdings by shelfmark, location, or barcode and correct a copy's status or location when a physical shelf check finds a mismatch."
         actions={
-          <Button
-            variant="primary"
-            icon={Play}
-            onClick={() => {
-              setNotification('New Inventory Audit Session initialized.');
-              setTimeout(() => setNotification(null), 3000);
-            }}
-          >
-            Start New Audit Session
+          <Button variant="outline" icon={RefreshCw} onClick={loadRecords}>
+            Refresh
           </Button>
         }
       />
@@ -99,157 +154,120 @@ export default function InventoryAdminPage() {
         </div>
       )}
 
+      {error && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg text-sm font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard label="Total Physical Copies" value="6,240" hint="Registered in catalog" />
-        <StatCard label="Audited This Year" value="99.2%" hint="6,190 verified copies" hintTone="positive" />
-        <StatCard label="Misplaced Items" value="4 Items" hint="Found on wrong shelves" hintTone="warning" />
-        <StatCard label="Missing / Lost" value="2 Items" hint="Under active investigation" hintTone="negative" />
+        <StatCard label="Total Physical Copies" value={counts.total.toLocaleString()} hint="Loaded from catalogue" />
+        <StatCard
+          label="Available"
+          value={counts.total ? `${Math.round((counts.available / counts.total) * 100)}%` : '—'}
+          hint={`${counts.available} copies available`}
+          hintTone="positive"
+        />
+        <StatCard label="In Conservation" value={counts.conservation} hint="Undergoing treatment" hintTone="warning" />
+        <StatCard label="Lost / Withdrawn" value={counts.flagged} hint="Flagged copies" hintTone="negative" />
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === tab.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Search Bar */}
+      <Card padded={false} className="p-4">
+        <div className="relative w-full sm:w-96">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by title, shelfmark, barcode, or shelf location..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded-lg text-sm outline-none focus:border-heritage-red focus:ring-1 focus:ring-heritage-red/20"
+          />
+        </div>
+      </Card>
 
-      {activeTab === 'sessions' && (
+      {loading ? (
+        <div className="text-center py-16 text-sm text-gray-500 font-semibold">Loading catalogue holdings...</div>
+      ) : (
         <Card className="overflow-x-auto" padded={false}>
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="bg-gray-50 text-gray-400 uppercase text-[11px] tracking-wide">
-                <th className="py-3 px-5 font-semibold">Session ID</th>
-                <th className="py-3 px-3 font-semibold">Session Name &amp; Stacks</th>
-                <th className="py-3 px-3 font-semibold">Progress</th>
-                <th className="py-3 px-3 font-semibold">Scanned / Expected</th>
-                <th className="py-3 px-3 font-semibold">Discrepancies</th>
+                <th className="py-3 px-5 font-semibold">Barcode &amp; Copy #</th>
+                <th className="py-3 px-3 font-semibold">Title &amp; Shelfmark</th>
+                <th className="py-3 px-3 font-semibold">Location</th>
                 <th className="py-3 px-3 font-semibold">Status</th>
-                <th className="py-3 px-5 font-semibold text-right">Actions</th>
+                <th className="py-3 px-5 font-semibold text-right">Shelf Check</th>
               </tr>
             </thead>
             <tbody>
-              {inventorySessions.map((s) => {
-                const percent = Math.round((s.scannedCount / s.totalExpected) * 100);
+              {filtered.map((row) => {
+                const isEditing = editingCopyId === row.copy.id;
                 return (
-                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3.5 px-5 font-mono font-semibold text-gray-900">{s.id}</td>
-                    <td className="py-3.5 px-3">
-                      <div className="font-semibold text-sm text-gray-900">{s.name}</div>
-                      <div className="text-gray-400 text-[11px]">{s.section} · Started {s.startDate}</div>
-                    </td>
-                    <td className="py-3.5 px-3 w-36">
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-gray-900 h-1.5 rounded-full" style={{ width: `${percent}%` }}></div>
-                      </div>
-                      <span className="text-[10px] text-gray-400 mt-0.5 block">{percent}% Completed</span>
-                    </td>
-                    <td className="py-3.5 px-3 font-mono font-semibold text-gray-900">
-                      {s.scannedCount} / {s.totalExpected}
+                  <tr key={row.copy.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3.5 px-5 font-mono font-semibold text-gray-900">
+                      {row.copy.barcode}
+                      <div className="text-gray-400 text-[11px] font-sans">Copy #{row.copy.copyNumber}</div>
                     </td>
                     <td className="py-3.5 px-3">
-                      <span className="text-heritage-red font-semibold">{s.missingCount} Missing</span> ·{' '}
-                      <span className="text-amber-700 font-semibold">{s.misplacedCount} Misplaced</span>
+                      <div className="font-semibold text-sm text-gray-900">{row.title}</div>
+                      <div className="text-gray-400 text-[11px] font-mono">{row.shelfmark}</div>
                     </td>
-                    <td className="py-3.5 px-3">
-                      <Badge variant={s.status === 'COMPLETED' ? 'success' : 'warning'}>{s.status}</Badge>
+                    <td className="py-3.5 px-3 w-56">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          className="w-full border border-gray-200 h-8 px-2 rounded text-xs outline-none focus:border-heritage-red"
+                        />
+                      ) : (
+                        <span className="text-gray-700">{row.copy.location}</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-3 w-44">
+                      {isEditing ? (
+                        <select
+                          value={editStatus}
+                          onChange={(e) => setEditStatus(e.target.value as CopyStatus)}
+                          className="w-full border border-gray-200 h-8 px-2 rounded text-xs outline-none focus:border-heritage-red"
+                        >
+                          {STATUS_OPTIONS.map((s) => (
+                            <option key={s} value={s}>
+                              {s.replace(/_/g, ' ')}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Badge variant={statusBadgeVariant(row.copy.status)}>{row.copy.status.replace(/_/g, ' ')}</Badge>
+                      )}
                     </td>
                     <td className="py-3.5 px-5 text-right">
-                      <Button variant="dark" onClick={() => setActiveTab('scan')}>
-                        Resume Scan
-                      </Button>
+                      {isEditing ? (
+                        <div className="inline-flex gap-1.5">
+                          <Button variant="dark" icon={Save} disabled={saving} onClick={() => saveEdit(row)}>
+                            {saving ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button variant="outline" icon={X} disabled={saving} onClick={cancelEdit}>
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" icon={Edit3} onClick={() => startEdit(row)}>
+                          Correct Entry
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </Card>
-      )}
-
-      {activeTab === 'scan' && (
-        <Card className="space-y-6">
-          <form onSubmit={handleScanSubmit} className="max-w-xl">
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">
-              Continuous Shelf Scanner (Barcode or RFID Tag)
-            </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Scan className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Scan copy barcode (e.g. MS0142-01)..."
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  className="w-full pl-9 pr-3 border border-gray-200 h-10 text-sm rounded-lg outline-none font-mono focus:border-heritage-red focus:ring-1 focus:ring-heritage-red/20"
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" variant="dark">
-                Verify
-              </Button>
-            </div>
-          </form>
-
-          <div>
-            <h4 className="text-sm font-semibold mb-2 text-gray-900">Scanned in Current Session ({scannedItems.length})</h4>
-            <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-1.5 font-mono text-xs max-h-48 overflow-y-auto">
-              {scannedItems.length === 0 ? (
-                <span className="text-gray-400 font-sans italic">Ready for barcode scanner input...</span>
-              ) : (
-                scannedItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-gray-700 bg-white p-1.5 rounded border border-gray-200">
-                    <span>{item}</span>
-                    <span className="text-emerald-700 font-sans font-semibold text-[10px]">SHELF VERIFIED</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {activeTab === 'discrepancies' && (
-        <Card className="overflow-x-auto" padded={false}>
-          <table className="w-full border-collapse text-left text-xs">
-            <thead>
-              <tr className="bg-gray-50 text-gray-400 uppercase text-[11px] tracking-wide">
-                <th className="py-3 px-5 font-semibold">Barcode &amp; Shelfmark</th>
-                <th className="py-3 px-3 font-semibold">Item Title</th>
-                <th className="py-3 px-3 font-semibold">Expected Shelf</th>
-                <th className="py-3 px-3 font-semibold">Detected Status</th>
-                <th className="py-3 px-5 font-semibold text-right">Resolution</th>
-              </tr>
-            </thead>
-            <tbody>
-              {discrepancies.map((d) => (
-                <tr key={d.barcode} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3.5 px-5 font-mono font-semibold text-gray-900">{d.barcode}</td>
-                  <td className="py-3.5 px-3 font-semibold text-sm text-gray-900">{d.title}</td>
-                  <td className="py-3.5 px-3 text-gray-500">{d.expectedShelf}</td>
-                  <td className="py-3.5 px-3">
-                    <Badge variant={d.status === 'MISSING' ? 'danger' : 'warning'}>
-                      {d.status}: {d.currentLocation}
-                    </Badge>
-                  </td>
-                  <td className="py-3.5 px-5 text-right">
-                    <Button variant="dark" onClick={() => alert(`Marked ${d.barcode} as reconciled on expected shelf.`)}>
-                      Resolve Shelfmark
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {filtered.length === 0 && (
+            <div className="text-center py-16 text-sm text-gray-500 font-semibold">No item copies match this search.</div>
+          )}
         </Card>
       )}
     </div>

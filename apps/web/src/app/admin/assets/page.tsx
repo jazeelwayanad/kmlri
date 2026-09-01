@@ -1,222 +1,238 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { 
-  Boxes, 
-  Search, 
-  Plus, 
-  Filter, 
-  QrCode, 
-  Wrench, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
-  Printer, 
-  Laptop, 
-  Scan, 
-  ShieldCheck, 
-  Eye, 
-  Building2, 
-  Calendar, 
-  Tag, 
-  FileText,
-  Clock,
-  RotateCw
+import { useEffect, useState } from 'react';
+import {
+  Boxes,
+  Search,
+  Plus,
+  QrCode,
+  Wrench,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Printer,
+  Eye,
+  Pencil,
+  Trash2,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { PageHeader, Button } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+interface Department {
+  id: string;
+  name: string;
+}
+
+interface AssetMaintenance {
+  id: string;
+  description: string;
+  cost?: number | null;
+  performedBy?: string | null;
+  performedAt: string;
+}
+
+interface AssetAudit {
+  id: string;
+  condition: 'GOOD' | 'FAIR' | 'DAMAGED' | 'MISSING';
+  notes?: string | null;
+  auditedBy?: string | null;
+  auditedAt: string;
+}
 
 interface LibraryAsset {
   id: string;
-  tag: string;
   name: string;
-  category: 'DIGITIZATION' | 'CONSERVATION' | 'CIRCULATION' | 'IT_INFRASTRUCTURE' | 'ARCHIVAL_STORAGE';
-  model: string;
-  serialNumber: string;
-  location: string;
-  custodian: string;
-  purchaseDate: string;
-  purchaseCost: number;
-  warrantyExpiry: string;
-  status: 'OPERATIONAL' | 'UNDER_MAINTENANCE' | 'ALLOCATED' | 'DEPRECATED';
-  lastServiceDate?: string;
-  condition: 'EXCELLENT' | 'GOOD' | 'NEEDS_CALIBRATION' | 'POOR';
+  category?: string | null;
+  serialNumber?: string | null;
+  location?: string | null;
+  status: 'ACTIVE' | 'IN_MAINTENANCE' | 'RETIRED' | 'LOST';
+  purchaseDate?: string | null;
+  purchaseCost?: number | null;
+  notes?: string | null;
+  departmentId?: string | null;
+  department?: Department | null;
+  createdAt: string;
+  updatedAt: string;
+  maintenanceLogs?: AssetMaintenance[];
+  audits?: AssetAudit[];
 }
 
+const STATUS_LABELS: Record<LibraryAsset['status'], string> = {
+  ACTIVE: 'Active',
+  IN_MAINTENANCE: 'In Maintenance',
+  RETIRED: 'Retired',
+  LOST: 'Lost',
+};
+
 export default function AssetManagementPage() {
-  const [assets, setAssets] = useState<LibraryAsset[]>([
-    {
-      id: 'AST-001',
-      tag: 'AST-SCN-001',
-      name: 'Bookeye 5 V1A Professional Planetary Book Scanner',
-      category: 'DIGITIZATION',
-      model: 'Image Access Bookeye 5 V1A-C35',
-      serialNumber: 'BE5-2024-8891',
-      location: 'Digitization Lab (Room 204)',
-      custodian: 'Senior Digitization Specialist',
-      purchaseDate: '12 Jan 2024',
-      purchaseCost: 1850000,
-      warrantyExpiry: '12 Jan 2027',
-      status: 'OPERATIONAL',
-      lastServiceDate: '15 Jul 2026',
-      condition: 'EXCELLENT',
-    },
-    {
-      id: 'AST-002',
-      tag: 'AST-LAB-014',
-      name: 'Ultrasonic Polyester Encapsulation Welder',
-      category: 'CONSERVATION',
-      model: 'Preservation Equipment Ltd. SonicSeal 300',
-      serialNumber: 'SS3-9941-K',
-      location: 'Conservation & Paper Lab',
-      custodian: 'Head of Manuscript Conservation',
-      purchaseDate: '05 Mar 2023',
-      purchaseCost: 640000,
-      warrantyExpiry: '05 Mar 2026',
-      status: 'OPERATIONAL',
-      lastServiceDate: '10 Aug 2026',
-      condition: 'GOOD',
-    },
-    {
-      id: 'AST-003',
-      tag: 'AST-GT-002',
-      name: 'Nedap 3D RFID Security Detection Gates (Dual Pedestal)',
-      category: 'CIRCULATION',
-      model: 'Nedap PG39 RFID Gates',
-      serialNumber: 'NDP-2025-091',
-      location: 'Main Library Entrance / Exit',
-      custodian: 'Circulation Desk Supervisor',
-      purchaseDate: '20 Nov 2024',
-      purchaseCost: 420000,
-      warrantyExpiry: '20 Nov 2027',
-      status: 'OPERATIONAL',
-      lastServiceDate: '01 Jun 2026',
-      condition: 'EXCELLENT',
-    },
-    {
-      id: 'AST-004',
-      tag: 'AST-LAB-088',
-      name: 'Non-Aqueous Paper Deacidification Treatment Chamber',
-      category: 'CONSERVATION',
-      model: 'Bookkeeper Deacidification Unit Mk IV',
-      serialNumber: 'BK-2022-104',
-      location: 'Chemical Conservation Suite',
-      custodian: 'Conservation Chemist',
-      purchaseDate: '18 Aug 2022',
-      purchaseCost: 1200000,
-      warrantyExpiry: '18 Aug 2025',
-      status: 'UNDER_MAINTENANCE',
-      lastServiceDate: '28 Aug 2026',
-      condition: 'NEEDS_CALIBRATION',
-    },
-    {
-      id: 'AST-005',
-      tag: 'AST-IT-019',
-      name: 'Dell PowerEdge R750 IIIF & Archival Storage Server',
-      category: 'IT_INFRASTRUCTURE',
-      model: 'Dell R750 128TB RAID-6',
-      serialNumber: 'SRV-DEL-7721',
-      location: 'Server Room Rack A2',
-      custodian: 'Lead Systems Architect',
-      purchaseDate: '10 Oct 2023',
-      purchaseCost: 950000,
-      warrantyExpiry: '10 Oct 2028',
-      status: 'OPERATIONAL',
-      lastServiceDate: '20 Jul 2026',
-      condition: 'EXCELLENT',
-    },
-    {
-      id: 'AST-006',
-      tag: 'AST-VLT-003',
-      name: 'Liebert Climate & Humidity Precision Regulating Unit',
-      category: 'ARCHIVAL_STORAGE',
-      model: 'Vertiv Liebert PEX 30kW',
-      serialNumber: 'VRT-2024-441',
-      location: 'Special Collections Vault A',
-      custodian: 'Facilities & Environmental Control',
-      purchaseDate: '15 Feb 2024',
-      purchaseCost: 1450000,
-      warrantyExpiry: '15 Feb 2029',
-      status: 'OPERATIONAL',
-      lastServiceDate: '01 Aug 2026',
-      condition: 'EXCELLENT',
-    },
-    {
-      id: 'AST-007',
-      tag: 'AST-CAM-008',
-      name: 'Phase One IQ4 150MP Multi-Spectral Camera Back & Stand',
-      category: 'DIGITIZATION',
-      model: 'Phase One iXG 150MP',
-      serialNumber: 'PHS-150-0928',
-      location: 'Manuscript Micro-Imaging Suite',
-      custodian: 'Dr. Tariq al-Omani (Research Fellow)',
-      purchaseDate: '01 Jun 2024',
-      purchaseCost: 3200000,
-      warrantyExpiry: '01 Jun 2027',
-      status: 'ALLOCATED',
-      lastServiceDate: '12 May 2026',
-      condition: 'EXCELLENT',
-    },
-  ]);
+  const [assets, setAssets] = useState<LibraryAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [notification, setNotification] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // New Asset Modal
-  const [showAddModal, setShowAddModal] = useState(false);
+  // Add / Edit Asset Modal
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
-  const [tag, setTag] = useState('');
-  const [category, setCategory] = useState<'DIGITIZATION' | 'CONSERVATION' | 'CIRCULATION' | 'IT_INFRASTRUCTURE' | 'ARCHIVAL_STORAGE'>('DIGITIZATION');
-  const [model, setModel] = useState('');
+  const [category, setCategory] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [location, setLocation] = useState('Digitization Lab (Room 204)');
-  const [custodian, setCustodian] = useState('Senior Digitization Specialist');
-  const [purchaseCost, setPurchaseCost] = useState(250000);
-  const [warrantyExpiry, setWarrantyExpiry] = useState('2028-09-01');
+  const [location, setLocation] = useState('');
+  const [status, setStatus] = useState<LibraryAsset['status']>('ACTIVE');
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchaseCost, setPurchaseCost] = useState<number | ''>('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Selected Asset Details View Modal
   const [viewingAsset, setViewingAsset] = useState<LibraryAsset | null>(null);
+  const [viewingLoading, setViewingLoading] = useState(false);
+  const [viewingError, setViewingError] = useState<string | null>(null);
 
-  const handleCreateAsset = (e: React.FormEvent) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadAssets = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await api.getAssets();
+      setAssets(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setLoadError(err.message || 'Failed to load assets.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAssets();
+    (async () => {
+      try {
+        const data = await api.getDepartments();
+        setDepartments(Array.isArray(data) ? data : []);
+      } catch {
+        setDepartments([]);
+      }
+    })();
+  }, []);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setCategory('');
+    setSerialNumber('');
+    setLocation('');
+    setStatus('ACTIVE');
+    setPurchaseDate('');
+    setPurchaseCost('');
+    setDepartmentId('');
+    setNotes('');
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowFormModal(true);
+  };
+
+  const openEditModal = (a: LibraryAsset) => {
+    setEditingId(a.id);
+    setName(a.name);
+    setCategory(a.category || '');
+    setSerialNumber(a.serialNumber || '');
+    setLocation(a.location || '');
+    setStatus(a.status);
+    setPurchaseDate(a.purchaseDate ? a.purchaseDate.slice(0, 10) : '');
+    setPurchaseCost(a.purchaseCost ?? '');
+    setDepartmentId(a.departmentId || '');
+    setNotes(a.notes || '');
+    setShowFormModal(true);
+  };
+
+  const handleSubmitAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const newAsset: LibraryAsset = {
-      id: `AST-${Date.now().toString().slice(-3)}`,
-      tag: tag || `AST-EQ-${Date.now().toString().slice(-4)}`,
+    const payload: Record<string, any> = {
       name,
-      category,
-      model: model || 'Custom Institutional Spec',
-      serialNumber: serialNumber || `SN-${Date.now().toString().slice(-6)}`,
-      location,
-      custodian,
-      purchaseDate: '01 Sep 2026',
-      purchaseCost: Number(purchaseCost),
-      warrantyExpiry,
-      status: 'OPERATIONAL',
-      condition: 'EXCELLENT',
-      lastServiceDate: 'Just now',
+      category: category || undefined,
+      serialNumber: serialNumber || undefined,
+      location: location || undefined,
+      status,
+      purchaseDate: purchaseDate || undefined,
+      purchaseCost: purchaseCost === '' ? undefined : Number(purchaseCost),
+      departmentId: departmentId || undefined,
+      notes: notes || undefined,
     };
 
-    setAssets([newAsset, ...assets]);
-    setShowAddModal(false);
-    setName('');
-    setTag('');
-    setModel('');
-    setSerialNumber('');
-    setNotification(`Asset "${newAsset.name}" registered successfully with Tag ${newAsset.tag}.`);
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    setErrorMessage(null);
+    try {
+      if (editingId) {
+        await api.updateAsset(editingId, payload);
+        setNotification(`Asset "${name}" updated successfully.`);
+      } else {
+        await api.createAsset(payload);
+        setNotification(`Asset "${name}" registered successfully.`);
+      }
+      setShowFormModal(false);
+      resetForm();
+      await loadAssets();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to save asset.');
+    } finally {
+      setSaving(false);
+    }
   };
 
+  const handleDeleteAsset = async (a: LibraryAsset) => {
+    if (!confirm(`Delete asset "${a.name}"? This cannot be undone.`)) return;
+    setDeletingId(a.id);
+    setErrorMessage(null);
+    try {
+      await api.deleteAsset(a.id);
+      setNotification(`Asset "${a.name}" deleted.`);
+      await loadAssets();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete asset.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openViewModal = async (a: LibraryAsset) => {
+    setViewingAsset(a);
+    setViewingError(null);
+    setViewingLoading(true);
+    try {
+      const full = await api.getAsset(a.id);
+      setViewingAsset(full);
+    } catch (err: any) {
+      setViewingError(err.message || 'Failed to load asset details.');
+    } finally {
+      setViewingLoading(false);
+    }
+  };
+
+  const categories = Array.from(new Set(assets.map((a) => a.category).filter(Boolean))) as string[];
+
   const filtered = assets.filter((a) => {
+    const q = search.toLowerCase();
     const matchesSearch =
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.tag.toLowerCase().includes(search.toLowerCase()) ||
-      a.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
-      a.location.toLowerCase().includes(search.toLowerCase()) ||
-      a.custodian.toLowerCase().includes(search.toLowerCase());
+      a.name.toLowerCase().includes(q) ||
+      (a.serialNumber || '').toLowerCase().includes(q) ||
+      (a.location || '').toLowerCase().includes(q) ||
+      (a.category || '').toLowerCase().includes(q);
 
     const matchesCategory = categoryFilter === 'ALL' || a.category === categoryFilter;
     const matchesStatus = statusFilter === 'ALL' || a.status === statusFilter;
@@ -224,8 +240,9 @@ export default function AssetManagementPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const totalValuation = assets.reduce((acc, cur) => acc + cur.purchaseCost, 0);
-  const operationalCount = assets.filter((a) => a.status === 'OPERATIONAL' || a.status === 'ALLOCATED').length;
+  const totalValuation = assets.reduce((acc, cur) => acc + (cur.purchaseCost || 0), 0);
+  const activeCount = assets.filter((a) => a.status === 'ACTIVE').length;
+  const maintenanceCount = assets.filter((a) => a.status === 'IN_MAINTENANCE').length;
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
@@ -238,7 +255,10 @@ export default function AssetManagementPage() {
             <Button variant="outline" icon={Wrench} href="/admin/assets/maintenance">
               Maintenance Orders
             </Button>
-            <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
+            <Button variant="outline" icon={ShieldCheck} href="/admin/assets/audits">
+              Audits
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={openCreateModal}>
               Register New Asset
             </Button>
           </div>
@@ -249,6 +269,20 @@ export default function AssetManagementPage() {
         <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{notification}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{loadError}</span>
         </div>
       )}
 
@@ -267,18 +301,16 @@ export default function AssetManagementPage() {
           <span className="text-[11px] text-emerald-700 font-semibold">Total capital expenditure</span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Operational Availability</span>
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Active Availability</span>
           <span className="text-2xl font-bold text-emerald-700 mt-1 block">
-            {Math.round((operationalCount / assets.length) * 100)}%
+            {assets.length > 0 ? Math.round((activeCount / assets.length) * 100) : 0}%
           </span>
-          <span className="text-[11px] text-emerald-600">{operationalCount} of {assets.length} operational</span>
+          <span className="text-[11px] text-emerald-600">{activeCount} of {assets.length} active</span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">In Maintenance / Service</span>
-          <span className="text-2xl font-bold text-amber-700 mt-1 block">
-            {assets.filter((a) => a.status === 'UNDER_MAINTENANCE').length}
-          </span>
-          <span className="text-[11px] text-amber-700">1 unit awaiting calibration</span>
+          <span className="text-2xl font-bold text-amber-700 mt-1 block">{maintenanceCount}</span>
+          <span className="text-[11px] text-amber-700">Units currently serviced</span>
         </div>
       </div>
 
@@ -288,7 +320,7 @@ export default function AssetManagementPage() {
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
-            placeholder="Search assets by tag, name, serial #, room..."
+            placeholder="Search assets by name, serial #, room..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
@@ -302,11 +334,11 @@ export default function AssetManagementPage() {
             className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
           >
             <option value="ALL">All Categories</option>
-            <option value="DIGITIZATION">Digitization Equipment</option>
-            <option value="CONSERVATION">Conservation &amp; Lab</option>
-            <option value="CIRCULATION">Circulation &amp; RFID</option>
-            <option value="IT_INFRASTRUCTURE">IT &amp; Storage Servers</option>
-            <option value="ARCHIVAL_STORAGE">Archival Climate Systems</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
 
           <select
@@ -315,92 +347,123 @@ export default function AssetManagementPage() {
             className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
           >
             <option value="ALL">All Statuses</option>
-            <option value="OPERATIONAL">Operational</option>
-            <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-            <option value="ALLOCATED">Allocated to Staff/Fellow</option>
-            <option value="DEPRECATED">Deprecated</option>
+            <option value="ACTIVE">Active</option>
+            <option value="IN_MAINTENANCE">In Maintenance</option>
+            <option value="RETIRED">Retired</option>
+            <option value="LOST">Lost</option>
           </select>
         </div>
       </div>
 
       {/* Assets Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">Asset Tag / ID</th>
-              <th className="py-3 px-4">Asset Name &amp; Model</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4">Physical Location</th>
-              <th className="py-3 px-4">Assigned Custodian</th>
-              <th className="py-3 px-4">Valuation</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((a) => (
-              <tr key={a.id} className="hover:bg-[#FAF8F5] transition-colors">
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                  <span className="block">{a.tag}</span>
-                  <span className="text-[10px] text-gray-400">{a.id}</span>
-                </td>
-                <td className="py-3.5 px-4 max-w-xs">
-                  <span className="font-bold text-gray-900 block text-sm">{a.name}</span>
-                  <span className="text-gray-500 text-[11px] block">{a.model}</span>
-                  <span className="font-mono text-gray-400 text-[10px]">SN: {a.serialNumber}</span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                    {a.category.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-gray-700 font-semibold">{a.location}</td>
-                <td className="py-3.5 px-4 text-gray-600">{a.custodian}</td>
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                  ₹{a.purchaseCost.toLocaleString('en-IN')}
-                </td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      a.status === 'OPERATIONAL'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : a.status === 'ALLOCATED'
-                        ? 'bg-blue-100 text-blue-800'
-                        : a.status === 'UNDER_MAINTENANCE'
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {a.status.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setViewingAsset(a)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>View</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert(`Printing QR / Barcode Tag for ${a.tag}`)}
-                    className="p-1 text-gray-400 hover:text-gray-900"
-                    title="Print QR Tag"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                  </button>
-                </td>
+        {loading ? (
+          <div className="py-16 flex items-center justify-center text-gray-400 text-xs gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading assets...
+          </div>
+        ) : (
+          <table className="w-full border-collapse text-left text-xs font-sans">
+            <thead>
+              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                <th className="py-3 px-4">Asset Name</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Physical Location</th>
+                <th className="py-3 px-4">Department</th>
+                <th className="py-3 px-4">Valuation</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#EEECE7]">
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-gray-400">
+                    No assets found.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((a) => (
+                <tr key={a.id} className="hover:bg-[#FAF8F5] transition-colors">
+                  <td className="py-3.5 px-4 max-w-xs">
+                    <span className="font-bold text-gray-900 block text-sm">{a.name}</span>
+                    {a.serialNumber && (
+                      <span className="font-mono text-gray-400 text-[10px]">SN: {a.serialNumber}</span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    {a.category ? (
+                      <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                        {a.category}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4 text-gray-700 font-semibold">{a.location || '—'}</td>
+                  <td className="py-3.5 px-4 text-gray-600">{a.department?.name || '—'}</td>
+                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
+                    {a.purchaseCost ? `₹${a.purchaseCost.toLocaleString('en-IN')}` : '—'}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        a.status === 'ACTIVE'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : a.status === 'IN_MAINTENANCE'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : a.status === 'LOST'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {STATUS_LABELS[a.status]}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => openViewModal(a)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(a)}
+                      className="p-1.5 text-gray-400 hover:text-gray-900"
+                      title="Edit Asset"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAsset(a)}
+                      disabled={deletingId === a.id}
+                      className="p-1.5 text-gray-400 hover:text-red-700 disabled:opacity-50"
+                      title="Delete Asset"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert(`Printing QR / Barcode Tag for ${a.name}`)}
+                      className="p-1.5 text-gray-400 hover:text-gray-900"
+                      title="Print QR Tag"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* POPUP MODAL: Register New Asset */}
-      {showAddModal && (
+      {/* POPUP MODAL: Register / Edit Asset */}
+      {showFormModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden border border-[#E2E0DB] animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center">
@@ -409,20 +472,25 @@ export default function AssetManagementPage() {
                   <Boxes className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Register New Library Asset</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">
+                    {editingId ? 'Edit Library Asset' : 'Register New Library Asset'}
+                  </h3>
                   <span className="text-[11px] text-gray-500">Enter institutional hardware and equipment specifications</span>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowFormModal(false);
+                  resetForm();
+                }}
                 className="text-gray-400 hover:text-gray-700 p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAsset} className="p-6 space-y-4 text-xs font-sans">
+            <form onSubmit={handleSubmitAsset} className="p-6 space-y-4 text-xs font-sans">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="font-bold text-gray-800 block mb-1">Asset Name <span className="text-red-600">*</span></label>
@@ -437,38 +505,12 @@ export default function AssetManagementPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Asset Tag / Identification</label>
+                  <label className="font-bold text-gray-800 block mb-1">Category</label>
                   <input
                     type="text"
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                    placeholder="e.g. AST-SCN-005 (Auto-generated if empty)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 focus:border-[#A52307] outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Asset Category</label>
-                  <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                  >
-                    <option value="DIGITIZATION">Digitization Equipment</option>
-                    <option value="CONSERVATION">Conservation &amp; Lab</option>
-                    <option value="CIRCULATION">Circulation &amp; RFID</option>
-                    <option value="IT_INFRASTRUCTURE">IT &amp; Storage Servers</option>
-                    <option value="ARCHIVAL_STORAGE">Archival Climate Systems</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Model / Specification</label>
-                  <input
-                    type="text"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="e.g. Image Access A2+"
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="e.g. Digitization Equipment"
                     className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
@@ -485,7 +527,7 @@ export default function AssetManagementPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Location / Department</label>
+                  <label className="font-bold text-gray-800 block mb-1">Location</label>
                   <input
                     type="text"
                     value={location}
@@ -496,33 +538,65 @@ export default function AssetManagementPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Assigned Custodian</label>
-                  <input
-                    type="text"
-                    value={custodian}
-                    onChange={(e) => setCustodian(e.target.value)}
-                    placeholder="e.g. Senior Conservator"
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
+                  <label className="font-bold text-gray-800 block mb-1">Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as LibraryAsset['status'])}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="IN_MAINTENANCE">In Maintenance</option>
+                    <option value="RETIRED">Retired</option>
+                    <option value="LOST">Lost</option>
+                  </select>
                 </div>
+
+                {departments.length > 0 && (
+                  <div>
+                    <label className="font-bold text-gray-800 block mb-1">Department</label>
+                    <select
+                      value={departmentId}
+                      onChange={(e) => setDepartmentId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
+                    >
+                      <option value="">Unassigned</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="font-bold text-gray-800 block mb-1">Purchase Cost (₹)</label>
                   <input
                     type="number"
                     value={purchaseCost}
-                    onChange={(e) => setPurchaseCost(Number(e.target.value))}
+                    onChange={(e) => setPurchaseCost(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Warranty / AMC Expiry</label>
+                  <label className="font-bold text-gray-800 block mb-1">Purchase Date</label>
                   <input
                     type="date"
-                    value={warrantyExpiry}
-                    onChange={(e) => setWarrantyExpiry(e.target.value)}
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 focus:border-[#A52307] outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Notes</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Additional notes about this asset..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
               </div>
@@ -530,16 +604,20 @@ export default function AssetManagementPage() {
               <div className="flex justify-end gap-2.5 pt-4 border-t border-[#E2E0DB]">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowFormModal(false);
+                    resetForm();
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow"
+                  disabled={saving}
+                  className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow disabled:opacity-50"
                 >
-                  Save Asset Record
+                  {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Save Asset Record'}
                 </button>
               </div>
             </form>
@@ -550,10 +628,9 @@ export default function AssetManagementPage() {
       {/* POPUP MODAL: View Asset Details */}
       {viewingAsset && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-xl w-full overflow-hidden border border-[#E2E0DB] animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center">
+          <div className="bg-white rounded-lg shadow-2xl max-w-xl w-full overflow-hidden border border-[#E2E0DB] animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center flex-shrink-0">
               <div>
-                <span className="font-mono text-[10px] font-bold uppercase text-gray-500 block">{viewingAsset.tag}</span>
                 <h3 className="font-bold text-gray-900 text-sm">{viewingAsset.name}</h3>
               </div>
               <button
@@ -565,50 +642,118 @@ export default function AssetManagementPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs font-sans">
+            <div className="p-6 space-y-4 text-xs font-sans overflow-y-auto">
+              {viewingError && (
+                <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{viewingError}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 bg-[#FAF8F5] p-4 rounded border border-[#E2E0DB]">
                 <div>
                   <span className="text-gray-500 block text-[11px]">Category:</span>
-                  <strong className="text-gray-900">{viewingAsset.category.replace(/_/g, ' ')}</strong>
+                  <strong className="text-gray-900">{viewingAsset.category || '—'}</strong>
                 </div>
                 <div>
                   <span className="text-gray-500 block text-[11px]">Status:</span>
                   <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                    {viewingAsset.status.replace(/_/g, ' ')}
+                    {STATUS_LABELS[viewingAsset.status]}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block text-[11px]">Model &amp; Spec:</span>
-                  <span className="text-gray-800">{viewingAsset.model}</span>
-                </div>
-                <div>
                   <span className="text-gray-500 block text-[11px]">Serial Number:</span>
-                  <span className="font-mono font-bold text-gray-900">{viewingAsset.serialNumber}</span>
+                  <span className="font-mono font-bold text-gray-900">{viewingAsset.serialNumber || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block text-[11px]">Installed Location:</span>
-                  <span className="text-gray-800 font-semibold">{viewingAsset.location}</span>
+                  <span className="text-gray-500 block text-[11px]">Location:</span>
+                  <span className="text-gray-800 font-semibold">{viewingAsset.location || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block text-[11px]">Assigned Custodian:</span>
-                  <span className="text-gray-800">{viewingAsset.custodian}</span>
+                  <span className="text-gray-500 block text-[11px]">Department:</span>
+                  <span className="text-gray-800">{viewingAsset.department?.name || '—'}</span>
                 </div>
                 <div>
                   <span className="text-gray-500 block text-[11px]">Purchase Valuation:</span>
-                  <span className="font-mono font-bold text-gray-900">₹{viewingAsset.purchaseCost.toLocaleString('en-IN')}</span>
+                  <span className="font-mono font-bold text-gray-900">
+                    {viewingAsset.purchaseCost ? `₹${viewingAsset.purchaseCost.toLocaleString('en-IN')}` : '—'}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block text-[11px]">Warranty Expiry:</span>
-                  <span className="font-mono text-gray-900">{viewingAsset.warrantyExpiry}</span>
+                  <span className="text-gray-500 block text-[11px]">Purchase Date:</span>
+                  <span className="font-mono text-gray-900">
+                    {viewingAsset.purchaseDate ? new Date(viewingAsset.purchaseDate).toLocaleDateString() : '—'}
+                  </span>
                 </div>
+                {viewingAsset.notes && (
+                  <div className="col-span-2">
+                    <span className="text-gray-500 block text-[11px]">Notes:</span>
+                    <span className="text-gray-800">{viewingAsset.notes}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-between items-center pt-2">
+              {viewingLoading ? (
+                <div className="py-6 flex items-center justify-center text-gray-400 gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading history...
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-1.5">
+                      <Wrench className="w-3.5 h-3.5" /> Maintenance History
+                    </h4>
+                    {viewingAsset.maintenanceLogs && viewingAsset.maintenanceLogs.length > 0 ? (
+                      <ul className="space-y-2">
+                        {viewingAsset.maintenanceLogs.map((m) => (
+                          <li key={m.id} className="border border-[#E2E0DB] rounded p-2.5">
+                            <div className="flex justify-between items-start">
+                              <span className="font-semibold text-gray-900">{m.description}</span>
+                              {m.cost != null && (
+                                <span className="font-mono font-bold text-gray-900">₹{m.cost.toLocaleString('en-IN')}</span>
+                              )}
+                            </div>
+                            <span className="text-gray-500 text-[11px]">
+                              {new Date(m.performedAt).toLocaleDateString()}
+                              {m.performedBy ? ` · ${m.performedBy}` : ''}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-400 italic">No maintenance logged yet.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Audit History
+                    </h4>
+                    {viewingAsset.audits && viewingAsset.audits.length > 0 ? (
+                      <ul className="space-y-2">
+                        {viewingAsset.audits.map((au) => (
+                          <li key={au.id} className="border border-[#E2E0DB] rounded p-2.5">
+                            <div className="flex justify-between items-start">
+                              <span className="font-semibold text-gray-900">{au.condition}</span>
+                              <span className="text-gray-500 text-[11px]">{new Date(au.auditedAt).toLocaleDateString()}</span>
+                            </div>
+                            {au.notes && <span className="text-gray-600 block">{au.notes}</span>}
+                            {au.auditedBy && <span className="text-gray-400 text-[11px]">by {au.auditedBy}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-400 italic">No audits logged yet.</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-between items-center pt-2 border-t border-[#E2E0DB]">
                 <button
                   type="button"
-                  onClick={() => {
-                    alert(`Printing Asset Tag sticker for ${viewingAsset.tag}`);
-                  }}
+                  onClick={() => alert(`Printing Asset Tag sticker for ${viewingAsset.name}`)}
                   className="px-3 py-1.5 border border-gray-300 rounded font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -627,7 +772,6 @@ export default function AssetManagementPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
