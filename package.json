@@ -1,0 +1,26 @@
+{
+  "name": "kmlri-library-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@kmlri/web",
+    "dev:api": "npm run start:dev --workspace=@kmlri/api",
+    "build:web": "npm run build --workspace=@kmlri/web",
+    "build:api": "npm run build --workspace=@kmlri/api",
+    "prisma:generate": "npm run prisma:generate --workspace=@kmlri/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@kmlri/api",
+    "prisma:seed": "npm run prisma:seed --workspace=@kmlri/api"
+  },
+  "keywords": [
+    "library",
+    "nextjs",
+    "nestjs",
+    "kmlri",
+    "opac"
+  ],
+  "author": "KMLRI Team",
+  "license": "ISC"
+}

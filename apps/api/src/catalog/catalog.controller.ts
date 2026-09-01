@@ -1,0 +1,39 @@
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { CatalogService } from './catalog.service';
+import { CreateRecordDto } from './dto/create-record.dto';
+import { SearchQueryDto } from './dto/search-query.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+
+@Controller('catalog')
+export class CatalogController {
+  constructor(private readonly catalogService: CatalogService) {}
+
+  @Get('search')
+  search(@Query() queryDto: SearchQueryDto) {
+    return this.catalogService.search(queryDto);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.catalogService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Post()
+  create(@Body() dto: CreateRecordDto) {
+    return this.catalogService.create(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Post(':id/copies')
+  addCopy(
+    @Param('id') id: string,
+    @Body() body: { location?: string; barcode?: string },
+  ) {
+    return this.catalogService.addCopy(id, body.location, body.barcode);
+  }
+}

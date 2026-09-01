@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kunhīn Musliyār Library &amp; Research Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,600;0,700;1,400&amp;family=Averia+Serif+Libre:wght@300;400;700&amp;family=Poppins:wght@300;400&amp;family=EB+Garamond:ital,wght@0,400;0,500;1,400&amp;display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: rgb(243, 239, 230);
+      color: rgb(0, 0, 0);
+      font-family: 'Amiri', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    a:hover {
+      color: rgb(165, 35, 7);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+      color: inherit;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(216, 179, 179, 0.52);
+    }
+
+    ::selection {
+      background: rgb(165, 35, 7);
+      color: #ffffff;
+    }
+
+    /* Page container */
+    .page-wrapper {
+      background: rgb(243, 239, 230);
+      min-height: 100vh;
+      min-width: 320px;
+      overflow-x: hidden;
+    }
+
+    /* Top decorative stripes */
+    .top-strip-1 {
+      height: 2px;
+      background: rgb(0, 0, 0);
+    }
+
+    .top-strip-gap-1 {
+      height: 3px;
+    }
+
+    .top-strip-2 {
+      height: 1px;
+      background: rgb(0, 0, 0);
+    }
+
+    .top-strip-gap-2 {
+      height: 7px;
+    }
+
+    /* Top black bar */
+    .top-bar {
+      background: rgb(0, 0, 0);
+      height: 45px;
+      position: relative;
+    }
+
+    .top-bar-inner {
+      max-width: 955px;
+      margin: 0 auto;
+      position: relative;
+      height: 45px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .top-logo {
+      font-family: 'Amiri', serif;
+      font-weight: 400;
+      font-size: 40px;
+      line-height: 1;
+      color: rgb(255, 255, 255);
+      letter-spacing: -0.02em;
+    }
+
+    .top-logo:hover {
+      color: rgb(243, 239, 230);
+    }
+
+    .top-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Amiri', serif;
+      font-size: 15px;
+      color: rgb(255, 255, 255);
+    }
+
+    .top-links a {
+      color: rgb(255, 255, 255);
+    }
+
+    .top-links a:hover {
+      color: rgb(243, 239, 230);
+      text-decoration: underline;
+    }
+
+    /* Header */
+    .main-header {
+      max-width: 955px;
+      margin: 0 auto;
+      padding: 99px 16px 0;
+    }
+
+    .main-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      min-height: 34px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 34px;
+      font-family: 'Averia Serif Libre', serif;
+      font-size: 17px;
+      line-height: 1;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: rgb(0, 0, 0);
+    }
+
+    .nav-links a.active {
+      color: rgb(165, 35, 7);
+      font-weight: 700;
+    }
+
+    .nav-links a:hover {
+      color: rgb(165, 35, 7);
+    }
+
+    .btn-account {
+      width: 142px;
+      height: 34px;
+      box-shadow: inset 0 0 0 1px rgb(0, 0, 0);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Averia Serif Libre', serif;
+      font-size: 17px;
+      line-height: 1;
+      color: rgb(0, 0, 0);
+      background: transparent;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .btn-account:hover {
+      background: rgb(0, 0, 0);
+      color: rgb(243, 239, 230);
+    }
+
+    .header-divider {
+      margin-top: 22px;
+      height: 4px;
+      border-top: 1px solid rgb(0, 0, 0);
+      border-bottom: 1px solid rgb(0, 0, 0);
+    }
+
+    .double-rule {
+      border-top: 2px solid rgb(0, 0, 0);
+      border-bottom: 1px solid rgb(0, 0, 0);
+      height: 5px;
+    }
+
+    /* Common Section Styles */
+    .section-standard {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 78px 40px 0;
+    }
+
+    .section-narrow {
+      max-width: 955px;
+      margin: 0 auto;
+      padding: 56px 16px 0;
+    }
+
+    .section-med {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 56px 40px 0;
+    }
+
+    .page-title {
+      font-family: 'Amiri', serif;
+      font-size: 60px;
+      font-weight: 700;
+      line-height: 1.05;
+      margin: 0 0 18px;
+      letter-spacing: -0.015em;
+    }
+
+    .kicker {
+      font-family: 'Averia Serif Libre', serif;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #8C8175;
+      margin: 0 0 12px;
+    }
+
+    .section-heading {
+      font-family: 'Amiri', serif;
+      font-size: 26px;
+      font-weight: 600;
+      color: rgb(165, 35, 7);
+      margin: 0 0 10px;
+    }
+
+    .pill-btn-black {
+      display: inline-block;
+      background: rgb(0, 0, 0);
+      color: rgb(243, 239, 230);
+      font-family: 'Amiri', serif;
+      font-weight: 600;
+      font-size: 17px;
+      padding: 12px 30px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .pill-btn-black:hover {
+      background: rgb(165, 35, 7);
+      color: rgb(255, 255, 255);
+    }
+
+    .pill-btn-outline {
+      display: inline-block;
+      background: transparent;
+      border: 1.5px solid rgb(0, 0, 0);
+      font-family: 'Amiri', serif;
+      font-weight: 600;
+      font-size: 17px;
+      padding: 12px 28px;
+      border-radius: 999px;
+      cursor: pointer;
+      color: rgb(0, 0, 0);
+      text-align: center;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .pill-btn-outline:hover {
+      background: rgb(0, 0, 0);
+      color: rgb(243, 239, 230);
+    }
+
+    /* What's on tabs */
+    .tab-btn {
+      border: none;
+      cursor: pointer;
+      font-family: 'Amiri', serif;
+      font-size: 20px;
+      line-height: 1;
+      padding: 0 22px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 54px;
+      background: transparent;
+      color: rgb(0, 0, 0);
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: rgb(0, 0, 0);
+      color: rgb(255, 255, 255);
+      width: 94px;
+      height: 54px;
+      margin-bottom: -14px;
+      padding-bottom: 14px;
+      font-weight: 700;
+    }
+
+    /* Collections grid */
+    .collections-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgb(0, 0, 0);
+      border: 1px solid rgb(0, 0, 0);
+    }
+
+    .collection-card {
+      background: rgb(243, 239, 230);
+      padding: 28px 26px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 168px;
+      transition: background-color 0.15s ease;
+    }
+
+    .collection-card:hover {
+      background: #E8E1D6;
+    }
+
+    .collection-card .col-count {
+      font-family: 'Averia Serif Libre', serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: #8C8175;
+    }
+
+    .collection-card .col-name {
+      font-family: 'Amiri', serif;
+      font-size: 23px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .collection-card .col-note {
+      font-size: 17px;
+      line-height: 1.45;
+      color: #5E564C;
+      text-wrap: pretty;
+    }
+
+    /* Search Results Item */
+    .search-result-row {
+      display: grid;
+      grid-template-columns: 104px 1fr auto;
+      gap: 24px;
+      padding: 24px 12px;
+      border-bottom: 1px solid #D6CCBC;
+      align-items: start;
+      transition: background-color 0.15s ease;
+    }
+
+    .search-result-row:hover {
+      background: #EAE3D8;
+    }
+
+    /* Facet Checkbox Styling */
+    .facet-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      color: #3E3831;
+      user-select: none;
+    }
+
+    .facet-box {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid rgb(0, 0, 0);
+      display: inline-block;
+      transition: background-color 0.15s ease;
+    }
+
+    .facet-item input {
+      display: none;
+    }
+
+    .facet-item input:checked+.facet-box {
+      background-color: rgb(0, 0, 0);
+    }
+
+    /* Placeholder Patterns */
+    .folio-scan-placeholder {
+      aspect-ratio: 4/3;
+      background: repeating-linear-gradient(135deg, #E4DCCF 0 10px, #DBD2C3 10px 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgb(0, 0, 0);
+    }
+
+    .folio-scan-placeholder-3-4 {
+      aspect-ratio: 3/4;
+      background: repeating-linear-gradient(135deg, #E4DCCF 0 10px, #DBD2C3 10px 20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgb(0, 0, 0);
+    }
+
+    .thumb-placeholder {
+      aspect-ratio: 3/4;
+      background: repeating-linear-gradient(135deg, #E4DCCF 0 6px, #DBD2C3 6px 12px);
+      border: 1px solid #C9BEAC;
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 900px) {
+      .collections-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .whatson-cards-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .services-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .stats-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .stories-grid-3 {
+        grid-template-columns: 1fr !important;
+      }
+
+      .news-grid-3 {
+        grid-template-columns: 1fr !important;
+      }
+
+      .two-col-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      .footer-main-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .page-title {
+        font-size: 42px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-wrapper">
+
+    <!-- Top Line Trim -->
+    <div class="top-strip-1"></div>
+    <div class="top-strip-gap-1"></div>
+    <div class="top-strip-2"></div>
+    <div class="top-strip-gap-2"></div>
+
+    <!-- Top Black Bar -->
+    <div class="top-bar">
+      <div class="top-bar-inner">
+        <a href="#/" class="top-logo">kmlri</a>
+        <div class="top-links">
+          <a href="#/faqs">FAQs</a>
+          <span>|</span>
+          <a href="#/ask">Ask Librarian</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="main-header">
+      <div class="main-nav-row">
+        <nav class="nav-links" id="main-nav">
+          <a href="#/collections" data-nav="collections">Collections</a>
+          <a href="#/services" data-nav="services">Services</a>
+          <a href="#/news" data-nav="news">News &amp; Events</a>
+          <a href="#/stories" data-nav="stories">Stories</a>
+          <a href="#/about" data-nav="about">About</a>
+        </nav>
+        <a href="#/account" class="btn-account" data-nav="account">My Account</a>
+      </div>
+      <div class="header-divider"></div>
+    </header>
+
+    <!-- Dynamic Page Content Container -->
+    <main id="app-view"></main>
+
+    <!-- Newsletter Section -->
+    <section style="text-align: center; padding: 67px 16px; font-family: 'Amiri', serif;">
+      <h2 style="font-size: 50px; font-weight: 700; line-height: 1; margin: 0 0 33px; color: rgb(0,0,0);">E-Newsletter
+      </h2>
+      <p
+        style="font-size: 20px; line-height: 1.4; color: rgb(0,0,0); max-width: 542px; margin: 0 auto 33px; text-wrap: pretty;">
+        Sign up for our monthly e-newsletter for updates and highlights about Gallica.
+      </p>
+      <form id="newsletter-form" style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <div style="display: flex; justify-content: center; gap: 12px; max-width: 420px; width: 100%;">
+          <input type="email" id="newsletter-email" placeholder="Enter your email address"
+            aria-label="Email for newsletter"
+            style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 44px; padding: 0 16px; font-size: 17px; outline: none; border-radius: 999px; flex: 1; width: 100%;"
+            required>
+          <button type="submit"
+            style="background: rgb(0,0,0); color: rgb(243,239,230); border: none; width: 154px; height: 44px; border-radius: 59px; font-family: 'Amiri', serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: background-color 0.15s ease;"
+            onmouseover="this.style.background='rgb(165,35,7)'" onmouseout="this.style.background='rgb(0,0,0)'">
+            SUBSCRIBE
+          </button>
+        </div>
+        <p id="newsletter-feedback"
+          style="font-size: 17px; color: rgb(165, 35, 7); margin: 0; min-height: 24px; font-weight: 600;"></p>
+      </form>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer-section" style="background: rgb(0,0,0); color: rgb(255,255,255); font-family: 'Amiri', serif;">
+      <div class="footer-main-grid"
+        style="max-width: 955px; margin: 0 auto; padding: 65px 16px 0; display: grid; grid-template-columns: 374px 1fr 1fr; gap: 48px;">
+        <div>
+          <img src="assets/wordmark-latin.svg" alt="Kunhīn Musliyār Library &amp; Research Institute"
+            style="width: 374px; max-width: 100%; height: auto; display: block; filter: invert(1);">
+          <p style="font-size: 13px; line-height: 1.4; color: rgb(255,255,255); margin: 33px 0 0;">
+            Near Sabeelul Hidaya Islamic College<br>
+            Vadhee Hidaya, Vattaparamba, Parappur PO,<br>
+            Kottakkal, Malappuram, Kerala - 676503
+          </p>
+          <p
+            style="font-size: 14px; line-height: 1.4; color: rgb(156,156,156); margin: 41px 0 0; display: flex; gap: 19px; flex-wrap: wrap;">
+            <a href="tel:+919745234786" style="color: rgb(156,156,156);">+91 97452 34786</a>
+            <a href="mailto:info@kmlri.in" style="color: rgb(156,156,156);">info@kmlri.in</a>
+          </p>
+          <div style="display: flex; gap: 17px; margin-top: 21px;">
+            <a href="#/about" aria-label="Facebook"
+              style="width: 31.333px; height: 31.333px; border-radius: 5px; background: rgb(31,31,31); display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: rgb(255,255,255); transition: background-color 0.15s ease;"
+              onmouseover="this.style.background='rgb(75,75,75)'"
+              onmouseout="this.style.background='rgb(31,31,31)'">f</a>
+            <a href="#/about" aria-label="Instagram"
+              style="width: 31.333px; height: 31.333px; border-radius: 5px; background: rgb(31,31,31); display: flex; align-items: center; justify-content: center; color: rgb(255,255,255); transition: background-color 0.15s ease;"
+              onmouseover="this.style.background='rgb(75,75,75)'" onmouseout="this.style.background='rgb(31,31,31)'">
+              <img src="assets/social-icon.svg" alt="" style="width: 14.242px; height: 14.242px; filter: invert(1);">
+            </a>
+            <a href="#/about" aria-label="YouTube"
+              style="width: 31.333px; height: 31.333px; border-radius: 5px; background: rgb(31,31,31); display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; color: rgb(255,255,255); transition: background-color 0.15s ease;"
+              onmouseover="this.style.background='rgb(75,75,75)'"
+              onmouseout="this.style.background='rgb(31,31,31)'">▶</a>
+          </div>
+        </div>
+        <div>
+          <p
+            style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: rgb(156,156,156); margin: 8px 0 18px;">
+            Explore</p>
+          <div style="display: flex; flex-direction: column; gap: 11px; font-size: 17px;">
+            <a href="#/collections" style="color: rgb(255,255,255);">Collections</a>
+            <a href="#/search" style="color: rgb(255,255,255);">Digital reading room</a>
+            <a href="#/advanced" style="color: rgb(255,255,255);">Advanced search</a>
+            <a href="#/news" style="color: rgb(255,255,255);">New acquisitions</a>
+            <a href="#/stories" style="color: rgb(255,255,255);">Stories</a>
+          </div>
+        </div>
+        <div>
+          <p
+            style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: rgb(156,156,156); margin: 8px 0 18px;">
+            Visit &amp; Use</p>
+          <div style="display: flex; flex-direction: column; gap: 11px; font-size: 17px;">
+            <a href="#/services" style="color: rgb(255,255,255);">Reading room</a>
+            <a href="#/account" style="color: rgb(255,255,255);">Membership</a>
+            <a href="#/ask" style="color: rgb(255,255,255);">Ask a librarian</a>
+            <a href="#/services" style="color: rgb(255,255,255);">Reproduction requests</a>
+            <a href="#/faqs" style="color: rgb(255,255,255);">FAQs</a>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div
+          style="max-width: 955px; margin: 44px auto 0; padding: 21px 16px 44px; display: flex; justify-content: space-between; gap: 24px; font-size: 12px; color: rgb(255,255,255); flex-wrap: wrap; border-top: 1px solid rgb(31,31,31);">
+          <span>© 2026 Kunhīn Musliyār Library &amp; Research Institute. All rights reserved.</span>
+          <span style="display: flex; gap: 20px;">
+            <a href="#/about" style="color: rgb(156,156,156);">Privacy</a>
+            <a href="#/about" style="color: rgb(156,156,156);">Terms of use</a>
+            <a href="#/about" style="color: rgb(156,156,156);">Accessibility</a>
+          </span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // State Store
+    const state = {
+      activeTab: 'News',
+      activeNewsTab: 'News',
+      searchQuery: '',
+      signedIn: false,
+      openFaq: 0,
+      askSent: false,
+      currentPage: 'home'
+    };
+
+    // Data Models
+    const collectionsData = [
+      { name: "Manuscripts", count: "1,240 items", note: "Arabic, Persian and Arabi-Malayalam codices, described folio by folio." },
+      { name: "Arabi-Malayalam Print", count: "860 items", note: "Lithographs, chapbooks and poetry printed across Malabar." },
+      { name: "Rare Books", count: "2,100 items", note: "Early editions in Arabic, Malayalam, Urdu and English." },
+      { name: "Periodicals", count: "310 titles", note: "Journals and magazines, bound runs and loose issues." },
+      { name: "Theses & Papers", count: "470 items", note: "Dissertations deposited by affiliated researchers." },
+      { name: "Audio & Oral History", count: "95 hours", note: "Recorded recitation, interviews and lecture archives." }
+    ];
+
+    const servicesData = [
+      { name: "Reading Room", note: "Open to researchers, Monday to Saturday, 9:00 to 17:00.", action: "Plan a visit", href: "#/services" },
+      { name: "Reproduction", note: "Digital copies of catalogued items on request.", action: "Request a scan", href: "#/services" },
+      { name: "Reference Help", note: "Ask a librarian about sources, scripts and citations.", action: "Ask a question", href: "#/ask" },
+      { name: "Membership", note: "Borrowing and remote access for members of the institute.", action: "Become a member", href: "#/account" }
+    ];
+
+    const facetsData = [
+      { title: "Format", options: ["Manuscript", "Printed book", "Periodical", "Audio"] },
+      { title: "Script", options: ["Arabic", "Arabi-Malayalam", "Malayalam", "Latin"] },
+      { title: "Access", options: ["Digitised in full", "Reading room only", "Restricted"] }
+    ];
+
+    const searchResultsData = [
+      { title: "Bayān al-Fawāʾid", author: "Unnamed scribe, Malabar coast", detail: "Manuscript · MS 0142 · 84 folios", status: "Digitised" },
+      { title: "Muḥyiddīn Mālā", author: "Qāḍī Muḥammad", detail: "Arabi-Malayalam print · AM 0311", status: "Digitised" },
+      { title: "Fatḥ al-Muʿīn, annotated copy", author: "Zayn al-Dīn al-Malībārī", detail: "Rare book · RB 0908", status: "Reading room" },
+      { title: "Al-Bayān monthly, bound run 1954–1961", author: "Various", detail: "Periodical · PER 0044 · 7 volumes", status: "Reading room" },
+      { title: "Notes on a family collection, Parappur", author: "Deposited papers", detail: "Archive · ARC 0026", status: "Restricted" }
+    ];
+
+    const itemMetadata = [
+      { k: "Shelfmark", v: "MS 0142" },
+      { k: "Title (Arabic)", v: "بيان الفوائد" },
+      { k: "Language", v: "Arabic, with Arabi-Malayalam glosses" },
+      { k: "Extent", v: "84 folios, 21 × 15 cm" },
+      { k: "Material", v: "Laid paper, brown ink, red rubrication" },
+      { k: "Binding", v: "Limp leather over paper boards" },
+      { k: "Provenance", v: "Family deposit, Parappur, 2019" },
+      { k: "Access", v: "Digitised in full; original by appointment" }
+    ];
+
+    const advancedFields = [
+      { label: "All of these words", hint: "e.g. mālā poem" },
+      { label: "Exact phrase", hint: "e.g. fatḥ al-muʿīn" },
+      { label: "Author or scribe", hint: "name in any script" },
+      { label: "Shelfmark", hint: "e.g. MS 0142" },
+      { label: "Collection", hint: "manuscripts, rare books…" },
+      { label: "Script", hint: "Arabic, Arabi-Malayalam…" },
+      { label: "Date from", hint: "yyyy" },
+      { label: "Date to", hint: "yyyy" }
+    ];
+
+    const openingHours = [
+      { day: "Monday – Thursday", time: "9:00 – 17:00" },
+      { day: "Friday", time: "9:00 – 12:00" },
+      { day: "Saturday", time: "9:00 – 15:00" },
+      { day: "Sunday and public holidays", time: "Closed" }
+    ];
+
+    const eventsArticles = [
+      { date: "18 September", title: "National Seminar on Arabi-Malayalam Manuscripts", blurb: "Two-day academic symposium on Indian Ocean trade logs and fatwa transmission." },
+      { date: "24 September", title: "Workshop: Palm-leaf Deacidification and Scribe Inks", blurb: "Practical conservation session in the restoration lab, 12 places." },
+      { date: "27 September", title: "Evening Lecture on Malabar’s Manuscript Networks", blurb: "How codices, scribes and students moved between coastal trading towns." },
+      { date: "1-15 October", title: "Exhibition: 100 Rare Inscriptions & Illuminated Folios", blurb: "Curated showcase with digital deep-zoom stations in Gallery Hall A." }
+    ];
+
+    const newsArticles = [
+      { date: "12 September", title: "Reading room open house for research scholars", blurb: "An afternoon of short talks and a walk-through of the catalogue for new readers." },
+      { date: "20 September", title: "Workshop: handling and rehousing fragile bindings", blurb: "Practical session in the conservation lab, limited to twelve places." },
+      { date: "27 September", title: "Evening lecture on Malabar’s manuscript networks", blurb: "How books, scribes and students moved between towns along the coast." },
+      { date: "2 October", title: "Nine hundred folios added to the digital reading room", blurb: "The largest single batch since digitisation began." },
+      { date: "14 October", title: "Conservation lab completes its first full-year survey", blurb: "Condition reports now exist for every manuscript on the shelves." },
+      { date: "5 November", title: "KMLRI acquires 17th-century Arabian Sea navigational charts", blurb: "Accessioned portolan charts now available for scholarly reservation." }
+    ];
+
+    const storiesArticles = [
+      { kicker: "Featured story", date: "Autumn 2026", title: "What a margin note reveals about a 19th-century reader", blurb: "A single line in the margin of a jurisprudence manuscript tells us who read the book." },
+      { kicker: "Research notes", date: "September 2026", title: "Tracing one poem across four handwritten copies", blurb: "How slight variations in rhyme schemes reveal the movement of Sufi poetry." },
+      { kicker: "Materials", date: "August 2026", title: "The paper, the ink and the hands that made a book", blurb: "Microscopic examination of Venetian watermarks and local soot inks." },
+      { kicker: "Donors", date: "July 2026", title: "How a family collection came to the reading room", blurb: "Three generations of ancestral legal deeds safeguarded from monsoon moisture." },
+      { kicker: "Conservation", date: "June 2026", title: "Rehousing a binding that had travelled too far", blurb: "Restoring an embossed goatskin flap binding damaged by desiccated adhesive." },
+      { kicker: "Reading room", date: "May 2026", title: "A week with the periodicals of the 1950s", blurb: "Digging through the early print runs of coastal literary magazines." }
+    ];
+
+    const opportunitiesArticles = [
+      { date: "Deadline: 30 Oct", title: "Short-term research fellowships in manuscript studies", blurb: "Four fully-funded residential fellowships with research stipends and housing." },
+      { date: "Deadline: 15 Nov", title: "Graduate Resident Internship in Book & Paper Conservation", blurb: "6-month intensive placement in paper deacidification and leather tooling." },
+      { date: "Deadline: 10 Dec", title: "Call for Papers: 3rd Indian Ocean Codicology Symposium", blurb: "Submissions invited on scribal traditions and watermark chronologies." },
+      { date: "Deadline: 25 Oct", title: "Graduate Assistantship in Arabic Paleography Cataloguing", blurb: "Part-time position assisting senior cataloguers with Dublin Core metadata." }
+    ];
+
+    const statsData = [
+      { n: "5,075", label: "Catalogued items" },
+      { n: "1,240", label: "Manuscripts" },
+      { n: "38,600", label: "Digitised folios" },
+      { n: "6", label: "Collections" }
+    ];
+
+    const accountStatsData = [
+      { n: "3", label: "Items on loan" },
+      { n: "1", label: "Hold ready for collection" },
+      { n: "₹0", label: "Outstanding fines" }
+    ];
+
+    const activeLoansData = [
+      { title: "Fatḥ al-Muʿīn, annotated copy", call: "RB 0908", due: "Due 14 September" },
+      { title: "Al-Bayān monthly, vol. 3", call: "PER 0044", due: "Due 21 September" },
+      { title: "Malabar and its people", call: "RB 1177", due: "Due 3 October" }
+    ];
+
+    const faqsList = [
+      { q: "Who can use the reading room?", a: "Students, teachers and visiting researchers. Bring photo identification for a day pass; members can enter with their card." },
+      { q: "Can I borrow manuscripts?", a: "No. Manuscripts and rare books are consulted in the supervised reading room. Printed books in the general collection can be borrowed by members." },
+      { q: "How do I request a scan?", a: "Find the item in the catalogue and use Request a scan, or write to the reference desk with the shelfmark. Fees depend on extent and format." },
+      { q: "Is the catalogue searchable in Arabic script?", a: "Yes. Records are described in Arabic script and in Latin transliteration, and either will match." },
+      { q: "Do you accept donations of books and papers?", a: "We do, subject to a condition survey. Write to the reference desk describing the material before sending anything." },
+      { q: "Is there parking and step-free access?", a: "Parking is available beside the college gate. The ground-floor reading room and reference desk are step-free." }
+    ];
+
+    // Router & Views Renderer
+    function renderFacets() {
+      return `
+    <aside style="display: flex; flex-direction: column; gap: 30px;">
+      ${facetsData.map(f => `
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 12px;">${f.title}</p>
+          <div style="display: flex; flex-direction: column; gap: 9px; font-size: 17px;">
+            ${f.options.map(o => `
+              <label class="facet-item">
+                <input type="checkbox">
+                <span class="facet-box"></span>
+                <span>${o}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </aside>
+  `;
+    }
+
+    function renderView() {
+      const hash = (window.location.hash || '').replace(/^#\/?/, '') || 'home';
+      state.currentPage = hash;
+
+      // Update active navigation state
+      document.querySelectorAll('[data-nav]').forEach(el => {
+        if (el.dataset.nav === hash) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+
+      const appView = document.getElementById('app-view');
+      window.scrollTo(0, 0);
+
+      switch (hash) {
+        case 'collections':
+          appView.innerHTML = renderCollectionsView();
+          break;
+        case 'search':
+          appView.innerHTML = renderSearchView();
+          break;
+        case 'item':
+          appView.innerHTML = renderItemView();
+          break;
+        case 'advanced':
+          appView.innerHTML = renderAdvancedView();
+          break;
+        case 'services':
+          appView.innerHTML = renderServicesView();
+          break;
+        case 'news':
+          appView.innerHTML = renderNewsView();
+          break;
+        case 'stories':
+          appView.innerHTML = renderStoriesView();
+          break;
+        case 'about':
+          appView.innerHTML = renderAboutView();
+          break;
+        case 'account':
+          appView.innerHTML = renderAccountView();
+          break;
+        case 'faqs':
+          appView.innerHTML = renderFaqsView();
+          break;
+        case 'ask':
+          appView.innerHTML = renderAskView();
+          break;
+        case 'home':
+        default:
+          appView.innerHTML = renderHomeView();
+          break;
+      }
+    }
+
+    // 1. Home View
+    function renderHomeView() {
+      const tabs = ["Events", "News", "Stories", "Opportunities"];
+      const currentTab = state.activeTab || "Events";
+
+      let currentItems = eventsArticles;
+      if (currentTab === 'News') currentItems = newsArticles.slice(0, 4);
+      else if (currentTab === 'Stories') currentItems = storiesArticles.slice(0, 4);
+      else if (currentTab === 'Opportunities') currentItems = opportunitiesArticles.slice(0, 4);
+      else currentItems = eventsArticles.slice(0, 4);
+
+      return `
+    <!-- Arabic Wordmark -->
+    <section style="max-width: 955px; margin: 0 auto; padding: 42px 16px 0; text-align: center;">
+      <img src="assets/wordmark-arabic.svg" alt="كنجين مسليار — Kunhīn Musliyār Library &amp; Research Institute" style="width: 313px; max-width: 100%; height: auto; display: block; margin: 0 auto;">
+    </section>
+
+    <!-- Main Search -->
+    <section style="max-width: 955px; margin: 0 auto; padding: 51px 16px 0;">
+      <form onsubmit="handleSearchSubmit(event)" style="display: flex; align-items: center; box-shadow: inset 0 0 0 3px rgb(0,0,0); height: 68px; padding: 0 28px 0 36px; gap: 16px; background: transparent;">
+        <input type="text" id="main-search-input" value="${escapeHtml(state.searchQuery)}" placeholder="Enter Keywords to Search" aria-label="Search the catalogue" style="flex: 1; border: none; outline: none; background: transparent; font-family: 'Poppins', sans-serif; font-weight: 300; font-size: 24px; color: rgb(0,0,0);">
+        <button type="submit" aria-label="Search" style="border: none; background: transparent; cursor: pointer; color: rgb(165,35,7); display: flex; align-items: center; padding: 0; transition: color 0.15s ease;" onmouseover="this.style.color='rgb(0,0,0)'" onmouseout="this.style.color='rgb(165,35,7)'">
+          <span style="width: 31px; height: 31px; display: block; background: currentColor; -webkit-mask: url(assets/search-icon.svg) no-repeat center/contain; mask: url(assets/search-icon.svg) no-repeat center/contain;"></span>
+        </button>
+      </form>
+      <div style="margin-top: 2px; font-family: 'Amiri', serif; font-size: 20px;">
+        <a href="#/advanced">Advanced Search</a>
+      </div>
+    </section>
+
+    <!-- What's On Heading & Tabs -->
+    <section id="whatson" style="max-width: 955px; margin: 0 auto; padding: 80px 16px 0; position: relative; z-index: 2;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; font-family: 'Amiri', serif; flex-wrap: wrap;">
+        <h2 style="font-size: 20px; font-weight: 700; color: rgb(165,35,7); margin: 0 0 20px;">What’s On</h2>
+        <div style="display: flex; align-items: flex-end; gap: 0; font-size: 20px; flex-wrap: wrap;">
+          ${tabs.map(tab => `
+            <button type="button" class="tab-btn ${tab === currentTab ? 'active' : ''}" onclick="switchHomeTab('${tab}')">${tab}</button>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Black What's On Cards Section -->
+    <section style="background: rgb(0,0,0); color: rgb(255,255,255); position: relative; z-index: 1;">
+      <div style="position: absolute; left: 0; right: 0; top: 5px; border-top: 1px solid rgb(255,255,255);"></div>
+      <div style="position: absolute; left: 0; right: 0; top: 8px; border-top: 1px solid rgb(255,255,255);"></div>
+      <div style="max-width: 955px; margin: 0 auto; padding: 74px 16px;">
+        <div class="whatson-cards-grid" style="display: grid; grid-template-columns: repeat(4, 216px); gap: 30px; justify-content: space-between;">
+          ${currentItems.map(item => `
+            <article style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 216px;">
+              <div style="width: 100%; height: 153px; background: #222; border: 1px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; text-align: center;">
+                <span style="font-family: 'Averia Serif Libre', serif; font-size: 11px; color: #A52307; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">${item.kicker || currentTab}</span>
+                <span style="font-size: 11px; color: #aaa;">${item.date}</span>
+              </div>
+              <p style="font-family: 'Amiri', serif; font-size: 18px; font-weight: 700; line-height: 1.35; margin: 0; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                ${item.title}
+              </p>
+              <a href="#/news" style="width: 137px; height: 46px; box-shadow: inset 0 0 0 1px rgb(243,239,230); color: rgb(255,255,255); font-family: 'Amiri', serif; font-weight: 700; font-size: 20px; display: flex; align-items: center; justify-content: center; margin-top: auto; transition: background-color 0.15s ease, color 0.15s ease;" onmouseover="this.style.background='rgb(243,239,230)'; this.style.color='rgb(0,0,0)'" onmouseout="this.style.background='transparent'; this.style.color='rgb(255,255,255)'">Read more</a>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Browse the Collections -->
+    <section id="collections" class="section-standard">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <h2 class="section-heading">Browse the Collections</h2>
+        <a href="#/collections" style="font-size: 18px; margin-bottom: 12px;">All collections →</a>
+      </div>
+      <div class="double-rule"></div>
+      <div class="collections-grid" style="border-top: none; margin-top: 0;">
+        ${collectionsData.map(col => `
+          <a href="#/search" class="collection-card">
+            <span class="col-count">${col.count}</span>
+            <span class="col-name">${col.name}</span>
+            <span class="col-note">${col.note}</span>
+          </a>
+        `).join('')}
+      </div>
+    </section>
+
+    <!-- From the Archive -->
+    <section id="stories" class="section-standard">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <h2 class="section-heading">From the Archive</h2>
+        <a href="#/stories" style="font-size: 18px; margin-bottom: 12px;">More stories →</a>
+      </div>
+      <div class="double-rule"></div>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 44px; padding-top: 38px; align-items: center;">
+        <div class="folio-scan-placeholder">
+          <span style="font-family: 'Averia Serif Libre', serif; font-size: 12px; letter-spacing: 0.1em; color: #7E7365; text-transform: uppercase;">manuscript folio scan</span>
+        </div>
+        <div>
+          <p class="kicker" style="margin: 0 0 14px;">Featured item</p>
+          <h3 style="font-family: 'Amiri', serif; font-size: 38px; font-weight: 600; line-height: 1.15; margin: 0 0 18px; text-wrap: balance;">
+            A hand-copied Arabi-Malayalam poem, newly digitised
+          </h3>
+          <p style="font-size: 20px; line-height: 1.5; color: #3E3831; margin: 0 0 26px; text-wrap: pretty;">
+            Every item added to the digital reading room is catalogued in both scripts, photographed folio by folio, and made searchable for researchers working on the manuscript cultures of Malabar.
+          </p>
+          <a href="#/stories" class="pill-btn-black">Read the story</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Overview -->
+    <section id="services" class="section-standard">
+      <div class="double-rule"></div>
+      <div class="services-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; padding-top: 34px;">
+        ${servicesData.map(svc => `
+          <div style="display: flex; flex-direction: column; gap: 9px;">
+            <span style="font-family: 'Amiri', serif; font-size: 21px; font-weight: 600;">${svc.name}</span>
+            <span style="font-size: 17px; line-height: 1.45; color: #5E564C; text-wrap: pretty;">${svc.note}</span>
+            <a href="${svc.href}" style="font-size: 17px; color: rgb(165,35,7); margin-top: 2px;">${svc.action}</a>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+    }
+
+    // 2. Collections View
+    function renderCollectionsView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">Collections</p>
+      <h1 class="page-title" style="max-width: 16ch;">Browse the holdings</h1>
+      <p style="font-size: 21px; line-height: 1.5; color: #3E3831; max-width: 62ch; margin: 0 0 30px; text-wrap: pretty;">
+        Six collections, described in Arabic script and in Latin transliteration. Items marked digitised can be read in full from the digital reading room.
+      </p>
+      <div class="double-rule"></div>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 230px 1fr; gap: 44px; padding-top: 34px;">
+        ${renderFacets()}
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; font-size: 17px; color: #5E564C;">
+            <span>5,075 items across 6 collections</span>
+            <span>Sort: Recently catalogued</span>
+          </div>
+          <div class="collections-grid">
+            ${collectionsData.map(col => `
+              <a href="#/search" class="collection-card" style="padding: 26px 24px 28px; min-height: 180px;">
+                <span class="col-count">${col.count}</span>
+                <span class="col-name">${col.name}</span>
+                <span class="col-note">${col.note}</span>
+              </a>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+    }
+
+    // 3. Search View
+    function renderSearchView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <form onsubmit="handleSearchSubmit(event)" style="display: flex; align-items: center; border: 2px solid rgb(0,0,0); background: #F7F4EF; height: 60px; padding: 0 20px; gap: 16px;">
+        <input type="text" id="catalogue-search-input" value="${escapeHtml(state.searchQuery)}" placeholder="Enter Keywords to Search" aria-label="Search the catalogue" style="flex: 1; border: none; outline: none; background: transparent; font-size: 20px; font-family: 'EB Garamond', serif;">
+        <button type="submit" aria-label="Search" style="border: none; background: transparent; cursor: pointer; color: rgb(165,35,7); display: flex; align-items: center; padding: 6px; transition: color 0.15s ease;" onmouseover="this.style.color='rgb(0,0,0)'" onmouseout="this.style.color='rgb(165,35,7)'">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.8"></circle><line x1="15.6" y1="15.6" x2="21" y2="21"></line></svg>
+        </button>
+      </form>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 26px; font-size: 18px; flex-wrap: wrap; gap: 12px;">
+        <a href="#/advanced">Advanced Search</a>
+        <span style="color: #5E564C; font-size: 17px;">248 results · 0.12 seconds</span>
+      </div>
+      <div class="double-rule"></div>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 230px 1fr; gap: 44px; padding-top: 30px;">
+        ${renderFacets()}
+        <div style="display: flex; flex-direction: column;">
+          ${searchResultsData.map(r => `
+            <a href="#/item" class="search-result-row">
+              <span class="thumb-placeholder" style="display: block;"></span>
+              <span style="display: flex; flex-direction: column; gap: 7px;">
+                <span style="font-family: 'Amiri', serif; font-size: 22px; font-weight: 600; line-height: 1.25;">${r.title}</span>
+                <span style="font-size: 18px; color: #3E3831;">${r.author}</span>
+                <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">${r.detail}</span>
+              </span>
+              <span style="font-family: 'Averia Serif Libre', serif; font-size: 12px; letter-spacing: 0.06em; border: 1px solid rgb(0,0,0); padding: 5px 10px; white-space: nowrap;">${r.status}</span>
+            </a>
+          `).join('')}
+          <div style="display: flex; gap: 8px; padding-top: 28px; font-size: 17px; flex-wrap: wrap;">
+            ${[1, 2, 3, 4, 5].map(n => `
+              <a href="#/search" style="padding: 8px 14px; border: 1px solid rgb(0,0,0); ${n === 1 ? 'background: rgb(0,0,0); color: rgb(243,239,230);' : 'background: transparent; color: rgb(0,0,0);'}">${n}</a>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+    }
+
+    // 4. Item View
+    function renderItemView() {
+      return `
+    <section class="section-standard" style="padding-top: 44px;">
+      <p style="font-size: 17px; color: #5E564C; margin: 0 0 26px;">
+        <a href="#/collections">Collections</a> / <a href="#/search">Manuscripts</a> / Bayān al-Fawāʾid
+      </p>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 52px;">
+        <div>
+          <div class="folio-scan-placeholder-3-4">
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 12px; letter-spacing: 0.1em; color: #7E7365; text-transform: uppercase;">folio 1r, colour scan</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px;">
+            ${[1, 2, 3, 4].map(() => `<div class="thumb-placeholder"></div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <p class="kicker">Manuscript · digitised</p>
+          <h1 class="page-title" style="font-size: 46px; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.01em; text-wrap: balance;">
+            Bayān al-Fawāʾid
+          </h1>
+          <p style="font-size: 22px; color: #3E3831; margin: 0 0 26px;">Copied by an unnamed scribe, Malabar coast, undated</p>
+          <div style="display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap;">
+            <a href="#/account" class="pill-btn-black" style="padding: 12px 28px;">Read in full</a>
+            <a href="#/services" class="pill-btn-outline" style="padding: 12px 28px;">Request a scan</a>
+            <a href="#/account" class="pill-btn-outline" style="padding: 12px 28px;">Place a hold</a>
+          </div>
+          <div class="double-rule" style="margin-bottom: 22px;"></div>
+          <dl style="display: grid; grid-template-columns: 180px 1fr; gap: 14px 24px; margin: 0; font-size: 18px;">
+            ${itemMetadata.map(m => `
+              <dt style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; padding-top: 3px; margin: 0;">${m.k}</dt>
+              <dd style="margin: 0; color: #1A1A1A;">${m.v}</dd>
+            `).join('')}
+          </dl>
+        </div>
+      </div>
+    </section>
+  `;
+    }
+
+    // 5. Advanced Search View
+    function renderAdvancedView() {
+      return `
+    <section class="section-med">
+      <p class="kicker">Search</p>
+      <h1 class="page-title">Advanced Search</h1>
+      <div class="double-rule" style="margin-bottom: 34px;"></div>
+      <form onsubmit="handleSearchSubmit(event)" style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px 30px;">
+        ${advancedFields.map(f => `
+          <label style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">${f.label}</span>
+            <input type="text" placeholder="${f.hint}" style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 48px; padding: 0 14px; font-size: 19px; outline: none; width: 100%;">
+          </label>
+        `).join('')}
+        <div style="grid-column: 1 / -1; display: flex; gap: 12px; padding-top: 8px; flex-wrap: wrap;">
+          <button type="submit" class="pill-btn-black" style="height: 50px; padding: 0 38px;">Search</button>
+          <button type="reset" class="pill-btn-outline" style="height: 50px; padding: 0 30px;">Clear</button>
+        </div>
+      </form>
+    </section>
+  `;
+    }
+
+    // 6. Services View
+    function renderServicesView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">Services</p>
+      <h1 class="page-title" style="max-width: 18ch;">Using the library</h1>
+      <div class="double-rule"></div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: rgb(0,0,0); border: 1px solid rgb(0,0,0); border-top: none;">
+        ${servicesData.map(svc => `
+          <div style="background: rgb(243,239,230); padding: 34px 32px 38px; display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-family: 'Amiri', serif; font-size: 28px; font-weight: 600;">${svc.name}</span>
+            <span style="font-size: 19px; line-height: 1.5; color: #3E3831; text-wrap: pretty;">${svc.note}</span>
+            <a href="${svc.href}" style="font-size: 18px; color: rgb(165,35,7); margin-top: 6px;">${svc.action} →</a>
+          </div>
+        `).join('')}
+      </div>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 44px; padding-top: 50px;">
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 16px;">Opening hours</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 19px;">
+            ${openingHours.map(h => `
+              <tr>
+                <td style="padding: 11px 0; border-bottom: 1px solid #D6CCBC;">${h.day}</td>
+                <td style="padding: 11px 0; border-bottom: 1px solid #D6CCBC; text-align: right; color: #3E3831;">${h.time}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 16px;">Before you visit</p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 19px; line-height: 1.6; color: #3E3831;">
+            <li>Bring photo identification for a day pass.</li>
+            <li>Manuscripts are consulted in the supervised reading room only.</li>
+            <li>Request items at least one working day ahead.</li>
+            <li>Pencils and phone cameras without flash are permitted.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  `;
+    }
+
+    // 7. News & Events View
+    function renderNewsView() {
+      const tabs = ["Events", "News", "Stories", "Opportunities"];
+      const activeTab = state.activeNewsTab || "Events";
+
+      let activeList = eventsArticles;
+      if (activeTab === 'News') activeList = newsArticles;
+      else if (activeTab === 'Stories') activeList = storiesArticles;
+      else if (activeTab === 'Opportunities') activeList = opportunitiesArticles;
+      else activeList = eventsArticles;
+
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">News &amp; Events</p>
+      <h1 class="page-title" style="max-width: 18ch; margin-bottom: 24px;">What’s on at the institute</h1>
+      <div style="display: flex; gap: 0; font-size: 20px; flex-wrap: wrap;">
+        ${tabs.map(tab => `
+          <button type="button" class="tab-btn ${tab === activeTab ? 'active' : ''}" onclick="switchNewsTab('${tab}')">${tab}</button>
+        `).join('')}
+      </div>
+      <div class="double-rule"></div>
+      <div class="news-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; padding-top: 36px;">
+        ${activeList.map(n => `
+          <article style="display: flex; flex-direction: column; gap: 12px; background: #fff; padding: 20px; border: 1px solid rgba(0,0,0,0.15);">
+            <div style="aspect-ratio: 4/3; background: #EAE4D9; border: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; text-align: center;">
+              <span style="font-family: 'Averia Serif Libre', serif; font-size: 11px; text-transform: uppercase; font-weight: 700; color: #8C8175;">${n.kicker || activeTab}</span>
+              <span style="font-size: 12px; color: #555; margin-top: 4px;">KMLRI Archive Collection</span>
+            </div>
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; font-weight: 700;">${n.date}</span>
+            <span style="font-family: 'Amiri', serif; font-size: 22px; font-weight: 600; line-height: 1.25; text-wrap: pretty;">${n.title}</span>
+            <span style="font-size: 16px; line-height: 1.5; color: #3E3831; text-wrap: pretty;">${n.blurb}</span>
+            <a href="#/news" class="pill-btn-outline" style="padding: 8px 18px; align-self: flex-start; margin-top: auto; border-radius: 0; border-width: 1.5px; font-size: 15px;">Read more →</a>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+    }
+
+    // 8. Stories View
+    function renderStoriesView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">Stories</p>
+      <h1 class="page-title" style="max-width: 18ch;">From the reading room</h1>
+      <div class="double-rule" style="margin-bottom: 40px;"></div>
+      <article class="two-col-layout" style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 44px; align-items: center; margin-bottom: 56px;">
+        <div class="folio-scan-placeholder">
+          <span style="font-family: 'Averia Serif Libre', serif; font-size: 12px; letter-spacing: 0.1em; color: #7E7365; text-transform: uppercase;">lead story image</span>
+        </div>
+        <div>
+          <p class="kicker" style="margin: 0 0 14px;">Featured story</p>
+          <h2 style="font-family: 'Amiri', serif; font-size: 40px; font-weight: 600; line-height: 1.15; margin: 0 0 16px; text-wrap: balance;">
+            What a margin note reveals about a nineteenth-century reader
+          </h2>
+          <p style="font-size: 20px; line-height: 1.5; color: #3E3831; margin: 0 0 24px; text-wrap: pretty;">
+            A single line in the margin of a jurisprudence manuscript tells us who read the book, where they sat, and what they disagreed with.
+          </p>
+          <a href="#/stories" class="pill-btn-black">Read the story</a>
+        </div>
+      </article>
+      <div class="stories-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px;">
+        ${storiesArticles.map(s => `
+          <a href="#/stories" style="display: flex; flex-direction: column; gap: 12px;">
+            <span style="aspect-ratio: 4/3; background: #D9D9D9; display: block;"></span>
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">${s.kicker}</span>
+            <span style="font-family: 'Amiri', serif; font-size: 23px; font-weight: 600; line-height: 1.25; text-wrap: pretty;">${s.title}</span>
+          </a>
+        `).join('')}
+      </div>
+    </section>
+  `;
+    }
+
+    // 9. About View
+    function renderAboutView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">About</p>
+      <h1 class="page-title" style="max-width: 20ch; margin-bottom: 24px;">Kunhīn Musliyār Library &amp; Research Institute</h1>
+      <div class="double-rule"></div>
+      <div class="two-col-layout" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 52px; padding-top: 40px;">
+        <div style="font-size: 21px; line-height: 1.6; color: #2A2620; display: flex; flex-direction: column; gap: 20px;">
+          <p style="margin: 0; text-wrap: pretty;">The institute keeps, describes and makes available the written heritage of Malabar: manuscripts in Arabic, Persian and Arabi-Malayalam, printed books and periodicals, and the papers of scholars and families of the region.</p>
+          <p style="margin: 0; text-wrap: pretty;">Work happens in three rooms. In the reading room, researchers consult originals under supervision. In the conservation lab, items are surveyed, cleaned and rehoused. In the digitisation studio, each item is photographed folio by folio and catalogued in both scripts before it enters the digital reading room.</p>
+          <p style="margin: 0; text-wrap: pretty;">The library sits beside Sabeelul Hidaya Islamic College in Vattaparamba and is open to students, teachers and visiting researchers.</p>
+        </div>
+        <div>
+          <div class="folio-scan-placeholder" style="aspect-ratio: 4/5;">
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 12px; letter-spacing: 0.1em; color: #7E7365; text-transform: uppercase;">reading room photo</span>
+          </div>
+        </div>
+      </div>
+      <div class="stats-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgb(0,0,0); border: 1px solid rgb(0,0,0); margin-top: 52px;">
+        ${statsData.map(st => `
+          <div style="background: rgb(243,239,230); padding: 28px 24px 30px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-family: 'Amiri', serif; font-size: 38px; font-weight: 700; line-height: 1;">${st.n}</span>
+            <span style="font-size: 17px; color: #5E564C;">${st.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+    }
+
+    // 10. Account View
+    function renderAccountView() {
+      return `
+    <section class="section-standard" style="padding-top: 56px;">
+      <p class="kicker">My Account</p>
+      ${!state.signedIn ? `
+        <div class="two-col-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start;">
+          <div>
+            <h1 class="page-title" style="font-size: 52px; line-height: 1.08; margin-bottom: 18px;">Sign in</h1>
+            <form onsubmit="handleSignIn(event)" style="display: flex; flex-direction: column; gap: 18px; max-width: 420px;">
+              <label style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">Membership number or email</span>
+                <input type="text" required style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 48px; padding: 0 14px; font-size: 19px; outline: none;">
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">Password</span>
+                <input type="password" required style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 48px; padding: 0 14px; font-size: 19px; outline: none;">
+              </label>
+              <button type="submit" class="pill-btn-black" style="height: 50px; margin-top: 6px;">Sign in</button>
+              <a href="#/ask" style="font-size: 17px; color: rgb(165,35,7);">Forgotten your password?</a>
+            </form>
+          </div>
+          <div style="border: 1px solid rgb(0,0,0); padding: 34px 32px 38px;">
+            <h2 style="font-family: 'Amiri', serif; font-size: 30px; font-weight: 600; margin: 0 0 14px;">Not a member yet?</h2>
+            <p style="font-size: 19px; line-height: 1.55; color: #3E3831; margin: 0 0 24px; text-wrap: pretty;">
+              Membership gives you borrowing rights, remote access to the digital reading room and a reserved desk on request.
+            </p>
+            <a href="#/services" class="pill-btn-outline">Become a member</a>
+          </div>
+        </div>
+      ` : `
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+          <h1 class="page-title" style="font-size: 52px; line-height: 1.08; margin-bottom: 12px;">Welcome, Rashid</h1>
+          <button type="button" onclick="handleSignOut()" class="pill-btn-outline" style="height: 44px; padding: 0 24px; font-size: 16px; margin-bottom: 16px;">Sign out</button>
+        </div>
+        <div class="double-rule"></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgb(0,0,0); border: 1px solid rgb(0,0,0); border-top: none;">
+          ${accountStatsData.map(a => `
+            <div style="background: rgb(243,239,230); padding: 26px 24px 28px; display: flex; flex-direction: column; gap: 5px;">
+              <span style="font-family: 'Amiri', serif; font-size: 34px; font-weight: 700; line-height: 1;">${a.n}</span>
+              <span style="font-size: 17px; color: #5E564C;">${a.label}</span>
+            </div>
+          `).join('')}
+        </div>
+        <h2 style="font-family: 'Amiri', serif; font-size: 26px; font-weight: 600; color: rgb(165,35,7); margin: 44px 0 10px;">On loan</h2>
+        <div class="double-rule"></div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 18px; margin-top: 8px;">
+          ${activeLoansData.map(l => `
+            <tr>
+              <td style="padding: 16px 0; border-bottom: 1px solid #D6CCBC; font-family: 'Amiri', serif; font-size: 20px; font-weight: 600;">${l.title}</td>
+              <td style="padding: 16px 0; border-bottom: 1px solid #D6CCBC; color: #5E564C; font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em;">${l.call}</td>
+              <td style="padding: 16px 0; border-bottom: 1px solid #D6CCBC; color: #3E3831;">${l.due}</td>
+              <td style="padding: 16px 0; border-bottom: 1px solid #D6CCBC; text-align: right;"><a href="#/account" style="color: rgb(165,35,7);">Renew</a></td>
+            </tr>
+          `).join('')}
+        </table>
+      `}
+    </section>
+  `;
+    }
+
+    // 11. FAQs View
+    function renderFaqsView() {
+      return `
+    <section style="max-width: 900px; margin: 0 auto; padding: 56px 40px 0;">
+      <p class="kicker">Help</p>
+      <h1 class="page-title">FAQs</h1>
+      <div class="double-rule"></div>
+      ${faqsList.map((f, i) => `
+        <div style="border-bottom: 1px solid #D6CCBC;">
+          <button type="button" onclick="toggleFaq(${i})" style="width: 100%; background: transparent; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 0; text-align: left; font-family: 'Amiri', serif; font-size: 23px; font-weight: 600; color: rgb(0,0,0);">
+            <span>${f.q}</span>
+            <span style="font-family: 'Averia Serif Libre', serif; font-size: 22px; color: rgb(165,35,7);">${state.openFaq === i ? '–' : '+'}</span>
+          </button>
+          ${state.openFaq === i ? `
+            <p style="font-size: 19px; line-height: 1.6; color: #3E3831; margin: 0 0 24px; max-width: 70ch; text-wrap: pretty;">
+              ${f.a}
+            </p>
+          ` : ''}
+        </div>
+      `).join('')}
+      <p style="font-size: 19px; color: #3E3831; padding-top: 30px;">Still stuck? <a href="#/ask" style="color: rgb(165,35,7);">Ask a librarian</a>.</p>
+    </section>
+  `;
+    }
+
+    // 12. Ask View
+    function renderAskView() {
+      return `
+    <section class="section-med">
+      <p class="kicker">Reference help</p>
+      <h1 class="page-title" style="max-width: 18ch;">Ask a Librarian</h1>
+      <p style="font-size: 21px; line-height: 1.5; color: #3E3831; max-width: 60ch; margin: 0 0 30px; text-wrap: pretty;">
+        Questions about sources, scripts, citations or how to reach an item. We reply within two working days.
+      </p>
+      <div class="double-rule" style="margin-bottom: 34px;"></div>
+      <form onsubmit="handleAskSubmit(event)" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px 30px;">
+        <label style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">Your name</span>
+          <input type="text" required style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 48px; padding: 0 14px; font-size: 19px; outline: none;">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">Email</span>
+          <input type="email" required style="border: 1.5px solid rgb(0,0,0); background: transparent; height: 48px; padding: 0 14px; font-size: 19px; outline: none;">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; grid-column: 1 / -1;">
+          <span style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175;">Your question</span>
+          <textarea rows="6" required style="border: 1.5px solid rgb(0,0,0); background: transparent; padding: 12px 14px; font-size: 19px; outline: none; font-family: 'Amiri', serif; resize: vertical;"></textarea>
+        </label>
+        <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <button type="submit" class="pill-btn-black" style="height: 50px; padding: 0 38px;">Send question</button>
+          <span id="ask-feedback-note" style="font-size: 17px; color: ${state.askSent ? 'rgb(165,35,7)' : '#8C8175'};">
+            ${state.askSent ? 'Thank you — we’ll reply within two working days.' : ''}
+          </span>
+        </div>
+      </form>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; padding-top: 52px;">
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 8px;">By phone</p>
+          <p style="font-size: 19px; margin: 0;">+91 97452 34786</p>
+        </div>
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 8px;">By email</p>
+          <p style="font-size: 19px; margin: 0;">info@kmlri.in</p>
+        </div>
+        <div>
+          <p style="font-family: 'Averia Serif Libre', serif; font-size: 13px; letter-spacing: 0.06em; color: #8C8175; margin: 0 0 8px;">In person</p>
+          <p style="font-size: 19px; margin: 0;">Reading room desk, 9:00–17:00</p>
+        </div>
+      </div>
+    </section>
+  `;
+    }
+
+    // Helpers & Event Handlers
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function switchHomeTab(tabName) {
+      state.activeTab = tabName;
+      renderView();
+    }
+
+    function switchNewsTab(tabName) {
+      state.activeNewsTab = tabName;
+      renderView();
+    }
+
+    function toggleFaq(index) {
+      state.openFaq = state.openFaq === index ? -1 : index;
+      renderView();
+    }
+
+    function handleSignIn(e) {
+      e.preventDefault();
+      state.signedIn = true;
+      renderView();
+    }
+
+    function handleSignOut() {
+      state.signedIn = false;
+      renderView();
+    }
+
+    function handleAskSubmit(e) {
+      e.preventDefault();
+      state.askSent = true;
+      renderView();
+    }
+
+    function handleSearchSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('main-search-input') || document.getElementById('catalogue-search-input');
+      if (input) {
+        state.searchQuery = input.value;
+      }
+      window.location.hash = '#/search';
+    }
+
+    // Newsletter Handler
+    document.getElementById('newsletter-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('newsletter-email');
+      const feedback = document.getElementById('newsletter-feedback');
+      if (emailInput && emailInput.value) {
+        feedback.textContent = 'Thank you — please confirm from the email we just sent.';
+        emailInput.value = '';
+      }
+    });
+
+    // Hashchange listener
+    window.addEventListener('hashchange', renderView);
+
+    // Initial render
+    window.addEventListener('DOMContentLoaded', renderView);
+  </script>
+</body>
+
+</html>

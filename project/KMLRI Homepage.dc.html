@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./support.js"></script>
+</head>
+
+<body>
+  <x-dc>
+    <helmet>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Averia+Serif+Libre:wght@300;400;700&amp;family=Poppins:wght@300;400&amp;display=swap"
+        rel="stylesheet">
+      <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          background: rgb(243, 239, 230);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        a:hover {
+          color: rgb(165, 35, 7);
+        }
+
+        input {
+          font: inherit;
+          color: inherit;
+        }
+
+        input::placeholder {
+          color: rgba(216, 179, 179, 0.52);
+        }
+
+        ::selection {
+          background: rgb(165, 35, 7);
+          color: #fff;
+        }
+      </style>
+    </helmet>
+
+    <div
+      style="background:rgb(243,239,230);font-family:Amiri,Georgia,serif;color:rgb(0,0,0);min-height:100vh;min-width:1280px">
+
+      <div style="height:2px;background:rgb(0,0,0)"></div>
+      <div style="height:3px"></div>
+      <div style="height:1px;background:rgb(0,0,0)"></div>
+      <div style="height:7px"></div>
+      <div style="background:rgb(0,0,0);height:45px;position:relative" data-comment-anchor="3506223ba0-div">
+        <div style="max-width:955px;margin:0 auto;position:relative;height:45px;padding:0 1px">
+          <a href="#/"
+            style="position:absolute;left:5px;top:0;height:45px;display:flex;align-items:center;font-family:Amiri,serif;font-weight:400;font-size:40px;line-height:1;color:rgb(255,255,255)">kmlri</a>
+          <div
+            style="position:absolute;right:0;top:0;height:45px;display:flex;align-items:center;gap:6px;font-family:Amiri,serif;font-size:15px;color:rgb(255,255,255)">
+            <a href="#/faqs" style="color:rgb(255,255,255)">FAQs</a>
+            <span>|</span>
+            <a href="#/ask" style="color:rgb(255,255,255)">Ask Librarian</a>
+          </div>
+        </div>
+      </div>
+
+      <header style="max-width:955px;margin:0 auto;padding:99px 0 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;height:34px">
+          <nav style="display:flex;gap:34px;font-family:'Averia Serif Libre',serif;font-size:17px;line-height:1">
+            <a href="#/collections">Collections</a>
+            <a href="#/services">Services</a>
+            <a href="#/news">News &amp; Events</a>
+            <a href="#/stories">Stories</a>
+            <a href="#/about">About</a>
+          </nav>
+          <a href="#/account"
+            style="width:142px;height:34px;box-shadow:inset 0 0 0 1px rgb(0,0,0);display:flex;align-items:center;justify-content:center;font-family:'Averia Serif Libre',serif;font-size:17px;line-height:1"
+            style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">My Account</a>
+        </div>
+        <div style="margin-top:22px;height:4px;border-top:1px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0)">
+        </div>
+      </header>
+
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <section style="max-width:955px;margin:0 auto;padding:42px 0 0;text-align:center">
+          <img src="assets/wordmark-arabic.svg" alt="كنجين مسليار — Kunhīn Musliyār Library &amp; Research Institute"
+            style="width:313px;height:124px;display:block;margin:0 auto">
+        </section>
+
+        <section style="max-width:955px;margin:0 auto;padding:51px 0 0">
+          <form onSubmit="{{ onSearch }}"
+            style="display:flex;align-items:center;box-shadow:inset 0 0 0 3px rgb(0,0,0);height:68px;padding:0 28px 0 36px;gap:16px">
+            <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Enter Keywords to Search"
+              aria-label="Search the catalogue"
+              style="flex:1;border:none;outline:none;background:transparent;font-family:Poppins,sans-serif;font-weight:300;font-size:24px;color:rgb(0,0,0)">
+            <button type="submit" aria-label="Search"
+              style="border:none;background:transparent;cursor:pointer;color:rgb(165,35,7);display:flex;align-items:center;padding:0"
+              style-hover="color:rgb(0,0,0)">
+              <span
+                style="width:31px;height:31px;display:block;background:currentColor;-webkit-mask:url(assets/search-icon.svg) no-repeat center/contain;mask:url(assets/search-icon.svg) no-repeat center/contain"></span>
+            </button>
+          </form>
+          <div style="margin-top:2px;font-family:Amiri,serif;font-size:20px">
+            <a href="#/advanced">Advanced Search</a>
+          </div>
+        </section>
+
+        <section id="whatson" style="max-width:955px;margin:0 auto;padding:80px 0 0;position:relative;z-index:2">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;font-family:Amiri,serif">
+            <h2 style="font-size:20px;font-weight:700;color:rgb(165,35,7);margin:0 0 20px">What’s On</h2>
+            <div style="display:flex;align-items:flex-end;gap:0;font-size:20px">
+              <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+                <button type="button" onClick="{{ tab.onClick }}" style="{{ tab.style }}">{{ tab.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:rgb(0,0,0);color:rgb(255,255,255);position:relative;z-index:1">
+          <div style="position:absolute;left:0;right:0;top:5px;border-top:1px solid rgb(255,255,255)"></div>
+          <div style="position:absolute;left:0;right:0;top:8px;border-top:1px solid rgb(255,255,255)"></div>
+          <div style="max-width:955px;margin:0 auto;padding:74px 0">
+            <div style="display:grid;grid-template-columns:repeat(4,216px);gap:30px;justify-content:space-between">
+              <sc-for list="{{ cards }}" as="card" hint-placeholder-count="4">
+                <article style="display:flex;flex-direction:column;gap:10px;width:216px">
+                  <div style="width:216px;height:153px;background:rgb(217,217,217)"></div>
+                  <p
+                    style="font-family:Amiri,serif;font-size:18px;font-weight:700;line-height:1.45;margin:0;text-wrap:pretty">
+                    {{ card.title }}</p>
+                  <a href="#/news"
+                    style="width:137px;height:46px;box-shadow:inset 0 0 0 1px rgb(243,239,230);color:rgb(255,255,255);font-family:Amiri,serif;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;margin-top:6px"
+                    style-hover="background:rgb(243,239,230);color:rgb(0,0,0)">Read more</a>
+                </article>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+
+        <section id="collections" style="max-width:1240px;margin:0 auto;padding:78px 40px 0">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+            <h2 style="font-family:Amiri,serif;font-size:26px;font-weight:600;color:rgb(165,35,7);margin:0 0 10px">
+              Browse the Collections</h2>
+            <a href="#/collections" style="font-size:18px;margin-bottom:12px">All collections →</a>
+          </div>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div
+            style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgb(0,0,0);border:1px solid rgb(0,0,0);border-top:none;margin-top:0">
+            <sc-for list="{{ collections }}" as="col" hint-placeholder-count="6">
+              <a href="#/search"
+                style="background:rgb(243,239,230);padding:28px 26px 30px;display:flex;flex-direction:column;gap:8px;min-height:168px"
+                style-hover="background:#E8E1D6">
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.12em;color:#8C8175">{{
+                  col.count }}</span>
+                <span style="font-family:Amiri,serif;font-size:23px;font-weight:600;line-height:1.25">{{ col.name
+                  }}</span>
+                <span style="font-size:17px;line-height:1.45;color:#5E564C;text-wrap:pretty">{{ col.note }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+
+        <section id="stories" style="max-width:1240px;margin:0 auto;padding:78px 40px 0">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+            <h2 style="font-family:Amiri,serif;font-size:26px;font-weight:600;color:rgb(165,35,7);margin:0 0 10px">From
+              the Archive</h2>
+            <a href="#/stories" style="font-size:18px;margin-bottom:12px">More stories →</a>
+          </div>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:44px;padding-top:38px;align-items:center">
+            <div
+              style="aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#E4DCCF 0 10px,#DBD2C3 10px 20px);display:flex;align-items:center;justify-content:center;border:1px solid rgb(0,0,0)">
+              <span
+                style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.1em;color:#7E7365;text-transform:uppercase">manuscript
+                folio scan</span>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 14px">
+                Featured item</p>
+              <h3
+                style="font-family:Amiri,serif;font-size:38px;font-weight:600;line-height:1.15;margin:0 0 18px;text-wrap:balance">
+                A hand-copied Arabi-Malayalam poem, newly digitised</h3>
+              <p style="font-size:20px;line-height:1.5;color:#3E3831;margin:0 0 26px;text-wrap:pretty">Every item added
+                to the digital reading room is catalogued in both scripts, photographed folio by folio, and made
+                searchable for researchers working on the manuscript cultures of Malabar.</p>
+              <a href="#/stories"
+                style="display:inline-block;background:rgb(0,0,0);color:rgb(243,239,230);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:13px 32px;border-radius:999px"
+                style-hover="background:rgb(165,35,7)">Read the story</a>
+            </div>
+          </div>
+        </section>
+
+        <section id="services" style="max-width:1240px;margin:0 auto;padding:78px 40px 0">
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:36px;padding-top:34px">
+            <sc-for list="{{ services }}" as="svc" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <span style="font-family:Amiri,serif;font-size:21px;font-weight:600">{{ svc.name }}</span>
+                <span style="font-size:17px;line-height:1.45;color:#5E564C;text-wrap:pretty">{{ svc.note }}</span>
+                <a href="#/services" style="font-size:17px;color:rgb(165,35,7);margin-top:2px">{{ svc.action }}</a>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+      </sc-if>
+
+      <sc-if value="{{ isCollections }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Collections</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em;max-width:16ch">
+            Browse the holdings</h1>
+          <p style="font-size:21px;line-height:1.5;color:#3E3831;max-width:62ch;margin:0 0 30px;text-wrap:pretty">Six
+            collections, described in Arabic script and in Latin transliteration. Items marked digitised can be read in
+            full from the digital reading room.</p>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:230px 1fr;gap:44px;padding-top:34px">
+            <aside style="display:flex;flex-direction:column;gap:30px">
+              <sc-for list="{{ facets }}" as="f" hint-placeholder-count="3">
+                <div>
+                  <p
+                    style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+                    {{ f.title }}</p>
+                  <div style="display:flex;flex-direction:column;gap:9px;font-size:17px">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;color:#3E3831">
+                        <span style="width:13px;height:13px;border:1.5px solid rgb(0,0,0);display:inline-block"></span>
+                        <span>{{ o }}</span>
+                      </label>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </aside>
+            <div>
+              <div
+                style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;font-size:17px;color:#5E564C">
+                <span>5,075 items across 6 collections</span>
+                <span>Sort: Recently catalogued</span>
+              </div>
+              <div
+                style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgb(0,0,0);border:1px solid rgb(0,0,0)">
+                <sc-for list="{{ collections }}" as="col" hint-placeholder-count="6">
+                  <a href="#/search"
+                    style="background:rgb(243,239,230);padding:26px 24px 28px;display:flex;flex-direction:column;gap:8px;min-height:180px"
+                    style-hover="background:#E8E1D6">
+                    <span
+                      style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.12em;color:#8C8175">{{
+                      col.count }}</span>
+                    <span style="font-family:Amiri,serif;font-size:23px;font-weight:600;line-height:1.25">{{ col.name
+                      }}</span>
+                    <span style="font-size:17px;line-height:1.45;color:#5E564C;text-wrap:pretty">{{ col.note }}</span>
+                  </a>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <form onSubmit="{{ onSearch }}"
+            style="display:flex;align-items:center;border:2px solid rgb(0,0,0);background:#F7F4EF;height:60px;padding:0 20px;gap:16px">
+            <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Enter Keywords to Search"
+              aria-label="Search the catalogue"
+              style="flex:1;border:none;outline:none;background:transparent;font-size:20px;font-family:'EB Garamond',serif">
+            <button type="submit" aria-label="Search"
+              style="border:none;background:transparent;cursor:pointer;color:rgb(165,35,7);display:flex;align-items:center;padding:6px"
+              style-hover="color:rgb(0,0,0)">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+                stroke-linecap="round">
+                <circle cx="10.5" cy="10.5" r="6.8"></circle>
+                <line x1="15.6" y1="15.6" x2="21" y2="21"></line>
+              </svg>
+            </button>
+          </form>
+          <div
+            style="display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 26px;font-size:18px">
+            <a href="#/advanced">Advanced Search</a>
+            <span style="color:#5E564C;font-size:17px">248 results · 0.12 seconds</span>
+          </div>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:230px 1fr;gap:44px;padding-top:30px">
+            <aside style="display:flex;flex-direction:column;gap:30px">
+              <sc-for list="{{ facets }}" as="f" hint-placeholder-count="3">
+                <div>
+                  <p
+                    style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+                    {{ f.title }}</p>
+                  <div style="display:flex;flex-direction:column;gap:9px;font-size:17px">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;color:#3E3831">
+                        <span style="width:13px;height:13px;border:1.5px solid rgb(0,0,0);display:inline-block"></span>
+                        <span>{{ o }}</span>
+                      </label>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </aside>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ results }}" as="r" hint-placeholder-count="5">
+                <a href="#/item"
+                  style="display:grid;grid-template-columns:104px 1fr auto;gap:24px;padding:24px 0;border-bottom:1px solid #D6CCBC;align-items:start"
+                  style-hover="background:#EAE3D8">
+                  <span
+                    style="aspect-ratio:3/4;background:repeating-linear-gradient(135deg,#E4DCCF 0 8px,#DBD2C3 8px 16px);display:block"></span>
+                  <span style="display:flex;flex-direction:column;gap:7px">
+                    <span style="font-family:Amiri,serif;font-size:22px;font-weight:600;line-height:1.25">{{ r.title
+                      }}</span>
+                    <span style="font-size:18px;color:#3E3831">{{ r.author }}</span>
+                    <span
+                      style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">{{
+                      r.detail }}</span>
+                  </span>
+                  <span
+                    style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.06em;border:1px solid rgb(0,0,0);padding:5px 10px;white-space:nowrap">{{
+                    r.status }}</span>
+                </a>
+              </sc-for>
+              <div style="display:flex;gap:8px;padding-top:28px;font-size:17px">
+                <sc-for list="{{ pages }}" as="p" hint-placeholder-count="5">
+                  <a href="#/search" style="{{ p.style }}">{{ p.label }}</a>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isItem }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:44px 40px 0">
+          <p style="font-size:17px;color:#5E564C;margin:0 0 26px"><a href="#/collections">Collections</a> / <a
+              href="#/search">Manuscripts</a> / Bayān al-Fawāʾid</p>
+          <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:52px">
+            <div>
+              <div
+                style="aspect-ratio:3/4;background:repeating-linear-gradient(135deg,#E4DCCF 0 10px,#DBD2C3 10px 20px);border:1px solid rgb(0,0,0);display:flex;align-items:center;justify-content:center">
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.1em;color:#7E7365;text-transform:uppercase">folio
+                  1r, colour scan</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">
+                <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
+                  <div
+                    style="aspect-ratio:3/4;background:repeating-linear-gradient(135deg,#E4DCCF 0 6px,#DBD2C3 6px 12px);border:1px solid #C9BEAC">
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+                Manuscript · digitised</p>
+              <h1
+                style="font-family:Amiri,serif;font-size:46px;font-weight:700;line-height:1.1;margin:0 0 10px;letter-spacing:-0.01em;text-wrap:balance">
+                Bayān al-Fawāʾid</h1>
+              <p style="font-size:22px;color:#3E3831;margin:0 0 26px">Copied by an unnamed scribe, Malabar coast,
+                undated</p>
+              <div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap">
+                <a href="#/account"
+                  style="background:rgb(0,0,0);color:rgb(243,239,230);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:12px 28px;border-radius:999px"
+                  style-hover="background:rgb(165,35,7)">Read in full</a>
+                <a href="#/services"
+                  style="border:1.5px solid rgb(0,0,0);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:12px 28px;border-radius:999px"
+                  style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Request a scan</a>
+                <a href="#/account"
+                  style="border:1.5px solid rgb(0,0,0);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:12px 28px;border-radius:999px"
+                  style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Place a hold</a>
+              </div>
+              <div
+                style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px;margin-bottom:22px">
+              </div>
+              <dl style="display:grid;grid-template-columns:180px 1fr;gap:14px 24px;margin:0;font-size:18px">
+                <sc-for list="{{ itemMeta }}" as="m" hint-placeholder-count="8">
+                  <dt
+                    style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;padding-top:3px">
+                    {{ m.k }}</dt>
+                  <dd style="margin:0;color:#1A1A1A">{{ m.v }}</dd>
+                </sc-for>
+              </dl>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isAdvanced }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1000px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Search</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em">
+            Advanced Search</h1>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px;margin-bottom:34px">
+          </div>
+          <form onSubmit="{{ onSearch }}" style="display:grid;grid-template-columns:1fr 1fr;gap:26px 30px">
+            <sc-for list="{{ advFields }}" as="f" hint-placeholder-count="8">
+              <label style="display:flex;flex-direction:column;gap:8px">
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">{{
+                  f.label }}</span>
+                <input type="text" placeholder="{{ f.hint }}"
+                  style="border:1.5px solid rgb(0,0,0);background:transparent;height:48px;padding:0 14px;font-size:19px;outline:none;width:100%">
+              </label>
+            </sc-for>
+            <div style="grid-column:1 / -1;display:flex;gap:12px;padding-top:8px">
+              <button type="submit"
+                style="background:rgb(0,0,0);color:rgb(243,239,230);border:none;height:50px;padding:0 38px;border-radius:999px;font-family:Amiri,serif;font-size:17px;font-weight:600;cursor:pointer"
+                style-hover="background:rgb(165,35,7)">Search</button>
+              <button type="reset"
+                style="background:transparent;border:1.5px solid rgb(0,0,0);height:50px;padding:0 30px;border-radius:999px;font-family:Amiri,serif;font-size:17px;font-weight:600;cursor:pointer"
+                style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Clear</button>
+            </div>
+          </form>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Services</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em;max-width:18ch">
+            Using the library</h1>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div
+            style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgb(0,0,0);border:1px solid rgb(0,0,0);border-top:none">
+            <sc-for list="{{ services }}" as="svc" hint-placeholder-count="4">
+              <div
+                style="background:rgb(243,239,230);padding:34px 32px 38px;display:flex;flex-direction:column;gap:10px">
+                <span style="font-family:Amiri,serif;font-size:28px;font-weight:600">{{ svc.name }}</span>
+                <span style="font-size:19px;line-height:1.5;color:#3E3831;text-wrap:pretty">{{ svc.note }}</span>
+                <a href="#/ask" style="font-size:18px;color:rgb(165,35,7);margin-top:6px">{{ svc.action }} →</a>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;padding-top:50px">
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 16px">
+                Opening hours</p>
+              <table style="width:100%;border-collapse:collapse;font-size:19px">
+                <sc-for list="{{ hours }}" as="h" hint-placeholder-count="4">
+                  <tr>
+                    <td style="padding:11px 0;border-bottom:1px solid #D6CCBC">{{ h.day }}</td>
+                    <td style="padding:11px 0;border-bottom:1px solid #D6CCBC;text-align:right;color:#3E3831">{{ h.time
+                      }}</td>
+                  </tr>
+                </sc-for>
+              </table>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 16px">
+                Before you visit</p>
+              <ul style="margin:0;padding-left:20px;font-size:19px;line-height:1.6;color:#3E3831">
+                <li>Bring photo identification for a day pass.</li>
+                <li>Manuscripts are consulted in the supervised reading room only.</li>
+                <li>Request items at least one working day ahead.</li>
+                <li>Pencils and phone cameras without flash are permitted.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isNews }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            News &amp; Events</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 24px;letter-spacing:-0.015em;max-width:18ch">
+            What’s on at the institute</h1>
+          <div style="display:flex;gap:0;font-size:20px">
+            <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+              <button type="button" onClick="{{ tab.onClick }}" style="{{ tab.style }}">{{ tab.label }}</button>
+            </sc-for>
+          </div>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:36px;padding-top:36px">
+            <sc-for list="{{ newsList }}" as="n" hint-placeholder-count="6">
+              <article style="display:flex;flex-direction:column;gap:12px">
+                <div style="aspect-ratio:4/3;background:#D9D9D9"></div>
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">{{
+                  n.date }}</span>
+                <span
+                  style="font-family:Amiri,serif;font-size:23px;font-weight:600;line-height:1.25;text-wrap:pretty">{{
+                  n.title }}</span>
+                <span style="font-size:18px;line-height:1.5;color:#3E3831;text-wrap:pretty">{{ n.blurb }}</span>
+                <a href="#/news"
+                  style="border:1.5px solid rgb(0,0,0);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:9px 22px;align-self:flex-start;margin-top:4px"
+                  style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Read more</a>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isStories }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Stories</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em;max-width:18ch">
+            From the reading room</h1>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px;margin-bottom:40px">
+          </div>
+          <article style="display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;margin-bottom:56px">
+            <div
+              style="aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#E4DCCF 0 10px,#DBD2C3 10px 20px);border:1px solid rgb(0,0,0);display:flex;align-items:center;justify-content:center">
+              <span
+                style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.1em;color:#7E7365;text-transform:uppercase">lead
+                story image</span>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 14px">
+                Featured story</p>
+              <h2
+                style="font-family:Amiri,serif;font-size:40px;font-weight:600;line-height:1.15;margin:0 0 16px;text-wrap:balance">
+                What a margin note reveals about a nineteenth-century reader</h2>
+              <p style="font-size:20px;line-height:1.5;color:#3E3831;margin:0 0 24px;text-wrap:pretty">A single line in
+                the margin of a jurisprudence manuscript tells us who read the book, where they sat, and what they
+                disagreed with.</p>
+              <a href="#/stories"
+                style="display:inline-block;background:rgb(0,0,0);color:rgb(243,239,230);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:12px 30px;border-radius:999px"
+                style-hover="background:rgb(165,35,7)">Read the story</a>
+            </div>
+          </article>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:36px">
+            <sc-for list="{{ storyList }}" as="s" hint-placeholder-count="6">
+              <a href="#/stories" style="display:flex;flex-direction:column;gap:12px">
+                <span style="aspect-ratio:4/3;background:#D9D9D9;display:block"></span>
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">{{
+                  s.kicker }}</span>
+                <span
+                  style="font-family:Amiri,serif;font-size:23px;font-weight:600;line-height:1.25;text-wrap:pretty">{{
+                  s.title }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            About</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 24px;letter-spacing:-0.015em;max-width:20ch">
+            Kunhīn Musliyār Library &amp; Research Institute</h1>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:52px;padding-top:40px">
+            <div style="font-size:21px;line-height:1.6;color:#2A2620;display:flex;flex-direction:column;gap:20px">
+              <p style="margin:0;text-wrap:pretty">The institute keeps, describes and makes available the written
+                heritage of Malabar: manuscripts in Arabic, Persian and Arabi-Malayalam, printed books and periodicals,
+                and the papers of scholars and families of the region.</p>
+              <p style="margin:0;text-wrap:pretty">Work happens in three rooms. In the reading room, researchers consult
+                originals under supervision. In the conservation lab, items are surveyed, cleaned and rehoused. In the
+                digitisation studio, each item is photographed folio by folio and catalogued in both scripts before it
+                enters the digital reading room.</p>
+              <p style="margin:0;text-wrap:pretty">The library sits beside Sabeelul Hidaya Islamic College in
+                Vattaparamba and is open to students, teachers and visiting researchers.</p>
+            </div>
+            <div>
+              <div
+                style="aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#E4DCCF 0 10px,#DBD2C3 10px 20px);border:1px solid rgb(0,0,0);display:flex;align-items:center;justify-content:center">
+                <span
+                  style="font-family:'Averia Serif Libre',serif;font-size:12px;letter-spacing:0.1em;color:#7E7365;text-transform:uppercase">reading
+                  room photo</span>
+              </div>
+            </div>
+          </div>
+          <div
+            style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgb(0,0,0);border:1px solid rgb(0,0,0);margin-top:52px">
+            <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4">
+              <div
+                style="background:rgb(243,239,230);padding:28px 24px 30px;display:flex;flex-direction:column;gap:6px">
+                <span style="font-family:Amiri,serif;font-size:38px;font-weight:700;line-height:1">{{ st.n }}</span>
+                <span style="font-size:17px;color:#5E564C">{{ st.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1240px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            My Account</p>
+          <sc-if value="{{ signedOut }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start">
+              <div>
+                <h1
+                  style="font-family:Amiri,serif;font-size:52px;font-weight:700;line-height:1.08;margin:0 0 18px;letter-spacing:-0.015em">
+                  Sign in</h1>
+                <form onSubmit="{{ onSignIn }}" style="display:flex;flex-direction:column;gap:18px;max-width:420px">
+                  <label style="display:flex;flex-direction:column;gap:8px">
+                    <span
+                      style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">Membership
+                      number or email</span>
+                    <input type="text"
+                      style="border:1.5px solid rgb(0,0,0);background:transparent;height:48px;padding:0 14px;font-size:19px;outline:none">
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:8px">
+                    <span
+                      style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">Password</span>
+                    <input type="password"
+                      style="border:1.5px solid rgb(0,0,0);background:transparent;height:48px;padding:0 14px;font-size:19px;outline:none">
+                  </label>
+                  <button type="submit"
+                    style="background:rgb(0,0,0);color:rgb(243,239,230);border:none;height:50px;border-radius:999px;font-family:Amiri,serif;font-size:17px;font-weight:600;cursor:pointer;margin-top:6px"
+                    style-hover="background:rgb(165,35,7)">Sign in</button>
+                  <a href="#/ask" style="font-size:17px;color:rgb(165,35,7)">Forgotten your password?</a>
+                </form>
+              </div>
+              <div style="border:1px solid rgb(0,0,0);padding:34px 32px 38px">
+                <h2 style="font-family:Amiri,serif;font-size:30px;font-weight:600;margin:0 0 14px">Not a member yet?
+                </h2>
+                <p style="font-size:19px;line-height:1.55;color:#3E3831;margin:0 0 24px;text-wrap:pretty">Membership
+                  gives you borrowing rights, remote access to the digital reading room and a reserved desk on request.
+                </p>
+                <a href="#/services"
+                  style="display:inline-block;border:1.5px solid rgb(0,0,0);font-family:Amiri,serif;font-weight:600;font-size:17px;padding:12px 28px;border-radius:999px"
+                  style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Become a member</a>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+              <h1
+                style="font-family:Amiri,serif;font-size:52px;font-weight:700;line-height:1.08;margin:0 0 12px;letter-spacing:-0.015em">
+                Welcome, Rashid</h1>
+              <button type="button" onClick="{{ onSignOut }}"
+                style="background:transparent;border:1.5px solid rgb(0,0,0);height:44px;padding:0 24px;border-radius:999px;font-family:Amiri,serif;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:16px"
+                style-hover="background:rgb(0,0,0);color:rgb(243,239,230)">Sign out</button>
+            </div>
+            <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+            <div
+              style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgb(0,0,0);border:1px solid rgb(0,0,0);border-top:none">
+              <sc-for list="{{ accountStats }}" as="a" hint-placeholder-count="3">
+                <div
+                  style="background:rgb(243,239,230);padding:26px 24px 28px;display:flex;flex-direction:column;gap:5px">
+                  <span style="font-family:Amiri,serif;font-size:34px;font-weight:700;line-height:1">{{ a.n }}</span>
+                  <span style="font-size:17px;color:#5E564C">{{ a.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <h2 style="font-family:Amiri,serif;font-size:26px;font-weight:600;color:rgb(165,35,7);margin:44px 0 10px">On
+              loan</h2>
+            <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+            <table style="width:100%;border-collapse:collapse;font-size:18px;margin-top:8px">
+              <sc-for list="{{ loans }}" as="l" hint-placeholder-count="3">
+                <tr>
+                  <td
+                    style="padding:16px 0;border-bottom:1px solid #D6CCBC;font-family:Amiri,serif;font-size:20px;font-weight:600">
+                    {{ l.title }}</td>
+                  <td
+                    style="padding:16px 0;border-bottom:1px solid #D6CCBC;color:#5E564C;font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em">
+                    {{ l.call }}</td>
+                  <td style="padding:16px 0;border-bottom:1px solid #D6CCBC;color:#3E3831">{{ l.due }}</td>
+                  <td style="padding:16px 0;border-bottom:1px solid #D6CCBC;text-align:right"><a href="#/account"
+                      style="color:rgb(165,35,7)">Renew</a></td>
+                </tr>
+              </sc-for>
+            </table>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isFaqs }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:900px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Help</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em">
+            FAQs</h1>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px"></div>
+          <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="6">
+            <div style="border-bottom:1px solid #D6CCBC">
+              <button type="button" onClick="{{ q.onClick }}"
+                style="width:100%;background:transparent;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:24px;padding:22px 0;text-align:left;font-family:Amiri,serif;font-size:23px;font-weight:600;color:rgb(0,0,0)">
+                <span>{{ q.q }}</span>
+                <span style="font-family:'Averia Serif Libre',serif;font-size:22px;color:rgb(165,35,7)">{{ q.sign
+                  }}</span>
+              </button>
+              <sc-if value="{{ q.open }}" hint-placeholder-val="{{ false }}">
+                <p style="font-size:19px;line-height:1.6;color:#3E3831;margin:0 0 24px;max-width:70ch;text-wrap:pretty">
+                  {{ q.a }}</p>
+              </sc-if>
+            </div>
+          </sc-for>
+          <p style="font-size:19px;color:#3E3831;padding-top:30px">Still stuck? <a href="#/ask"
+              style="color:rgb(165,35,7)">Ask a librarian</a>.</p>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isAsk }}" hint-placeholder-val="{{ false }}">
+        <section style="max-width:1000px;margin:0 auto;padding:56px 40px 0">
+          <p
+            style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 12px">
+            Reference help</p>
+          <h1
+            style="font-family:Amiri,serif;font-size:60px;font-weight:700;line-height:1.05;margin:0 0 18px;letter-spacing:-0.015em;max-width:18ch">
+            Ask a Librarian</h1>
+          <p style="font-size:21px;line-height:1.5;color:#3E3831;max-width:60ch;margin:0 0 30px;text-wrap:pretty">
+            Questions about sources, scripts, citations or how to reach an item. We reply within two working days.</p>
+          <div style="border-top:2px solid rgb(0,0,0);border-bottom:1px solid rgb(0,0,0);height:5px;margin-bottom:34px">
+          </div>
+          <form onSubmit="{{ onAsk }}" style="display:grid;grid-template-columns:1fr 1fr;gap:24px 30px">
+            <label style="display:flex;flex-direction:column;gap:8px">
+              <span
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">Your
+                name</span>
+              <input type="text"
+                style="border:1.5px solid rgb(0,0,0);background:transparent;height:48px;padding:0 14px;font-size:19px;outline:none">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px">
+              <span
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">Email</span>
+              <input type="email"
+                style="border:1.5px solid rgb(0,0,0);background:transparent;height:48px;padding:0 14px;font-size:19px;outline:none">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px;grid-column:1 / -1">
+              <span
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175">Your
+                question</span>
+              <textarea rows="6"
+                style="border:1.5px solid rgb(0,0,0);background:transparent;padding:12px 14px;font-size:19px;outline:none;font-family:Amiri,serif;resize:vertical"></textarea>
+            </label>
+            <div style="grid-column:1 / -1;display:flex;align-items:center;gap:20px">
+              <button type="submit"
+                style="background:rgb(0,0,0);color:rgb(243,239,230);border:none;height:50px;padding:0 38px;border-radius:999px;font-family:Amiri,serif;font-size:17px;font-weight:600;cursor:pointer"
+                style-hover="background:rgb(165,35,7)">Send question</button>
+              <span style="font-size:17px;color:#8C8175">{{ askNote }}</span>
+            </div>
+          </form>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:36px;padding-top:52px">
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 8px">
+                By phone</p>
+              <p style="font-size:19px;margin:0">+91 97452 34786</p>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 8px">
+                By email</p>
+              <p style="font-size:19px;margin:0">info@kmlri.in</p>
+            </div>
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:#8C8175;margin:0 0 8px">
+                In person</p>
+              <p style="font-size:19px;margin:0">Reading room desk, 9:00–17:00</p>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <section style="text-align:center;padding:67px 0 67px;font-family:Amiri,serif">
+        <h2 style="font-size:50px;font-weight:700;line-height:1;margin:0 0 33px;color:rgb(0,0,0)">E-Newsletter</h2>
+        <p style="font-size:20px;line-height:20px;color:rgb(0,0,0);width:542px;margin:0 auto 33px">Sign up for our
+          monthly e-newsletter for updates and highlights about Gallica.</p>
+        <form onSubmit="{{ onSubscribe }}" style="display:flex;justify-content:center">
+          <button type="submit"
+            style="background:rgb(0,0,0);color:rgb(243,239,230);border:none;width:154px;height:44px;border-radius:59px;font-family:Amiri,serif;font-size:16px;font-weight:700;cursor:pointer"
+            style-hover="background:rgb(165,35,7)">SUBSCRIBE</button>
+        </form>
+      </section>
+
+      <footer id="about" style="background:rgb(0,0,0);color:rgb(255,255,255);font-family:Amiri,serif">
+        <div
+          style="max-width:955px;margin:0 auto;padding:65px 0 0;display:grid;grid-template-columns:374px 1fr 1fr;gap:48px">
+          <div>
+            <img src="assets/wordmark-latin.svg" alt="Kunhīn Musliyār Library &amp; Research Institute"
+              style="width:374px;height:88px;display:block;filter:invert(1)">
+            <p style="font-size:13px;line-height:14px;color:rgb(255,255,255);margin:33px 0 0">Near Sabeelul Hidaya
+              Islamic College<br>Vadhee Hidaya, Vattaparamba, Parappur PO,<br>Kottakkal, Malappuram, Kerala - 676503</p>
+            <p style="font-size:14px;line-height:13px;color:rgb(156,156,156);margin:41px 0 0;display:flex;gap:19px">
+              <a href="tel:+919745234786" style="color:rgb(156,156,156)">+91 97452 34786</a>
+              <a href="mailto:info@kmlri.in" style="color:rgb(156,156,156)">info@kmlri.in</a>
+            </p>
+            <div style="display:flex;gap:17px;margin-top:21px">
+              <sc-for list="{{ socials }}" as="s" hint-placeholder-count="3">
+                <a href="#/about" aria-label="{{ s.name }}"
+                  style="width:31.333px;height:31.333px;border-radius:5px;background:rgb(31,31,31);display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;color:rgb(255,255,255)"
+                  style-hover="background:rgb(75,75,75)">{{ s.mark }}</a>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{ footerCols }}" as="fc" hint-placeholder-count="2">
+            <div>
+              <p
+                style="font-family:'Averia Serif Libre',serif;font-size:13px;letter-spacing:0.06em;color:rgb(156,156,156);margin:8px 0 18px">
+                {{ fc.title }}</p>
+              <div style="display:flex;flex-direction:column;gap:11px;font-size:17px">
+                <sc-for list="{{ fc.links }}" as="l" hint-placeholder-count="5">
+                  <a href="{{ l.href }}" style="color:rgb(255,255,255)">{{ l.label }}</a>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div data-comment-anchor="b3508b4dd3-div">
+          <div
+            style="max-width:955px;margin:0 auto;padding:21px 0 44px;display:flex;justify-content:space-between;gap:24px;font-size:12px;color:rgb(255,255,255);flex-wrap:wrap;border-top:1px solid rgb(31,31,31);margin-top:44px">
+            <span>© 2026 Kunhīn Musliyār Library &amp; Research Institute. All rights reserved.</span>
+            <span style="display:flex;gap:20px"><a href="#/about" style="color:rgb(156,156,156)">Privacy</a><a
+                href="#/about" style="color:rgb(156,156,156)">Terms of use</a><a href="#/about"
+                style="color:rgb(156,156,156)">Accessibility</a></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+  </x-dc>
+  <script type="text/x-dc" data-dc-script
+    data-props="{&quot;defaultTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Events&quot;,&quot;News&quot;,&quot;Stories&quot;,&quot;Opportunities&quot;],&quot;default&quot;:&quot;Events&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;What’s On&quot;},&quot;showSuggestions&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Search&quot;}}">
+class Component extends DCLogic {
+  state = { tab: null, query: "", email: "", subscribeNote: "", page: "home", signedIn: false, openFaq: 0, askNote: "" };
+
+  componentDidMount() {
+    this.sync = () => {
+      const h = (window.location.hash || "").replace(/^#\/?/, "") || "home";
+      this.setState({ page: h });
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", this.sync);
+    this.sync();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("hashchange", this.sync);
+  }
+
+  data() {
+    const four = (t) => [1, 2, 3, 4].map(() => ({ title: t }));
+    return {
+      Events: four("This year, Gallica’s summer workbook and etc"),
+      News: four("This year, Gallica’s summer workbook and etc"),
+      Stories: four("This year, Gallica’s summer workbook and etc"),
+      Opportunities: four("This year, Gallica’s summer workbook and etc")
+    };
+  }
+
+  tabStyle(active) {
+    return "border:none;cursor:pointer;font-family:Amiri,serif;font-size:20px;line-height:1;padding:0 22px;position:relative;display:flex;align-items:center;justify-content:center;"
+      + (active
+        ? "background:rgb(0,0,0);color:rgb(255,255,255);width:94px;height:54px;margin-bottom:-14px;padding-bottom:14px;font-weight:700;"
+        : "background:transparent;color:rgb(0,0,0);height:54px;");
+  }
+
+  renderVals() {
+    const d = this.data();
+    const names = ["Events", "News", "Stories", "Opportunities"];
+    const tab = this.state.tab || this.props.defaultTab || "News";
+    const p = this.state.page;
+    const known = ["home", "collections", "search", "item", "advanced", "services", "news", "stories", "about", "account", "faqs", "ask"];
+    const page = known.indexOf(p) === -1 ? "home" : p;
+    return {
+      showSuggestions: this.props.showSuggestions ?? true,
+      isHome: page === "home",
+      isCollections: page === "collections",
+      isSearch: page === "search",
+      isItem: page === "item",
+      isAdvanced: page === "advanced",
+      isServices: page === "services",
+      isNews: page === "news",
+      isStories: page === "stories",
+      isAbout: page === "about",
+      isAccount: page === "account",
+      isFaqs: page === "faqs",
+      isAsk: page === "ask",
+      signedIn: this.state.signedIn,
+      signedOut: !this.state.signedIn,
+      askNote: this.state.askNote,
+      onSignIn: (e) => { e.preventDefault(); this.setState({ signedIn: true }); },
+      onSignOut: () => this.setState({ signedIn: false }),
+      onAsk: (e) => { e.preventDefault(); this.setState({ askNote: "Thank you — we’ll reply within two working days." }); },
+      query: this.state.query,
+      email: this.state.email,
+      subscribeNote: this.state.subscribeNote,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      onEmail: (e) => this.setState({ email: e.target.value }),
+      onSearch: (e) => { e.preventDefault(); window.location.hash = "#/search"; },
+      onSubscribe: (e) => {
+        e.preventDefault();
+        this.setState({ subscribeNote: this.state.email ? "Thank you — please confirm from the email we just sent." : "" });
+      },
+      tabs: names.map((n) => ({
+        label: n,
+        style: this.tabStyle(n === tab),
+        onClick: () => this.setState({ tab: n })
+      })),
+      cards: d[tab] || d.News,
+      collections: [
+        { name: "Manuscripts", count: "1,240 items", note: "Arabic, Persian and Arabi-Malayalam codices, described folio by folio." },
+        { name: "Arabi-Malayalam Print", count: "860 items", note: "Lithographs, chapbooks and poetry printed across Malabar." },
+        { name: "Rare Books", count: "2,100 items", note: "Early editions in Arabic, Malayalam, Urdu and English." },
+        { name: "Periodicals", count: "310 titles", note: "Journals and magazines, bound runs and loose issues." },
+        { name: "Theses & Papers", count: "470 items", note: "Dissertations deposited by affiliated researchers." },
+        { name: "Audio & Oral History", count: "95 hours", note: "Recorded recitation, interviews and lecture archives." }
+      ],
+      services: [
+        { name: "Reading Room", note: "Open to researchers, Monday to Saturday, 9:00 to 17:00.", action: "Plan a visit" },
+        { name: "Reproduction", note: "Digital copies of catalogued items on request.", action: "Request a scan" },
+        { name: "Reference Help", note: "Ask a librarian about sources, scripts and citations.", action: "Ask a question" },
+        { name: "Membership", note: "Borrowing and remote access for members of the institute.", action: "Become a member" }
+      ],
+      socials: [
+        { name: "Facebook", mark: "f" },
+        { name: "Instagram", mark: React.createElement("img", { src: "assets/social-icon.svg", alt: "", style: { width: 14.242, height: 14.242, filter: "invert(1)" } }) },
+        { name: "YouTube", mark: "▶" }
+      ],
+      footerCols: [
+        { title: "Explore", links: [
+          { label: "Collections", href: "#/collections" },
+          { label: "Digital reading room", href: "#/search" },
+          { label: "Advanced search", href: "#/advanced" },
+          { label: "New acquisitions", href: "#/news" },
+          { label: "Stories", href: "#/stories" }
+        ] },
+        { title: "Visit & Use", links: [
+          { label: "Reading room", href: "#/services" },
+          { label: "Membership", href: "#/account" },
+          { label: "Ask a librarian", href: "#/ask" },
+          { label: "Reproduction requests", href: "#/services" },
+          { label: "FAQs", href: "#/faqs" }
+        ] }
+      ],
+      facets: [
+        { title: "Format", options: ["Manuscript", "Printed book", "Periodical", "Audio"] },
+        { title: "Script", options: ["Arabic", "Arabi-Malayalam", "Malayalam", "Latin"] },
+        { title: "Access", options: ["Digitised in full", "Reading room only", "Restricted"] }
+      ],
+      results: [
+        { title: "Bayān al-Fawāʾid", author: "Unnamed scribe, Malabar coast", detail: "Manuscript · MS 0142 · 84 folios", status: "Digitised" },
+        { title: "Muḥyiddīn Mālā", author: "Qāḍī Muḥammad", detail: "Arabi-Malayalam print · AM 0311", status: "Digitised" },
+        { title: "Fatḥ al-Muʿīn, annotated copy", author: "Zayn al-Dīn al-Malībārī", detail: "Rare book · RB 0908", status: "Reading room" },
+        { title: "Al-Bayān monthly, bound run 1954–1961", author: "Various", detail: "Periodical · PER 0044 · 7 volumes", status: "Reading room" },
+        { title: "Notes on a family collection, Parappur", author: "Deposited papers", detail: "Archive · ARC 0026", status: "Restricted" }
+      ],
+      pages: [1, 2, 3, 4, 5].map((n) => ({
+        label: String(n),
+        style: "padding:8px 14px;border:1px solid rgb(0,0,0);" + (n === 1 ? "background:rgb(0,0,0);color:rgb(243,239,230);" : "")
+      })),
+      thumbs: [1, 2, 3, 4],
+      itemMeta: [
+        { k: "Shelfmark", v: "MS 0142" },
+        { k: "Title (Arabic)", v: "بيان الفوائد" },
+        { k: "Language", v: "Arabic, with Arabi-Malayalam glosses" },
+        { k: "Extent", v: "84 folios, 21 × 15 cm" },
+        { k: "Material", v: "Laid paper, brown ink, red rubrication" },
+        { k: "Binding", v: "Limp leather over paper boards" },
+        { k: "Provenance", v: "Family deposit, Parappur, 2019" },
+        { k: "Access", v: "Digitised in full; original by appointment" }
+      ],
+      advFields: [
+        { label: "All of these words", hint: "e.g. mālā poem" },
+        { label: "Exact phrase", hint: "e.g. fatḥ al-muʿīn" },
+        { label: "Author or scribe", hint: "name in any script" },
+        { label: "Shelfmark", hint: "e.g. MS 0142" },
+        { label: "Collection", hint: "manuscripts, rare books…" },
+        { label: "Script", hint: "Arabic, Arabi-Malayalam…" },
+        { label: "Date from", hint: "yyyy" },
+        { label: "Date to", hint: "yyyy" }
+      ],
+      hours: [
+        { day: "Monday – Thursday", time: "9:00 – 17:00" },
+        { day: "Friday", time: "9:00 – 12:00" },
+        { day: "Saturday", time: "9:00 – 15:00" },
+        { day: "Sunday and public holidays", time: "Closed" }
+      ],
+      newsList: [
+        { date: "12 September", title: "Reading room open house for research scholars", blurb: "An afternoon of short talks and a walk-through of the catalogue for new readers." },
+        { date: "20 September", title: "Workshop: handling and rehousing fragile bindings", blurb: "Practical session in the conservation lab, limited to twelve places." },
+        { date: "27 September", title: "Evening lecture on Malabar’s manuscript networks", blurb: "How books, scribes and students moved between towns along the coast." },
+        { date: "2 October", title: "Nine hundred folios added to the digital reading room", blurb: "The largest single batch since digitisation began." },
+        { date: "14 October", title: "Conservation lab completes its first full-year survey", blurb: "Condition reports now exist for every manuscript on the shelves." },
+        { date: "30 October", title: "Short-term research fellowships, applications open", blurb: "Four fellowships for work with the institute’s manuscript holdings." }
+      ],
+      storyList: [
+        { kicker: "Research notes", title: "Tracing one poem across four handwritten copies" },
+        { kicker: "Materials", title: "The paper, the ink and the hands that made a book" },
+        { kicker: "Donors", title: "How a family collection came to the reading room" },
+        { kicker: "Conservation", title: "Rehousing a binding that had travelled too far" },
+        { kicker: "Catalogue", title: "Describing a book in two scripts at once" },
+        { kicker: "Reading room", title: "A week with the periodicals of the 1950s" }
+      ],
+      stats: [
+        { n: "5,075", label: "Catalogued items" },
+        { n: "1,240", label: "Manuscripts" },
+        { n: "38,600", label: "Digitised folios" },
+        { n: "6", label: "Collections" }
+      ],
+      accountStats: [
+        { n: "3", label: "Items on loan" },
+        { n: "1", label: "Hold ready for collection" },
+        { n: "₹0", label: "Outstanding fines" }
+      ],
+      loans: [
+        { title: "Fatḥ al-Muʿīn, annotated copy", call: "RB 0908", due: "Due 14 September" },
+        { title: "Al-Bayān monthly, vol. 3", call: "PER 0044", due: "Due 21 September" },
+        { title: "Malabar and its people", call: "RB 1177", due: "Due 3 October" }
+      ],
+      faqs: [
+        { q: "Who can use the reading room?", a: "Students, teachers and visiting researchers. Bring photo identification for a day pass; members can enter with their card." },
+        { q: "Can I borrow manuscripts?", a: "No. Manuscripts and rare books are consulted in the supervised reading room. Printed books in the general collection can be borrowed by members." },
+        { q: "How do I request a scan?", a: "Find the item in the catalogue and use Request a scan, or write to the reference desk with the shelfmark. Fees depend on extent and format." },
+        { q: "Is the catalogue searchable in Arabic script?", a: "Yes. Records are described in Arabic script and in Latin transliteration, and either will match." },
+        { q: "Do you accept donations of books and papers?", a: "We do, subject to a condition survey. Write to the reference desk describing the material before sending anything." },
+        { q: "Is there parking and step-free access?", a: "Parking is available beside the college gate. The ground-floor reading room and reference desk are step-free." }
+      ].map((f, i) => ({
+        q: f.q,
+        a: f.a,
+        open: this.state.openFaq === i,
+        sign: this.state.openFaq === i ? "–" : "+",
+        onClick: () => this.setState({ openFaq: this.state.openFaq === i ? -1 : i })
+      }))
+    };
+  }
+}
+
+</script>
+</body>
+
+</html>
