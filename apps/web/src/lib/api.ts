@@ -691,4 +691,107 @@ export const api = {
       body: JSON.stringify({ email }),
     });
   },
+
+  // Bookings (space / reading room / consultation)
+  async getBookings() {
+    return this.fetchWithAuth('/bookings');
+  },
+
+  async getAllBookings() {
+    return this.fetchWithAuth('/bookings/all');
+  },
+
+  async createBooking(data: { type: string; resourceName: string; date: string; timeSlot: string; notes?: string }) {
+    return this.fetchWithAuth('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async cancelBooking(id: string) {
+    return this.fetchWithAuth(`/bookings/${id}`, { method: 'DELETE' });
+  },
+
+  // Acquisition requests
+  async getAcquisitionRequests() {
+    return this.fetchWithAuth('/acquisitions');
+  },
+
+  async createAcquisitionRequest(data: { title: string; author?: string; publisher?: string; estimatedPrice?: number; reason?: string }) {
+    return this.fetchWithAuth('/acquisitions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateAcquisitionStatus(id: string, status: string) {
+    return this.fetchWithAuth(`/acquisitions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  // Reading lists
+  async getReadingLists() {
+    return this.fetchWithAuth('/reading-lists');
+  },
+
+  async createReadingList(name: string) {
+    return this.fetchWithAuth('/reading-lists', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  async addToReadingList(listId: string, bibRecordId: string) {
+    return this.fetchWithAuth(`/reading-lists/${listId}/items/${bibRecordId}`, { method: 'POST' });
+  },
+
+  async removeFromReadingList(listId: string, bibRecordId: string) {
+    return this.fetchWithAuth(`/reading-lists/${listId}/items/${bibRecordId}`, { method: 'DELETE' });
+  },
+
+  async deleteReadingList(listId: string) {
+    return this.fetchWithAuth(`/reading-lists/${listId}`, { method: 'DELETE' });
+  },
+
+  // Saved searches
+  async getSavedSearches() {
+    return this.fetchWithAuth('/saved-searches');
+  },
+
+  async createSavedSearch(query: string, filters?: Record<string, any>) {
+    return this.fetchWithAuth('/saved-searches', {
+      method: 'POST',
+      body: JSON.stringify({ query, filters }),
+    });
+  },
+
+  async deleteSavedSearch(id: string) {
+    return this.fetchWithAuth(`/saved-searches/${id}`, { method: 'DELETE' });
+  },
+
+  // Ask a Librarian / reference questions
+  async submitReferenceQuestion(data: { name: string; email: string; subject?: string; question: string }) {
+    return this.fetchWithAuth('/reference-questions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getReferenceQuestions(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`/reference-questions${query}`);
+  },
+
+  async answerReferenceQuestion(id: string, answer: string) {
+    return this.fetchWithAuth(`/reference-questions/${id}/answer`, {
+      method: 'PATCH',
+      body: JSON.stringify({ answer }),
+    });
+  },
+
+  async closeReferenceQuestion(id: string) {
+    return this.fetchWithAuth(`/reference-questions/${id}/close`, { method: 'PATCH' });
+  },
 };

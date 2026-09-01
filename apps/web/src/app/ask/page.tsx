@@ -4,16 +4,31 @@ import { useState } from 'react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { api } from '@/lib/api';
 
 export default function AskLibrarianPage() {
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [question, setQuestion] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setError('');
+    setSubmitting(true);
+    try {
+      await api.submitReferenceQuestion({ name, email, question });
+      setSent(true);
+      setName('');
+      setEmail('');
+      setQuestion('');
+    } catch (err: any) {
+      setError(err.message || 'Could not send your question. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -68,13 +83,19 @@ export default function AskLibrarianPage() {
           <div className="col-span-full flex items-center gap-4 flex-wrap pt-2">
             <button
               type="submit"
-              className="bg-black text-paper border-none h-[46px] sm:h-[50px] px-6 sm:px-[38px] rounded-full font-amiri text-[17px] sm:text-[19px] font-bold cursor-pointer hover:bg-heritage-red hover:text-white  transition-colors"
+              disabled={submitting}
+              className="bg-black text-paper border-none h-[46px] sm:h-[50px] px-6 sm:px-[38px] rounded-full font-amiri text-[17px] sm:text-[19px] font-bold cursor-pointer hover:bg-heritage-red hover:text-white  transition-colors disabled:opacity-50"
             >
-              Send question →
+              {submitting ? 'Sending…' : 'Send question →'}
             </button>
             {sent && (
-              <span className="text-[15px] sm:text-[17px] text-heritage-red font-semibold bg-red-50 px-3 py-1 border border-heritage-red/30">
+              <span className="text-[15px] sm:text-[17px] text-green-800 font-semibold bg-green-50 px-3 py-1 border border-green-300">
                 Thank you — our reference desk will reply within two working days.
+              </span>
+            )}
+            {error && (
+              <span className="text-[15px] sm:text-[17px] text-heritage-red font-semibold bg-red-50 px-3 py-1 border border-heritage-red/30">
+                {error}
               </span>
             )}
           </div>
