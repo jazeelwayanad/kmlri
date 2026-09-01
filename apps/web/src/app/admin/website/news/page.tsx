@@ -1,90 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Newspaper, 
-  Plus, 
-  Search, 
-  Image as ImageIcon, 
-  Tag, 
-  CheckCircle2, 
-  Eye, 
-  Edit3, 
-  Trash2, 
-  Star, 
+import {
+  Newspaper,
+  Plus,
+  Search,
+  Image as ImageIcon,
+  Tag,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  Edit3,
+  Trash2,
+  Star,
   Calendar,
   X,
   Upload,
   Globe
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
-
-interface NewsItem {
-  id: string;
-  title: string;
-  slug: string;
-  kicker?: string;
-  excerpt: string;
-  content?: string;
-  category: string;
-  author: string;
-  tags: string[];
-  featured: boolean;
-  status: 'PUBLISHED' | 'DRAFT';
-  publishedAt: string;
-  imageUrl?: string;
-}
+import { api, ContentItem } from '@/lib/api';
+import { slugify } from '@/lib/slugs';
 
 export default function WebsiteNewsPage() {
-  const [news, setNews] = useState<NewsItem[]>([
-    {
-      id: 'NWS-01',
-      title: 'KMLRI Ingests 400 Rare Arabi-Malayalam Manuscripts into IIIF Repository',
-      slug: 'kmlri-ingests-400-rare-manuscripts-iiif',
-      kicker: 'Digitisation Update',
-      excerpt: 'Scholars globally can now consult high-resolution multispectral folios directly via the digital manuscript portal.',
-      content: 'The digitization lab has uploaded 400 new folios encompassing 18th-century medical treatises and astronomy codices, complete with deep zoom IIIF manifests and full-text transcriptions.',
-      category: 'Institutional Announcement',
-      author: 'Communications Desk',
-      tags: ['IIIF', 'Digital Library', 'Manuscripts'],
-      featured: true,
-      status: 'PUBLISHED',
-      publishedAt: '28 Aug 2026',
-    },
-    {
-      id: 'NWS-02',
-      title: 'Visiting Scholar Fellowship Applications Open for 2026–2027 Academic Year',
-      slug: 'visiting-scholar-fellowships-2026-2027',
-      kicker: 'Academic Announcement',
-      excerpt: 'Four fully funded residential archival fellowships available for researchers in West Asian and Indian Ocean trade history.',
-      content: 'Applications are formally invited for the upcoming academic cycle. Selected researchers will receive research desks, scan allocations, and on-campus accommodation.',
-      category: 'Fellowships & Grants',
-      author: 'Directorate of Research',
-      tags: ['Fellowships', 'Research', 'Grants'],
-      featured: false,
-      status: 'PUBLISHED',
-      publishedAt: '15 Aug 2026',
-    },
-    {
-      id: 'NWS-03',
-      title: 'Conservation Lab Completes Comprehensive Annual Survey of Parchment Bindings',
-      slug: 'conservation-lab-annual-survey-parchment-bindings',
-      kicker: 'Conservation Milestone',
-      excerpt: 'Over 1,200 codices surveyed and stabilized in custom archival clamshell boxes.',
-      content: 'The preservation team surveyed and rehoused loose-leaf folios, establishing temperature and microclimate records for the entire physical archive.',
-      category: 'Preservation Update',
-      author: 'Preservation Division',
-      tags: ['Conservation', 'Survey', 'Preservation'],
-      featured: false,
-      status: 'PUBLISHED',
-      publishedAt: '05 Aug 2026',
-    },
-  ]);
+  const [news, setNews] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [notification, setNotification] = useState<string | null>(null);
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+
+  const loadNews = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getContentItems({ category: 'News' });
+      setNews(res.items);
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError(err.message || 'Could not load news bulletins from the server.');
+      setNews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNews();
+  }, []);
 
   // Modal State (Used for both Create and Edit)
   const [showModal, setShowModal] = useState(false);
@@ -95,12 +60,12 @@ export default function WebsiteNewsPage() {
   const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState('Institutional Announcement');
   const [author, setAuthor] = useState('Press & Media Desk');
   const [tags, setTags] = useState('');
   const [featured, setFeatured] = useState(false);
-  const [status, setStatus] = useState<'PUBLISHED' | 'DRAFT'>('PUBLISHED');
+  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT'>('ACTIVE');
   const [imageUrl, setImageUrl] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
     setEditingNewsId(null);
@@ -109,27 +74,25 @@ export default function WebsiteNewsPage() {
     setKicker('Press Release');
     setExcerpt('');
     setContent('');
-    setCategory('Institutional Announcement');
     setAuthor('Press & Media Desk');
     setTags('Announcement, News');
     setFeatured(false);
-    setStatus('PUBLISHED');
+    setStatus('ACTIVE');
     setImageUrl('');
     setShowModal(true);
   };
 
-  const openEditModal = (item: NewsItem) => {
+  const openEditModal = (item: ContentItem) => {
     setEditingNewsId(item.id);
     setTitle(item.title);
     setSlug(item.slug);
     setKicker(item.kicker || 'Press Release');
-    setExcerpt(item.excerpt);
+    setExcerpt(item.summary);
     setContent(item.content || '');
-    setCategory(item.category);
-    setAuthor(item.author);
-    setTags(item.tags.join(', '));
-    setFeatured(item.featured);
-    setStatus(item.status);
+    setAuthor(item.author || '');
+    setTags((item.tags || []).join(', '));
+    setFeatured(!!item.featured);
+    setStatus(item.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE');
     setImageUrl(item.imageUrl || '');
     setShowModal(true);
   };
@@ -137,72 +100,62 @@ export default function WebsiteNewsPage() {
   const handleTitleChange = (val: string) => {
     setTitle(val);
     if (!editingNewsId) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
-      );
+      setSlug(slugify(val));
     }
   };
 
-  const handleSaveNews = (e: React.FormEvent) => {
+  const handleSaveNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    if (editingNewsId) {
-      // Update existing news
-      setNews(
-        news.map((n) => {
-          if (n.id === editingNewsId) {
-            return {
-              ...n,
-              title,
-              slug,
-              kicker,
-              excerpt,
-              content,
-              category,
-              author,
-              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-              featured,
-              status,
-              imageUrl,
-            };
-          }
-          return n;
-        })
-      );
-      setNotification(`News item "${title}" updated successfully.`);
-    } else {
-      // Create new news
-      const newNews: NewsItem = {
-        id: `NWS-${Date.now().toString().slice(-4)}`,
-        title,
-        slug: slug || `news-${Date.now().toString().slice(-4)}`,
-        kicker,
-        excerpt,
-        content,
-        category,
-        author,
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-        featured,
-        status,
-        publishedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        imageUrl,
-      };
-      setNews([newNews, ...news]);
-      setNotification(`News item "${title}" published successfully.`);
-    }
+    const payload: Partial<ContentItem> = {
+      category: 'NEWS',
+      title,
+      slug: slug || slugify(title),
+      kicker,
+      summary: excerpt,
+      content,
+      author,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      featured,
+      status,
+      imageUrl: imageUrl || undefined,
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    };
 
-    setShowModal(false);
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    try {
+      if (editingNewsId) {
+        await api.updateContentItem(editingNewsId, payload);
+        setNotificationType('success');
+        setNotification(`News item "${title}" updated successfully.`);
+      } else {
+        await api.createContentItem(payload);
+        setNotificationType('success');
+        setNotification(`News item "${title}" published successfully.`);
+      }
+      setShowModal(false);
+      await loadNews();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not save the news bulletin.');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to permanently delete news bulletin "${name}"?`)) {
-      setNews(news.filter((n) => n.id !== id));
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete news bulletin "${name}"?`)) return;
+    try {
+      await api.deleteContentItem(id);
+      setNotificationType('success');
       setNotification(`News bulletin "${name}" deleted successfully.`);
+      await loadNews();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not delete this news bulletin.');
+    } finally {
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -210,11 +163,11 @@ export default function WebsiteNewsPage() {
   const filtered = news.filter((n) => {
     const matchesSearch =
       n.title.toLowerCase().includes(search.toLowerCase()) ||
-      n.author.toLowerCase().includes(search.toLowerCase()) ||
+      (n.author || '').toLowerCase().includes(search.toLowerCase()) ||
       n.slug.toLowerCase().includes(search.toLowerCase()) ||
-      n.excerpt.toLowerCase().includes(search.toLowerCase());
+      n.summary.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory = categoryFilter === 'ALL' || n.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'ALL' || n.kicker === categoryFilter;
 
     return matchesSearch && matchesCategory;
   });

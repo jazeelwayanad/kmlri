@@ -1,28 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import { Clock, Search, Mail, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { useState, useEffect } from 'react';
+import { Search, CheckCircle2 } from 'lucide-react';
+import { PageHeader } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+interface Loan {
+  id: string;
+  dueDate: string;
+  user: { fullName: string; membershipNumber: string; email: string };
+  copy: { barcode: string; bibRecord: { titleLatin: string } };
+}
+
+function daysOverdue(dueDate: string) {
+  return Math.ceil((Date.now() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24));
+}
 
 export default function CirculationOverduesPage() {
-  const [overdues, setOverdues] = useState([
-    { id: 'OVD-01', barcode: 'MS0142-01', title: 'Fatḥ al-Muʿīn, annotated classical copy', borrower: 'Dr. Naseer', membershipNumber: 'MEM-2231', email: 'naseer@kmlri.in', dueDate: '24 Aug 2026', daysOverdue: 8, fineAccrued: 80 },
-    { id: 'OVD-02', barcode: 'RB0411-01', title: 'Malabar Maritime Inscriptions', borrower: 'S. Fathima', membershipNumber: 'MEM-1187', email: 'fathima@kmlri.in', dueDate: '28 Aug 2026', daysOverdue: 4, fineAccrued: 40 },
-    { id: 'OVD-03', barcode: 'AM0311-01', title: 'Muḥyiddīn Mālā (Rare Print)', borrower: 'A. Rahman', membershipNumber: 'MEM-2098', email: 'rahman@kmlri.in', dueDate: '15 Aug 2026', daysOverdue: 17, fineAccrued: 170 },
-  ]);
-
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [notification, setNotification] = useState<string | null>(null);
 
-  const handleSendReminder = (patron: string) => {
-    setNotification(`Automated overdue reminder notice dispatched to ${patron}.`);
-    setTimeout(() => setNotification(null), 3500);
-  };
+  useEffect(() => {
+    api
+      .getActiveLoans()
+      .then((data) => setLoans(data || []))
+      .catch(() => setLoans([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filtered = overdues.filter((o) =>
-    o.title.toLowerCase().includes(search.toLowerCase()) ||
-    o.borrower.toLowerCase().includes(search.toLowerCase()) ||
-    o.barcode.toLowerCase().includes(search.toLowerCase())
+  const overdues = loans
+    .filter((l) => daysOverdue(l.dueDate) > 0)
+    .map((l) => ({ ...l, days: daysOverdue(l.dueDate), fine: daysOverdue(l.dueDate) * 5 }));
+
+  const filtered = overdues.filter(
+    (o) =>
+      o.copy.bibRecord.titleLatin.toLowerCase().includes(search.toLowerCase()) ||
+      o.user.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      o.copy.barcode.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -30,15 +45,8 @@ export default function CirculationOverduesPage() {
       <PageHeader
         eyebrow="Circulation · Overdue Tracking"
         title="Overdue Items"
-        description="Monitor unreturned library loans, overdue fine accumulations, and dispatch automated patron reminders."
+        description="Monitor unreturned library loans and their accrued overdue fines (₹5/day, assessed automatically on return)."
       />
-
-      {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -47,16 +55,12 @@ export default function CirculationOverduesPage() {
           <span className="text-2xl font-bold text-[#A52307] mt-1 block">{overdues.length} Volumes</span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Accrued Fines</span>
-          <span className="text-2xl font-mono font-bold text-gray-900 mt-1 block">
-            ₹{overdues.reduce((acc, cur) => acc + cur.fineAccrued, 0)}
-          </span>
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Projected Fines</span>
+          <span className="text-2xl font-mono font-bold text-gray-900 mt-1 block">₹{overdues.reduce((acc, cur) => acc + cur.fine, 0)}</span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Severe Overdues (&gt;14d)</span>
-          <span className="text-2xl font-bold text-[#A52307] mt-1 block">
-            {overdues.filter((o) => o.daysOverdue > 14).length} Volumes
-          </span>
+          <span className="text-2xl font-bold text-[#A52307] mt-1 block">{overdues.filter((o) => o.days > 14).length} Volumes</span>
         </div>
       </div>
 
@@ -76,44 +80,41 @@ export default function CirculationOverduesPage() {
 
       {/* Overdues Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">Item Barcode</th>
-              <th className="py-3 px-4">Overdue Title</th>
-              <th className="py-3 px-4">Borrower &amp; Contact</th>
-              <th className="py-3 px-4">Due Date</th>
-              <th className="py-3 px-4">Days Overdue</th>
-              <th className="py-3 px-4">Accrued Fine</th>
-              <th className="py-3 px-4 text-right">Reminder</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((o) => (
-              <tr key={o.id} className="hover:bg-[#FAF8F5]">
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{o.barcode}</td>
-                <td className="py-3.5 px-4 font-semibold text-gray-900">{o.title}</td>
-                <td className="py-3.5 px-4">
-                  <span className="font-bold text-gray-900 block">{o.borrower}</span>
-                  <span className="font-mono text-[11px] text-gray-500">{o.membershipNumber} · {o.email}</span>
-                </td>
-                <td className="py-3.5 px-4 font-mono text-red-700 font-bold">{o.dueDate}</td>
-                <td className="py-3.5 px-4 font-bold text-[#A52307]">{o.daysOverdue} Days Late</td>
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">₹{o.fineAccrued}</td>
-                <td className="py-3.5 px-4 text-right">
-                  <button
-                    type="button"
-                    onClick={() => handleSendReminder(o.borrower)}
-                    className="px-2.5 py-1 bg-white border border-gray-300 rounded text-gray-700 hover:bg-[#A52307] hover:text-white hover:border-[#A52307] transition-colors text-[11px] font-semibold inline-flex items-center gap-1"
-                  >
-                    <Mail className="w-3 h-3" />
-                    <span>Send Notice</span>
-                  </button>
-                </td>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500 text-xs">Loading overdue loans…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-xs flex items-center justify-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> No overdue items right now.
+          </div>
+        ) : (
+          <table className="w-full border-collapse text-left text-xs font-sans">
+            <thead>
+              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                <th className="py-3 px-4">Item Barcode</th>
+                <th className="py-3 px-4">Overdue Title</th>
+                <th className="py-3 px-4">Borrower &amp; Contact</th>
+                <th className="py-3 px-4">Due Date</th>
+                <th className="py-3 px-4">Days Overdue</th>
+                <th className="py-3 px-4">Projected Fine</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#EEECE7]">
+              {filtered.map((o) => (
+                <tr key={o.id} className="hover:bg-[#FAF8F5]">
+                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{o.copy.barcode}</td>
+                  <td className="py-3.5 px-4 font-semibold text-gray-900">{o.copy.bibRecord.titleLatin}</td>
+                  <td className="py-3.5 px-4">
+                    <span className="font-bold text-gray-900 block">{o.user.fullName}</span>
+                    <span className="font-mono text-[11px] text-gray-500">{o.user.membershipNumber} · {o.user.email}</span>
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-red-700 font-bold">{new Date(o.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td className="py-3.5 px-4 font-bold text-[#A52307]">{o.days} Days Late</td>
+                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">₹{o.fine}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
