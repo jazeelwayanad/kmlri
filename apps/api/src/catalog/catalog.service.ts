@@ -208,7 +208,7 @@ export class CatalogService {
         include: {
           loans: {
             where: { status: 'ACTIVE' as const },
-            select: { dueDate: true },
+            select: { dueDate: true, user: { select: { fullName: true, membershipNumber: true } } },
           },
         },
       },
@@ -318,7 +318,13 @@ export class CatalogService {
     return this.findOne(record.id);
   }
 
-  async addCopy(bibRecordId: string, location?: string, barcodeCustom?: string) {
+  async addCopy(
+    bibRecordId: string,
+    location?: string,
+    barcodeCustom?: string,
+    rfidTag?: string,
+    status?: string,
+  ) {
     const record = await this.prisma.bibliographicRecord.findUnique({
       where: { id: bibRecordId },
       include: { copies: true },
@@ -335,11 +341,46 @@ export class CatalogService {
       data: {
         bibRecordId,
         barcode,
+        rfidTag: rfidTag || undefined,
         copyNumber: nextCopyNumber,
         location: location || 'Main Reading Room',
-        status: 'AVAILABLE',
+        status: status || 'AVAILABLE',
       },
     });
+  }
+
+  async updateCopy(
+    copyId: string,
+    data: { barcode?: string; rfidTag?: string; location?: string; status?: string },
+  ) {
+    const existing = await this.prisma.itemCopy.findUnique({ where: { id: copyId } });
+    if (!existing) {
+      throw new NotFoundException('Item copy not found.');
+    }
+    return this.prisma.itemCopy.update({
+      where: { id: copyId },
+      data: {
+        ...(data.barcode !== undefined && { barcode: data.barcode }),
+        ...(data.rfidTag !== undefined && { rfidTag: data.rfidTag || null }),
+        ...(data.location !== undefined && { location: data.location }),
+        ...(data.status !== undefined && { status: data.status }),
+      },
+    });
+  }
+
+  async removeCopy(copyId: string) {
+    const existing = await this.prisma.itemCopy.findUnique({
+      where: { id: copyId },
+      include: { loans: { where: { status: 'ACTIVE' } } },
+    });
+    if (!existing) {
+      throw new NotFoundException('Item copy not found.');
+    }
+    if (existing.loans.length > 0) {
+      throw new ConflictException('Cannot delete a copy that is currently on loan.');
+    }
+    await this.prisma.itemCopy.delete({ where: { id: copyId } });
+    return { success: true };
   }
 
   private generateCitations(record: any) {

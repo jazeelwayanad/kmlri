@@ -13,16 +13,18 @@ import {
   AlertCircle, 
   Eye, 
   ArrowRight, 
-  X,
-  Boxes,
-  Barcode,
-  Save,
-  Globe,
-  Settings,
-  BookOpen,
-  Layers,
-  FileText,
-  Bookmark
+  X, 
+  Boxes, 
+  Barcode, 
+  Save, 
+  Globe, 
+  Settings, 
+  BookOpen, 
+  Layers, 
+  FileText, 
+  Bookmark,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getRecordSlug } from '@/lib/slugs';
@@ -34,12 +36,12 @@ export default function CatalogueRecordsPage() {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 2-Step Record Creation Modal State
+  // 2-Step Record Creation / Edit Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [createdRecordId, setCreatedRecordId] = useState<string>('');
   
-  // Step 1: Bibliographic Fields (Grouped Cleanly)
   // Section 1: Title & Authorship
   const [title, setTitle] = useState(''); // 245$a [Required]
   const [subtitle, setSubtitle] = useState(''); // 245$b
@@ -56,21 +58,17 @@ export default function CatalogueRecordsPage() {
   const [ddcClass, setDdcClass] = useState('297.14'); // 082$a
   const [ddcItem, setDdcItem] = useState('M14'); // 082$b
   const [isbn, setIsbn] = useState(''); // 020$a
-  const [controlField, setControlField] = useState('260901s2026 xx ||||| 000 0 mul d'); // 008
 
   // Section 3: Publication & Physical Extent
-  const [edition, setEdition] = useState(''); // 250$a
   const [pubPlace, setPubPlace] = useState('Ponnani'); // 260$a
   const [publisher, setPublisher] = useState('KMLRI Press'); // 260$b
   const [pubYear, setPubYear] = useState('2026'); // 260$c
   const [extent, setExtent] = useState('184 pages'); // 300$a
-  const [series, setSeries] = useState(''); // 490$a
 
   // Section 4: Notes, Subjects & Digital URI
   const [subjects, setSubjects] = useState('Islamic Jurisprudence, Malabar Manuscripts'); // 650
   const [notes, setNotes] = useState(''); // 500$a
   const [uri, setUri] = useState(''); // 856$u
-  const [uriText, setUriText] = useState('Digital Facsimile'); // 856$y
 
   // Step 2: Add Item(s) Fields (Holding Copies)
   const [barcode, setBarcode] = useState('');
@@ -99,90 +97,143 @@ export default function CatalogueRecordsPage() {
 
   // Open Add Record Modal
   const handleOpenAddModal = () => {
+    setEditingRecordId(null);
     setStep(1);
     setTitle('');
     setSubtitle('');
     setAuthor('');
     setStatementOfResp('');
     setUniformTitle('');
+    setItemType('Book');
+    setLanguage('Malayalam');
+    setDdcClass('297.14');
+    setDdcItem('M14');
     setIsbn('');
+    setPubPlace('Ponnani');
+    setPublisher('KMLRI Press');
+    setPubYear('2026');
+    setExtent('184 pages');
+    setSubjects('Islamic Jurisprudence, Malabar Manuscripts');
     setNotes('');
     setUri('');
     setAddedItems([]);
     setShowAddModal(true);
   };
 
-  // Step 1: Submit Record -> Proceed to Step 2
-  const handleSaveRecord = (e: React.FormEvent) => {
+  // Open Edit Record Modal
+  const handleOpenEditModal = (rec: BibliographicRecord) => {
+    setEditingRecordId(rec.id);
+    setStep(1);
+    setTitle(rec.titleLatin);
+    setSubtitle('');
+    setAuthor(Array.isArray(rec.authors) ? rec.authors.join(', ') : (rec.authors || ''));
+    setStatementOfResp('');
+    setUniformTitle(rec.titleArabic || '');
+    setItemType(rec.format === 'MANUSCRIPT' ? 'Manuscripts' : rec.format === 'RARE_BOOK' ? 'Reference' : 'Book');
+    setLanguage(rec.language || 'Malayalam');
+    const shelfParts = (rec.shelfmark || '297.14 M14').split(' ');
+    setDdcClass(shelfParts[0] || '297.14');
+    setDdcItem(shelfParts[1] || 'M14');
+    const rAny = rec as any;
+    setIsbn(rAny.isbn || '');
+    setPublisher(rAny.publisher || 'KMLRI Press');
+    setPubYear(rAny.publicationYear || '2026');
+    setExtent(rAny.extent || '184 pages');
+    setSubjects((rec.subjects || []).join(', '));
+    setNotes(rAny.summary || '');
+    setUri(rAny.coverImageUrl || '');
+    setAddedItems([]);
+    setShowAddModal(true);
+  };
+
+  const [saving, setSaving] = useState(false);
+
+  // Step 1: Submit Record -> Proceed to Step 2 (or Save on Edit)
+  const handleSaveRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      alert('Title is required.');
+    if (!title.trim() || !author.trim()) {
+      setNotification({ type: 'error', text: 'Title and author are required.' });
       return;
     }
 
-    const generatedId = `rec-${Date.now().toString().slice(-4)}`;
-    setCreatedRecordId(generatedId);
-
-    const newRecord: BibliographicRecord = {
-      id: generatedId,
+    const format = itemType === 'Manuscripts' ? 'MANUSCRIPT' : itemType === 'Reference' ? 'RARE_BOOK' : itemType === 'Lithographs' ? 'ARABI_MALAYALAM_PRINT' : 'MONOGRAPH';
+    const payload = {
       titleLatin: title + (subtitle ? `: ${subtitle}` : ''),
-      titleArabic: uniformTitle || '',
-      authors: author ? [author] : ['Unknown Author'],
-      shelfmark: `${ddcClass} ${ddcItem}`,
-      format: itemType === 'Manuscripts' ? 'MANUSCRIPT' : itemType === 'Reference' ? 'RARE_BOOK' : 'MONOGRAPH',
-      language: language,
-      accessLevel: 'DIGITISED_FULL',
-      totalCopiesCount: 0,
-      availableCopiesCount: 0,
+      titleArabic: uniformTitle || undefined,
+      authors: author.split(',').map((a) => a.trim()).filter(Boolean),
+      shelfmark: `${ddcClass} ${ddcItem}`.trim(),
+      isbn: isbn || undefined,
+      format,
+      language,
+      publicationYear: pubYear || undefined,
+      publisher: publisher || undefined,
+      extent: extent || undefined,
       subjects: subjects.split(',').map((s) => s.trim()).filter(Boolean),
+      summary: notes || undefined,
+      coverImageUrl: uri || undefined,
+      initialCopiesCount: 0,
     };
 
-    setRecords([newRecord, ...records]);
-    setCallNumber(`${ddcClass} ${ddcItem}`);
-    setBarcode(`KMLRI-${Date.now().toString().slice(-6)}`);
-    setStep(2); // Proceed immediately to Step 2: Add Item
+    setSaving(true);
+    try {
+      if (editingRecordId) {
+        await api.updateCatalogItem(editingRecordId, payload);
+        setShowAddModal(false);
+        setNotification({ type: 'success', text: `Catalogue record "${title}" updated successfully.` });
+        await loadRecords();
+      } else {
+        const created = await api.createCatalogItem(payload);
+        setCreatedRecordId(created.id);
+        setCallNumber(`${ddcClass} ${ddcItem}`);
+        setBarcode(`KMLRI-${Date.now().toString().slice(-6)}`);
+        setStep(2); // Proceed immediately to Step 2: Add Item
+        await loadRecords();
+      }
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not save the record.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   // Step 2: Add Holding Item Copy
-  const handleAddItemCopy = (e: React.FormEvent) => {
+  const handleAddItemCopy = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barcode.trim()) return;
+    if (!barcode.trim() || !createdRecordId) return;
 
-    const newItem = {
-      id: `copy-${Date.now().toString().slice(-4)}`,
-      barcode: barcode.trim(),
-      rfidTag: rfidTag.trim() || `RFID-${barcode.trim()}`,
-      location,
-      callNumber: callNumber || 'GEN-01',
-      status: itemStatus,
-    };
-
-    setAddedItems([...addedItems, newItem]);
-
-    // Update parent record copy counters
-    setRecords((prev) =>
-      prev.map((r) =>
-        r.id === createdRecordId
-          ? {
-              ...r,
-              totalCopiesCount: (r.totalCopiesCount || 0) + 1,
-              availableCopiesCount: (r.availableCopiesCount || 0) + (itemStatus === 'AVAILABLE' ? 1 : 0),
-            }
-          : r
-      )
-    );
-
-    setBarcode(`KMLRI-${Date.now().toString().slice(-6)}`);
-    setRfidTag('');
+    try {
+      const copy = await api.addCatalogCopy(createdRecordId, { barcode: barcode.trim(), location });
+      setAddedItems([...addedItems, copy]);
+      setBarcode(`KMLRI-${Date.now().toString().slice(-6)}`);
+      setRfidTag('');
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not attach item copy.' });
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
-  const handleFinishCreation = () => {
+  const handleFinishCreation = async () => {
     setShowAddModal(false);
     setNotification({
       type: 'success',
       text: `Catalogue record "${title}" created successfully with ${addedItems.length} item copy(s).`,
     });
     setTimeout(() => setNotification(null), 5000);
+    await loadRecords();
+  };
+
+  const handleDeleteRecord = async (id: string, titleName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete catalogue record "${titleName}" and all associated item copies?`)) return;
+    try {
+      await api.deleteCatalogItem(id);
+      setNotification({ type: 'success', text: `Catalogue record "${titleName}" deleted successfully.` });
+      await loadRecords();
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not delete this record.' });
+    } finally {
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   const filteredRecords = records.filter((r) => {
@@ -312,14 +363,30 @@ export default function CatalogueRecordsPage() {
                       {' '}/ {r.totalCopiesCount || 0} Copies
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-right space-x-2">
+                  <td className="py-3.5 px-4 text-right space-x-1.5">
                     <Link
                       href={`/admin/catalog/${getRecordSlug(r)}`}
-                      className="px-3 py-1.5 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1"
+                      className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1"
                     >
                       <Eye className="w-3 h-3" />
-                      <span>View Record &amp; Items</span>
+                      <span>View &amp; Items</span>
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(r)}
+                      className="px-2 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors inline-flex items-center gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRecord(r.id, r.titleLatin)}
+                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded inline-block align-middle"
+                      title="Delete Record"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -328,7 +395,7 @@ export default function CatalogueRecordsPage() {
         </table>
       </div>
 
-      {/* 2-Step Modern Add Record / Add Item Modal */}
+      {/* 2-Step Modern Add / Edit Record Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-xl max-w-4xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs max-h-[92vh] flex flex-col">
@@ -338,12 +405,12 @@ export default function CatalogueRecordsPage() {
               <div>
                 <span className="text-[10px] text-[#A52307] font-bold uppercase tracking-wider">Catalogue Management</span>
                 <h3 className="text-lg font-bold text-gray-900">
-                  {step === 1 ? 'Add New Bibliographic Record' : 'Step 2: Add Physical Item Copies'}
+                  {editingRecordId ? 'Edit Bibliographic Record' : step === 1 ? 'Add New Bibliographic Record' : 'Step 2: Add Physical Item Copies'}
                 </h3>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs font-mono font-bold bg-[#FAF8F5] border border-gray-200 text-gray-700 px-3 py-1 rounded">
-                  {step === 1 ? 'Step 1 of 2: Metadata' : 'Step 2 of 2: Physical Holdings'}
+                  {editingRecordId ? 'Edit Mode' : step === 1 ? 'Step 1 of 2: Metadata' : 'Step 2 of 2: Physical Holdings'}
                 </span>
                 <button
                   type="button"
@@ -355,7 +422,7 @@ export default function CatalogueRecordsPage() {
               </div>
             </div>
 
-            {/* STEP 1: Clean Form Layout */}
+            {/* STEP 1: Metadata Form */}
             {step === 1 && (
               <form onSubmit={handleSaveRecord} className="flex-1 overflow-y-auto pr-2 space-y-6">
                 
@@ -383,33 +450,20 @@ export default function CatalogueRecordsPage() {
 
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Subtitle / Remainder <span className="text-gray-400 font-mono text-[10px]">(245$b - Optional)</span>
+                        Subtitle / Remainder <span className="text-gray-500 font-mono text-[10px]">(245$b)</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Historical chronicle of Malabar"
+                        placeholder="e.g. 16th-century naval resistance chronicle"
                         value={subtitle}
                         onChange={(e) => setSubtitle(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white outline-none focus:border-[#A52307]"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
 
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Uniform / Original Title <span className="text-gray-400 font-mono text-[10px]">(240$a - Optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. تحفة المجاهدين"
-                        value={uniformTitle}
-                        onChange={(e) => setUniformTitle(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs font-amiri text-sm bg-white outline-none focus:border-[#A52307]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Primary Author / Scribe* <span className="text-[#A52307] font-bold font-mono text-[10px]">(100$a - Required)</span>
+                        Primary Author / Creator* <span className="text-[#A52307] font-bold font-mono text-[10px]">(100$a - Required)</span>
                       </label>
                       <input
                         type="text"
@@ -417,283 +471,190 @@ export default function CatalogueRecordsPage() {
                         placeholder="e.g. Shaykh Zayn al-Dīn al-Makhdūm II"
                         value={author}
                         onChange={(e) => setAuthor(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs font-semibold bg-white outline-none focus:border-[#A52307]"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-semibold text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
 
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Statement of Responsibility <span className="text-gray-400 font-mono text-[10px]">(245$c - Optional)</span>
+                        Uniform / Original Title (Arabic Script) <span className="text-gray-500 font-mono text-[10px]">(240$a)</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. translated with annotations by..."
+                        dir="rtl"
+                        placeholder="تحفة المجاهدين في بعض أخبار البرتغاليين"
+                        value={uniformTitle}
+                        onChange={(e) => setUniformTitle(e.target.value)}
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-sm font-amiri text-gray-900 bg-white outline-none focus:border-[#A52307]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">
+                        Statement of Responsibility <span className="text-gray-500 font-mono text-[10px]">(245$c)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ed. and annot. by Dr. Fatima Zahra"
                         value={statementOfResp}
                         onChange={(e) => setStatementOfResp(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white outline-none focus:border-[#A52307]"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* 2. Classification & Identifiers Section */}
+                {/* 2. Classification & Language */}
                 <div className="bg-[#FAF8F5] border border-[#E2E0DB] p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 border-b border-[#E2E0DB] pb-2">
                     <Layers className="w-4 h-4 text-[#A52307]" />
-                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Classification, Language &amp; Item Type</h4>
+                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Classification &amp; Language</h4>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Koha Default Item Type* <span className="text-[#A52307] font-bold font-mono text-[10px]">(942$c)</span>
+                        Koha / Catalog Item Type* <span className="text-[#A52307] font-bold font-mono text-[10px]">(942$c)</span>
                       </label>
                       <select
                         value={itemType}
                         onChange={(e) => setItemType(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white font-bold text-gray-900"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs bg-white text-gray-900 outline-none"
                       >
-                        <option value="Book">Book (General Circulation)</option>
-                        <option value="Reference">Reference (Reading Room)</option>
-                        <option value="Manuscripts">Manuscripts (Archival Codex)</option>
-                        <option value="Rare Book">Rare Antiquarian Book</option>
-                        <option value="Serials/Periodicals">Serials / Periodicals</option>
+                        <option value="Manuscripts">Manuscripts (Palm leaf / Paper)</option>
+                        <option value="Lithographs">Arabi-Malayalam Lithographs</option>
+                        <option value="Reference">Rare Books &amp; Archival Special</option>
+                        <option value="Book">Monographs &amp; Studies</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Language of Text* <span className="text-[#A52307] font-bold font-mono text-[10px]">(041$a)</span>
+                        Language* <span className="text-[#A52307] font-bold font-mono text-[10px]">(041$a)</span>
                       </label>
                       <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs bg-white text-gray-900 outline-none"
                       >
-                        <option value="Malayalam">Malayalam</option>
-                        <option value="Arabic">Arabic</option>
                         <option value="Arabi-Malayalam">Arabi-Malayalam</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Malayalam">Malayalam</option>
                         <option value="English">English</option>
                         <option value="Persian">Persian</option>
-                        <option value="Sanskrit">Sanskrit</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">
-                        ISBN / Standard No. <span className="text-gray-400 font-mono text-[10px]">(020$a)</span>
+                        DDC Class Number <span className="text-gray-500 font-mono text-[10px]">(082$a)</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. 978-81-948123-4-5"
-                        value={isbn}
-                        onChange={(e) => setIsbn(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">
-                        DDC Class Number <span className="text-gray-400 font-mono text-[10px]">(082$a)</span>
-                      </label>
-                      <input
-                        type="text"
+                        placeholder="297.14"
                         value={ddcClass}
                         onChange={(e) => setDdcClass(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">
-                        DDC Item Number <span className="text-gray-400 font-mono text-[10px]">(082$b)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={ddcItem}
-                        onChange={(e) => setDdcItem(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">
-                        Control Field <span className="text-gray-400 font-mono text-[10px]">(008)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={controlField}
-                        onChange={(e) => setControlField(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-[11px] bg-white text-gray-600"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-mono text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* 3. Publication & Physical Description Section */}
+                {/* 3. Publication, Physical Extent & Notes */}
                 <div className="bg-[#FAF8F5] border border-[#E2E0DB] p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 border-b border-[#E2E0DB] pb-2">
-                    <Bookmark className="w-4 h-4 text-[#A52307]" />
-                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Publication &amp; Physical Extent</h4>
+                    <FileText className="w-4 h-4 text-[#A52307]" />
+                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Publication &amp; Extent</h4>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Place of Publication (260$a)</label>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">Place of Publication</label>
                       <input
                         type="text"
                         value={pubPlace}
                         onChange={(e) => setPubPlace(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
                       />
                     </div>
-
                     <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Publisher Name (260$b)</label>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">Publisher</label>
                       <input
                         type="text"
                         value={publisher}
                         onChange={(e) => setPublisher(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
                       />
                     </div>
-
                     <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Year of Publication (260$c)</label>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">Year / Era</label>
                       <input
                         type="text"
                         value={pubYear}
                         onChange={(e) => setPubYear(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-mono text-gray-900 bg-white outline-none"
                       />
                     </div>
 
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Physical Description / Extent (300$a)</label>
+                    <div className="sm:col-span-3">
+                      <label className="block font-bold text-gray-700 uppercase mb-1">Subjects (Comma separated)</label>
                       <input
                         type="text"
-                        value={extent}
-                        onChange={(e) => setExtent(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Edition Statement (250$a)</label>
-                      <input
-                        type="text"
-                        value={edition}
-                        onChange={(e) => setEdition(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Series Statement (490$a)</label>
-                      <input
-                        type="text"
-                        value={series}
-                        onChange={(e) => setSeries(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Subjects, Notes & Digital Resource */}
-                <div className="bg-[#FAF8F5] border border-[#E2E0DB] p-4 rounded-lg space-y-3">
-                  <div className="flex items-center gap-2 border-b border-[#E2E0DB] pb-2">
-                    <Globe className="w-4 h-4 text-[#A52307]" />
-                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Subjects, Notes &amp; Digital Access</h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div className="col-span-full">
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Topical Subject Headings (650)</label>
-                      <input
-                        type="text"
-                        placeholder="Comma-separated e.g. Islamic Jurisprudence, Malabar Maritime History"
                         value={subjects}
                         onChange={(e) => setSubjects(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Electronic Access URL / URI (856$u)</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={uri}
-                        onChange={(e) => setUri(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Electronic Link Label (856$y)</label>
-                      <input
-                        type="text"
-                        value={uriText}
-                        onChange={(e) => setUriText(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
-                      />
-                    </div>
-
-                    <div className="col-span-full">
-                      <label className="block font-bold text-gray-700 uppercase mb-1">General Cataloging Note (500$a)</label>
-                      <textarea
-                        rows={2}
-                        placeholder="Physical condition, watermark details, or provenance notes..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded text-xs bg-white"
+                        placeholder="Islamic Jurisprudence, Malabar Manuscripts, Codicology"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Form Buttons */}
-                <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded font-semibold text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-[#A52307] text-white rounded font-bold hover:bg-red-700 transition-colors flex items-center gap-2 shadow-sm"
-                  >
-                    <span>Save Record &amp; Proceed to Add Item</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                {/* Modal Footer */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <span className="text-[11px] text-gray-500">
+                    {editingRecordId ? 'Click Update to save changes' : 'Step 1 of 2: Next step adds physical item copies'}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      {saving ? 'Saving…' : editingRecordId ? 'Update Record' : 'Save & Proceed to Add Items →'}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
 
-            {/* STEP 2: Add Physical Item Copies */}
+            {/* STEP 2: Add Holding Copies */}
             {step === 2 && (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs">
-                  <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Bibliographic record created: &quot;{title}&quot;</span>
+              <div className="flex-1 overflow-y-auto space-y-6">
+                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <strong className="text-emerald-900 text-xs block">Bibliographic Master Record Saved!</strong>
+                    <span className="text-emerald-700 text-[11px]">
+                      Now attach physical barcode copies, RFID identifiers, and stack room locations.
+                    </span>
                   </div>
-                  <p className="text-emerald-700 text-[11px] mt-0.5">
-                    Now attach one or more physical holding copies with barcode and shelf location.
-                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Add Copy Form */}
-                  <form onSubmit={handleAddItemCopy} className="bg-[#FAF8F5] border border-[#E2E0DB] p-5 rounded-lg space-y-3">
-                    <h4 className="font-bold text-gray-900 text-sm border-b border-[#E2E0DB] pb-2 flex items-center gap-2">
-                      <Barcode className="w-4 h-4 text-[#A52307]" />
-                      <span>Add Physical Copy / Item</span>
-                    </h4>
+                {/* Add Item Form */}
+                <form onSubmit={handleAddItemCopy} className="bg-[#FAF8F5] border border-[#E2E0DB] p-4 rounded-lg space-y-3">
+                  <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Barcode className="w-4 h-4 text-[#A52307]" />
+                    <span>Attach New Item Copy (Holding)</span>
+                  </h4>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block font-bold text-gray-700 uppercase mb-1">Item Barcode*</label>
                       <input
@@ -701,106 +662,79 @@ export default function CatalogueRecordsPage() {
                         required
                         value={barcode}
                         onChange={(e) => setBarcode(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
+                        className="w-full border border-gray-300 h-9 px-3 rounded text-xs font-mono font-bold text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
-
                     <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">RFID Transponder EPC</label>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">RFID Hex Tag</label>
                       <input
                         type="text"
                         placeholder="Auto-generated if empty"
                         value={rfidTag}
                         onChange={(e) => setRfidTag(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
+                        className="w-full border border-gray-300 h-9 px-3 rounded text-xs font-mono text-gray-900 bg-white outline-none"
                       />
                     </div>
-
                     <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Shelf Location</label>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">Permanent Location</label>
                       <input
                         type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded text-xs bg-white"
+                        className="w-full border border-gray-300 h-9 px-3 rounded text-xs text-gray-900 bg-white outline-none"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Call Number</label>
-                      <input
-                        type="text"
-                        value={callNumber}
-                        onChange={(e) => setCallNumber(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2.5 rounded font-mono text-xs bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 uppercase mb-1">Availability Status</label>
-                      <select
-                        value={itemStatus}
-                        onChange={(e) => setItemStatus(e.target.value)}
-                        className="w-full border border-gray-300 h-9 px-2 rounded text-xs bg-white"
-                      >
-                        <option value="AVAILABLE">Available (In Stack)</option>
-                        <option value="CHECKED_OUT">Checked Out</option>
-                        <option value="RESERVED">Reserved</option>
-                        <option value="CONSERVATION">Under Conservation</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-2.5 bg-black text-white rounded font-bold hover:bg-[#A52307] transition-colors flex items-center justify-center gap-1.5 mt-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Attach This Item Copy</span>
-                    </button>
-                  </form>
-
-                  {/* Added Items List */}
-                  <div className="bg-white border border-[#E2E0DB] p-5 rounded-lg space-y-3 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-sm border-b border-[#E2E0DB] pb-2 flex items-center justify-between">
-                        <span>Copies Attached ({addedItems.length})</span>
-                        <span className="text-[10px] font-mono bg-gray-100 px-2 py-0.5 rounded">ID: {createdRecordId}</span>
-                      </h4>
-
-                      {addedItems.length === 0 ? (
-                        <div className="py-8 text-center text-gray-400 font-mono text-xs">
-                          No item copies added yet. Fill the form to attach copies.
-                        </div>
-                      ) : (
-                        <div className="space-y-2 pt-2 max-h-60 overflow-y-auto">
-                          {addedItems.map((item) => (
-                            <div key={item.id} className="p-2.5 bg-[#FAF8F5] border border-gray-200 rounded flex justify-between items-center text-xs">
-                              <div>
-                                <span className="font-mono font-bold text-gray-900 block">{item.barcode}</span>
-                                <span className="text-gray-500 text-[11px]">{item.location} · {item.callNumber}</span>
-                              </div>
-                              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                                {item.status}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-4 border-t border-[#E2E0DB] flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={handleFinishCreation}
-                        className="px-6 py-2 bg-[#A52307] text-white rounded font-bold hover:bg-red-700 transition-colors shadow-sm"
-                      >
-                        Finish &amp; Complete Record
-                      </button>
                     </div>
                   </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Attach This Item Copy</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Added Items List */}
+                <div className="space-y-2">
+                  <h4 className="font-bold text-gray-800 text-xs uppercase">Attached Copies ({addedItems.length})</h4>
+                  {addedItems.length === 0 ? (
+                    <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded text-center text-gray-500">
+                      No copies attached yet. Enter a barcode above and click Attach.
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded divide-y divide-gray-200">
+                      {addedItems.map((item, idx) => (
+                        <div key={idx} className="p-3 bg-white flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-mono font-bold text-gray-900">{item.barcode}</span>
+                            <span className="text-gray-500 font-mono text-[11px] ml-2">({item.rfidTag})</span>
+                            <span className="text-gray-700 text-[11px] ml-3 font-semibold">📍 {item.location}</span>
+                          </div>
+                          <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                            {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleFinishCreation}
+                    className="px-6 py-2.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-md flex items-center gap-1.5"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Complete &amp; Return to Catalog</span>
+                  </button>
                 </div>
               </div>
             )}
+
           </div>
         </div>
       )}

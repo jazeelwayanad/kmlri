@@ -562,6 +562,26 @@ export const api = {
     });
   },
 
+  async addCatalogCopy(id: string, data: { location?: string; barcode?: string; rfidTag?: string; status?: string }) {
+    return this.fetchWithAuth(`/catalog/${id}/copies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateCatalogCopy(id: string, copyId: string, data: { barcode?: string; rfidTag?: string; location?: string; status?: string }) {
+    return this.fetchWithAuth(`/catalog/${id}/copies/${copyId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteCatalogCopy(id: string, copyId: string) {
+    return this.fetchWithAuth(`/catalog/${id}/copies/${copyId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // Circulation
   async getActiveLoans() {
     return this.fetchWithAuth('/circulation/loans');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { 
   Calendar, 
   Plus, 
@@ -16,151 +17,245 @@ import {
   Star, 
   X, 
   Layers,
-  Settings2
+  Settings2,
+  Edit3,
+  Globe,
+  ArrowRight
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 
+interface EventItem {
+  id: string;
+  title: string;
+  slug: string;
+  kicker?: string;
+  excerpt: string;
+  description?: string;
+  date: string;
+  time: string;
+  type: string;
+  location: string;
+  capacity: number;
+  featured: boolean;
+  status: 'PUBLISHED' | 'DRAFT';
+  enableRegistration: boolean;
+  registeredCount: number;
+  tags: string[];
+}
+
 export default function WebsiteEventsPage() {
-  const [events, setEvents] = useState([
+  const [events, setEvents] = useState<EventItem[]>([
     {
       id: 'EVT-01',
       title: 'International Colloquium on Indian Ocean Manuscript Cultures',
       slug: 'international-colloquium-indian-ocean-manuscripts',
+      kicker: 'Academic Symposium',
       excerpt: 'A three-day symposium convening manuscript conservators and maritime epigraphers.',
-      description: 'The colloquium explores codicological networks linking Malabar with the Red Sea and Swahili Coast.',
+      description: 'The colloquium explores codicological networks linking Malabar with the Red Sea, Hadramaut, and Swahili Coast from the 16th to early 20th centuries.',
       date: '14–16 October 2026',
       time: '09:30 AM – 05:30 PM IST',
       type: 'International Symposium',
       location: 'KMLRI Main Auditorium & Archival Gallery',
       capacity: 150,
+      registeredCount: 142,
       featured: true,
       status: 'PUBLISHED',
       enableRegistration: true,
-      customFields: [
-        { id: 'f1', label: 'Institutional Affiliation', type: 'text', required: true },
-        { id: 'f2', label: 'Paper Abstract (PDF upload)', type: 'file', required: true },
-        { id: 'f3', label: 'Meal Preference', type: 'select', options: ['Standard', 'Vegetarian'], required: false },
-      ],
-      registrations: [
-        { id: 'REG-101', name: 'Dr. Tariq al-Omani', email: 'tariq@squ.edu.om', affiliation: 'Sultan Qaboos University', attachmentName: 'Abstract_Tariq_Malabar_Oman.pdf', status: 'CONFIRMED' },
-        { id: 'REG-102', name: 'Prof. Ananya Sen', email: 'asen@jnu.ac.in', affiliation: 'Jawaharlal Nehru University', attachmentName: 'Paper_Sen_Maritime_Epigraphy.pdf', status: 'CONFIRMED' },
-      ],
+      tags: ['Symposium', 'Indian Ocean', 'Manuscripts'],
     },
     {
       id: 'EVT-02',
       title: 'Workshop: Reading 17th Century Arabi-Malayalam Paleography',
       slug: 'workshop-reading-arabi-malayalam-paleography',
+      kicker: 'Conservation Lab Workshop',
       excerpt: 'Hands-on training in deciphering regional script ligatures and archival orthography.',
-      description: 'Intensive archival seminar for post-graduate students in Kerala history.',
+      description: 'Intensive laboratory and paleography seminar limited to 35 scholars and graduate students in Kerala history.',
       date: '05 November 2026',
       time: '10:00 AM – 04:00 PM IST',
       type: 'Scholarly Workshop',
-      location: 'Seminar Hall B',
+      location: 'Seminar Hall B & Conservation Suite',
       capacity: 35,
+      registeredCount: 35,
       featured: false,
       status: 'PUBLISHED',
       enableRegistration: true,
-      customFields: [
-        { id: 'f1', label: 'University Student ID', type: 'text', required: true },
-        { id: 'f2', label: 'Recommendation Letter', type: 'file', required: false },
-      ],
-      registrations: [
-        { id: 'REG-201', name: 'Muhammed Nihal', email: 'nihal@uoc.ac.in', affiliation: 'University of Calicut', attachmentName: 'ID_Card_Scan.pdf', status: 'CONFIRMED' },
-      ],
+      tags: ['Workshop', 'Paleography', 'Arabi-Malayalam'],
+    },
+    {
+      id: 'EVT-03',
+      title: 'Exhibition: 100 Rare Inscriptions and Maritime Folios of Malabar',
+      slug: 'exhibition-100-rare-inscriptions-malabar',
+      kicker: 'Public Exhibition',
+      excerpt: 'Curated public showcase displaying unique illuminated Quranic folios and royal decrees.',
+      description: 'Public exhibition featuring rare items with interactive digital IIIF stations.',
+      date: '01–15 October 2026',
+      time: '10:00 AM – 07:00 PM Daily',
+      type: 'Public Exhibition',
+      location: 'KMLRI Gallery Hall A & B',
+      capacity: 500,
+      registeredCount: 320,
+      featured: true,
+      status: 'PUBLISHED',
+      enableRegistration: true,
+      tags: ['Exhibition', 'Public', 'Inscriptions'],
     },
   ]);
 
   const [search, setSearch] = useState('');
-  const [selectedEventForRoster, setSelectedEventForRoster] = useState<any | null>(null);
-  
-  // Modal for new event
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Create / Edit Modal State
   const [showModal, setShowModal] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('10:00 AM – 04:00 PM');
+  const [time, setTime] = useState('10:00 AM – 04:00 PM IST');
   const [type, setType] = useState('International Symposium');
-  const [location, setLocation] = useState('KMLRI Auditorium');
+  const [location, setLocation] = useState('KMLRI Main Auditorium');
   const [capacity, setCapacity] = useState(100);
   const [featured, setFeatured] = useState(false);
   const [enableRegistration, setEnableRegistration] = useState(true);
-  const [customFields, setCustomFields] = useState<any[]>([
-    { id: 'f1', label: 'Institutional Affiliation', type: 'text', required: true },
-    { id: 'f2', label: 'Statement of Interest / CV', type: 'file', required: true },
-  ]);
-  const [newFieldLabel, setNewFieldLabel] = useState('');
-  const [newFieldType, setNewFieldType] = useState('text');
-  const [newFieldRequired, setNewFieldRequired] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [tags, setTags] = useState('');
+  const [status, setStatus] = useState<'PUBLISHED' | 'DRAFT'>('PUBLISHED');
+
+  const openCreateModal = () => {
+    setEditingEventId(null);
+    setTitle('');
+    setSlug('');
+    setKicker('Symposium');
+    setExcerpt('');
+    setDescription('');
+    setDate('15–16 Nov 2026');
+    setTime('10:00 AM – 04:30 PM IST');
+    setType('International Symposium');
+    setLocation('KMLRI Auditorium');
+    setCapacity(100);
+    setFeatured(false);
+    setEnableRegistration(true);
+    setTags('Manuscripts, History');
+    setStatus('PUBLISHED');
+    setShowModal(true);
+  };
+
+  const openEditModal = (event: EventItem) => {
+    setEditingEventId(event.id);
+    setTitle(event.title);
+    setSlug(event.slug);
+    setKicker(event.kicker || 'Symposium');
+    setExcerpt(event.excerpt);
+    setDescription(event.description || '');
+    setDate(event.date);
+    setTime(event.time);
+    setType(event.type);
+    setLocation(event.location);
+    setCapacity(event.capacity);
+    setFeatured(event.featured);
+    setEnableRegistration(event.enableRegistration);
+    setTags(event.tags.join(', '));
+    setStatus(event.status);
+    setShowModal(true);
+  };
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    setSlug(
-      val
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '')
-    );
+    if (!editingEventId) {
+      setSlug(
+        val
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '')
+      );
+    }
   };
 
-  const handleAddField = () => {
-    if (!newFieldLabel) return;
-    setCustomFields([
-      ...customFields,
-      { id: `f-${Date.now()}`, label: newFieldLabel, type: newFieldType, required: newFieldRequired },
-    ]);
-    setNewFieldLabel('');
-  };
-
-  const handleRemoveField = (id: string) => {
-    setCustomFields(customFields.filter((f) => f.id !== id));
-  };
-
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleSaveEvent = (e: React.FormEvent) => {
     e.preventDefault();
-    const newE = {
-      id: `EVT-${Date.now().toString().slice(-4)}`,
-      title,
-      slug,
-      excerpt,
-      description,
-      date,
-      time,
-      type,
-      location,
-      capacity: Number(capacity),
-      featured,
-      status: 'PUBLISHED',
-      enableRegistration,
-      customFields,
-      registrations: [],
-    };
-    setEvents([newE, ...events]);
+    if (!title.trim()) return;
+
+    if (editingEventId) {
+      // Update
+      setEvents(
+        events.map((ev) => {
+          if (ev.id === editingEventId) {
+            return {
+              ...ev,
+              title,
+              slug,
+              kicker,
+              excerpt,
+              description,
+              date,
+              time,
+              type,
+              location,
+              capacity: Number(capacity),
+              featured,
+              enableRegistration,
+              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+              status,
+            };
+          }
+          return ev;
+        })
+      );
+      setNotification(`Event "${title}" updated successfully.`);
+    } else {
+      // Create
+      const newEvent: EventItem = {
+        id: `EVT-${Date.now().toString().slice(-4)}`,
+        title,
+        slug: slug || `event-${Date.now().toString().slice(-4)}`,
+        kicker,
+        excerpt,
+        description,
+        date,
+        time,
+        type,
+        location,
+        capacity: Number(capacity),
+        registeredCount: 0,
+        featured,
+        enableRegistration,
+        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        status,
+      };
+      setEvents([newEvent, ...events]);
+      setNotification(`Event "${title}" created successfully.`);
+    }
+
     setShowModal(false);
-    setTitle('');
-    setSlug('');
-    setExcerpt('');
-    setDescription('');
-    setDate('');
-    setNotification(`Event "${title}" published with registration form configuration.`);
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const filtered = events.filter((e) =>
-    e.title.toLowerCase().includes(search.toLowerCase()) ||
-    e.type.toLowerCase().includes(search.toLowerCase())
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to permanently delete event "${name}"?`)) {
+      setEvents(events.filter((e) => e.id !== id));
+      setNotification(`Event "${name}" deleted successfully.`);
+      setTimeout(() => setNotification(null), 4000);
+    }
+  };
+
+  const filtered = events.filter(
+    (e) =>
+      e.title.toLowerCase().includes(search.toLowerCase()) ||
+      e.location.toLowerCase().includes(search.toLowerCase()) ||
+      e.type.toLowerCase().includes(search.toLowerCase()) ||
+      e.slug.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
       <PageHeader
-        eyebrow="Website Management · Academic Programs"
-        title="Events &amp; Symposiums Management"
-        description="Schedule academic conferences, workshops, and lectures. Build custom registration forms with file attachments and manage attendee rosters."
+        eyebrow="Website Management · Programs"
+        title="Events &amp; Symposia"
+        description="Schedule academic conferences, paleography workshops, and public exhibitions. Click 'Manage Event' on any item to view registrations and attendees."
         actions={
-          <Button variant="primary" icon={Plus} onClick={() => setShowModal(true)}>
+          <Button variant="primary" icon={Plus} onClick={openCreateModal}>
             Schedule New Event
           </Button>
         }
@@ -173,13 +268,33 @@ export default function WebsiteEventsPage() {
         </div>
       )}
 
+      {/* Summary KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Scheduled Events</span>
+          <span className="text-2xl font-bold text-gray-900 mt-1 block">{events.length} Programs</span>
+        </div>
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Attendee Registrations</span>
+          <span className="text-2xl font-bold text-emerald-700 mt-1 block">
+            {events.reduce((acc, cur) => acc + cur.registeredCount, 0)} Attendees
+          </span>
+        </div>
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Featured Highlights</span>
+          <span className="text-2xl font-bold text-[#A52307] mt-1 block">
+            {events.filter((e) => e.featured).length} Featured
+          </span>
+        </div>
+      </div>
+
       {/* Search Bar */}
       <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex justify-between items-center">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
-            placeholder="Search events by title or type..."
+            placeholder="Search events by title, venue, type..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
@@ -192,56 +307,87 @@ export default function WebsiteEventsPage() {
         <table className="w-full border-collapse text-left text-xs font-sans">
           <thead>
             <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">Event Title &amp; Schedule</th>
-              <th className="py-3 px-4">Type &amp; Venue</th>
-              <th className="py-3 px-4">Capacity &amp; Reg.</th>
-              <th className="py-3 px-4">Custom Fields</th>
-              <th className="py-3 px-4 text-right">Roster &amp; Desk</th>
+              <th className="py-3 px-4">Event Title &amp; Slug</th>
+              <th className="py-3 px-4">Program Type</th>
+              <th className="py-3 px-4">Date &amp; Timing</th>
+              <th className="py-3 px-4">Venue</th>
+              <th className="py-3 px-4">Capacity &amp; Registrations</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((evt) => (
-              <tr key={evt.id} className="hover:bg-[#FAF8F5]">
-                <td className="py-3.5 px-4 max-w-sm">
-                  <div className="flex items-center gap-1.5">
-                    {evt.featured && (
-                      <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                        <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                        <span>Featured</span>
+            {filtered.map((ev) => (
+              <tr key={ev.id} className="hover:bg-[#FAF8F5] transition-colors">
+                <td className="py-3.5 px-4 max-w-xs">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {ev.featured && (
+                      <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
+                        Featured
                       </span>
                     )}
-                    <span className="font-bold text-sm text-gray-900 leading-tight block">
-                      {evt.title}
-                    </span>
+                    <Link
+                      href={`/admin/website/events/${ev.slug}`}
+                      className="font-bold text-gray-900 text-sm hover:text-[#A52307] transition-colors block line-clamp-1"
+                    >
+                      {ev.title}
+                    </Link>
                   </div>
-                  <span className="text-gray-500 text-[11px] flex items-center gap-1 mt-1 font-mono">
-                    <Calendar className="w-3 h-3 text-[#A52307]" />
-                    <span>{evt.date} · {evt.time}</span>
+                  <span className="font-mono text-gray-400 text-[11px] block">/{ev.slug}</span>
+                </td>
+                <td className="py-3.5 px-4">
+                  <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                    {ev.type}
                   </span>
                 </td>
                 <td className="py-3.5 px-4">
-                  <span className="font-semibold text-gray-800 block">{evt.type}</span>
-                  <span className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3 text-gray-400" />
-                    <span>{evt.location}</span>
-                  </span>
+                  <span className="font-semibold text-gray-900 block">{ev.date}</span>
+                  <span className="text-gray-500 text-[11px]">{ev.time}</span>
                 </td>
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-800">
-                  {evt.registrations.length} / {evt.capacity} Registered
+                <td className="py-3.5 px-4 text-gray-700">{ev.location}</td>
+                <td className="py-3.5 px-4">
+                  <span className="font-mono font-bold text-gray-900">
+                    {ev.registeredCount} / {ev.capacity}
+                  </span>
+                  <div className="w-24 bg-gray-200 h-1.5 rounded-full mt-1 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        ev.registeredCount >= ev.capacity ? 'bg-[#A52307]' : 'bg-emerald-600'
+                      }`}
+                      style={{ width: `${Math.min(100, (ev.registeredCount / ev.capacity) * 100)}%` }}
+                    />
+                  </div>
                 </td>
                 <td className="py-3.5 px-4">
-                  <span className="text-gray-600 text-xs">
-                    {evt.customFields.length} Form Fields ({evt.customFields.filter(f=>f.type==='file').length} Attachments)
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    ev.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {ev.status}
                   </span>
                 </td>
-                <td className="py-3.5 px-4 text-right">
+                <td className="py-3.5 px-4 text-right space-x-2">
+                  <Link
+                    href={`/admin/website/events/${ev.slug}`}
+                    className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1 shadow-sm"
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                    <span>Manage Event</span>
+                  </Link>
                   <button
                     type="button"
-                    onClick={() => setSelectedEventForRoster(evt)}
-                    className="px-3 py-1.5 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1.5"
+                    onClick={() => openEditModal(ev)}
+                    className="px-2 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
                   >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Attendees ({evt.registrations.length})</span>
+                    <Edit3 className="w-3 h-3 inline mr-1" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(ev.id, ev.title)}
+                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                    title="Delete Event"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </td>
               </tr>
@@ -250,277 +396,198 @@ export default function WebsiteEventsPage() {
         </table>
       </div>
 
-      {/* Registrations Roster Drawer */}
-      {selectedEventForRoster && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#A52307]">Registration Roster</p>
-              <h3 className="font-bold text-gray-900 text-lg">{selectedEventForRoster.title}</h3>
-              <p className="text-gray-500 text-xs mt-0.5">{selectedEventForRoster.date} · {selectedEventForRoster.location}</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => alert('Exporting registrations list CSV')}
-                className="px-3 py-1.5 border border-gray-300 rounded text-xs font-semibold hover:bg-gray-100 flex items-center gap-1"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedEventForRoster(null)}
-                className="px-3 py-1.5 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100"
-              >
-                Close Roster
-              </button>
-            </div>
-          </div>
-
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Reg #</th>
-                <th className="py-3 px-4">Attendee Name &amp; Email</th>
-                <th className="py-3 px-4">Affiliation / Institution</th>
-                <th className="py-3 px-4">Uploaded Attachment</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {selectedEventForRoster.registrations.map((r: any) => (
-                <tr key={r.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{r.id}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="font-bold text-gray-900 block">{r.name}</span>
-                    <span className="text-gray-500 text-[11px]">{r.email}</span>
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-700">{r.affiliation}</td>
-                  <td className="py-3.5 px-4">
-                    {r.attachmentName ? (
-                      <button
-                        type="button"
-                        onClick={() => alert(`Downloading submitted file: ${r.attachmentName}`)}
-                        className="inline-flex items-center gap-1 text-[#A52307] font-semibold hover:underline font-mono text-[11px]"
-                      >
-                        <Paperclip className="w-3 h-3" />
-                        <span>{r.attachmentName}</span>
-                      </button>
-                    ) : (
-                      <span className="text-gray-400">None</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                      {r.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Schedule Event Modal */}
+      {/* POPUP MODAL: Create / Edit Event */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4">
-              <h3 className="text-base font-bold text-gray-900">Schedule Academic Event</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E2E0DB] animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center sticky top-0 bg-[#FAF8F5] z-10">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded bg-red-50 text-[#A52307] border border-red-100 flex items-center justify-center font-bold">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">
+                    {editingEventId ? 'Edit Event Schedule' : 'Schedule New Event'}
+                  </h3>
+                  <span className="text-[11px] text-gray-500">Configure program dates, venue, capacity, and registration form</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-700 p-1"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="space-y-4">
+            <form onSubmit={handleSaveEvent} className="p-6 space-y-4 text-xs font-sans">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="col-span-full">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Event Title*</label>
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Event Title <span className="text-red-600">*</span></label>
                   <input
                     type="text"
-                    required
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-semibold text-gray-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Event Date(s)*</label>
-                  <input
-                    type="text"
+                    placeholder="e.g. International Colloquium on Indian Ocean Manuscript Cultures"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                     required
-                    placeholder="e.g. 14–16 October 2026"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Time Schedule</label>
+                  <label className="font-bold text-gray-800 block mb-1">URL Slug</label>
                   <input
                     type="text"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="international-colloquium-indian-ocean-manuscripts"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 focus:border-[#A52307] outline-none"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Event Type</label>
+                  <label className="font-bold text-gray-800 block mb-1">Eyebrow / Kicker</label>
+                  <input
+                    type="text"
+                    value={kicker}
+                    onChange={(e) => setKicker(e.target.value)}
+                    placeholder="e.g. Academic Symposium"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Event Type</label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
                   >
                     <option value="International Symposium">International Symposium</option>
                     <option value="Scholarly Workshop">Scholarly Workshop</option>
-                    <option value="Public Lecture">Public Lecture</option>
-                    <option value="Archival Exhibition">Archival Exhibition</option>
+                    <option value="Public Exhibition">Public Exhibition</option>
+                    <option value="Memorial Lecture">Memorial Lecture</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Location / Venue</label>
+                  <label className="font-bold text-gray-800 block mb-1">Dates of Event</label>
                   <input
                     type="text"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    placeholder="e.g. 14–16 October 2026"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                     required
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Maximum Capacity</label>
+                  <label className="font-bold text-gray-800 block mb-1">Time Schedule</label>
+                  <input
+                    type="text"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    placeholder="e.g. 09:30 AM – 05:30 PM IST"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Location / Venue</label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. KMLRI Main Auditorium & Archival Gallery"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Seat Capacity</label>
                   <input
                     type="number"
                     value={capacity}
                     onChange={(e) => setCapacity(Number(e.target.value))}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
 
-                <div className="col-span-full">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Excerpt / Brief Summary</label>
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Short Excerpt / Teaser</label>
                   <textarea
                     rows={2}
-                    required
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded outline-none focus:border-[#A52307] text-xs"
+                    placeholder="A brief 1-2 sentence lead paragraph shown on event cards..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
 
-                <div className="col-span-full">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Detailed Description &amp; Program</label>
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Full Program Schedule &amp; Description (Markdown)</label>
                   <textarea
-                    rows={4}
-                    required
+                    rows={6}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded outline-none focus:border-[#A52307] text-xs"
+                    placeholder="Write detailed session timings, keynote speaker names, and abstract submission deadlines..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
                 </div>
 
-                {/* Dynamic Registration Builder Block */}
-                <div className="col-span-full bg-[#FAF8F5] p-4 border border-[#E2E0DB] rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <strong className="text-gray-900 block text-sm">Public Registration Form</strong>
-                      <span className="text-gray-500 text-[11px]">Enable online attendee registration with custom field attachments</span>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer font-bold">
-                      <input
-                        type="checkbox"
-                        checked={enableRegistration}
-                        onChange={(e) => setEnableRegistration(e.target.checked)}
-                        className="rounded text-[#A52307]"
-                      />
-                      <span>Enable Registration</span>
-                    </label>
-                  </div>
-
-                  {enableRegistration && (
-                    <div className="space-y-3 pt-2 border-t border-[#E2E0DB]">
-                      <p className="font-bold text-gray-700 uppercase text-[10px]">Configured Form Fields</p>
-                      <div className="space-y-1.5">
-                        {customFields.map((f) => (
-                          <div key={f.id} className="flex justify-between items-center p-2 bg-white border border-gray-200 rounded text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">{f.label}</span>
-                              <span className="text-[10px] text-gray-400 uppercase">({f.type})</span>
-                              {f.required && (
-                                <span className="text-[10px] text-[#A52307] font-bold">Required</span>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveField(f.id)}
-                              className="text-gray-400 hover:text-red-600"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Add Custom Field row */}
-                      <div className="flex gap-2 pt-2 flex-wrap sm:flex-nowrap">
-                        <input
-                          type="text"
-                          placeholder="Field label (e.g. Abstract PDF, Designation)"
-                          value={newFieldLabel}
-                          onChange={(e) => setNewFieldLabel(e.target.value)}
-                          className="flex-1 border border-gray-300 h-9 px-2.5 rounded text-xs outline-none bg-white"
-                        />
-                        <select
-                          value={newFieldType}
-                          onChange={(e) => setNewFieldType(e.target.value)}
-                          className="border border-gray-300 h-9 px-2 rounded text-xs bg-white"
-                        >
-                          <option value="text">Text Input</option>
-                          <option value="textarea">Long Text</option>
-                          <option value="file">File Attachment</option>
-                        </select>
-                        <label className="flex items-center gap-1 text-xs whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={newFieldRequired}
-                            onChange={(e) => setNewFieldRequired(e.target.checked)}
-                          />
-                          <span>Required</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleAddField}
-                          className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] whitespace-nowrap"
-                        >
-                          + Add Field
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Tags (Comma separated)</label>
+                  <input
+                    type="text"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="Symposium, Indian Ocean, Manuscripts"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
+                  />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#A52307] text-white rounded font-bold hover:bg-red-700 transition-colors"
-                >
-                  Publish Event Program
-                </button>
+              <div className="pt-3 border-t border-[#E2E0DB] flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={featured}
+                      onChange={(e) => setFeatured(e.target.checked)}
+                      className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                    />
+                    <span className="font-bold text-gray-800">Pin as Featured</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enableRegistration}
+                      onChange={(e) => setEnableRegistration(e.target.checked)}
+                      className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                    />
+                    <span className="font-bold text-gray-800">Enable Online Registration Form</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow"
+                  >
+                    {editingEventId ? 'Save Changes' : 'Schedule Event'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

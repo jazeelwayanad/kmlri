@@ -32,9 +32,26 @@ export class CatalogController {
   @Post(':id/copies')
   addCopy(
     @Param('id') id: string,
-    @Body() body: { location?: string; barcode?: string },
+    @Body() body: { location?: string; barcode?: string; rfidTag?: string; status?: string },
   ) {
-    return this.catalogService.addCopy(id, body.location, body.barcode);
+    return this.catalogService.addCopy(id, body.location, body.barcode, body.rfidTag, body.status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Patch(':id/copies/:copyId')
+  updateCopy(
+    @Param('copyId') copyId: string,
+    @Body() body: { barcode?: string; rfidTag?: string; location?: string; status?: string },
+  ) {
+    return this.catalogService.updateCopy(copyId, body);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Delete(':id/copies/:copyId')
+  removeCopy(@Param('copyId') copyId: string) {
+    return this.catalogService.removeCopy(copyId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
