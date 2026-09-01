@@ -15,6 +15,13 @@ import { ReadingListsModule } from './reading-lists/reading-lists.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { ReferenceQuestionsModule } from './reference-questions/reference-questions.module';
 import { SettingsModule } from './settings/settings.module';
+import { VendorsModule } from './vendors/vendors.module';
+import { DepartmentsModule } from './departments/departments.module';
+import { MembershipTypesModule } from './membership-types/membership-types.module';
+import { AssetsModule } from './assets/assets.module';
+import { CollectionsModule } from './collections/collections.module';
+import { SerialsModule } from './serials/serials.module';
+import { ReproductionRequestsModule } from './reproduction-requests/reproduction-requests.module';
 
 @Module({
   imports: [
@@ -34,6 +41,13 @@ import { SettingsModule } from './settings/settings.module';
     SavedSearchesModule,
     ReferenceQuestionsModule,
     SettingsModule,
+    VendorsModule,
+    DepartmentsModule,
+    MembershipTypesModule,
+    AssetsModule,
+    CollectionsModule,
+    SerialsModule,
+    ReproductionRequestsModule,
   ],
 })
 export class AppModule {}

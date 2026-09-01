@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Settings, 
   Upload, 
@@ -18,33 +18,69 @@ import {
   Sliders
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+const PREFIX = 'catalog.';
+
+const DEFAULT_CATALOG_FIELDS = [
+  { id: 'f_title', tag: '245$a', name: 'Title Proper', group: 'Title & Statement', required: true, enabled: true, locked: true },
+  { id: 'f_subtitle', tag: '245$b', name: 'Subtitle / Remainder of Title', group: 'Title & Statement', required: false, enabled: true },
+  { id: 'f_author', tag: '100$a / 245$c', name: 'Author / Statement of Responsibility', group: 'Authorship', required: true, enabled: true },
+  { id: 'f_itemtype', tag: '942$c', name: 'Koha [default] Item Type', group: 'Item Definition', required: true, enabled: true, locked: true },
+  { id: 'f_lang', tag: '041$a', name: 'Language of Text', group: 'Classification', required: true, enabled: true },
+  { id: 'f_ddc', tag: '082', name: 'Dewey Decimal Classification (DDC)', group: 'Classification', required: false, enabled: true },
+  { id: 'f_isbn', tag: '020$a', name: 'ISBN / Standard Number', group: 'Identifiers', required: false, enabled: true },
+  { id: 'f_uniform_title', tag: '240$a', name: 'Uniform Title / Original Arabic Title', group: 'Title & Statement', required: false, enabled: true },
+  { id: 'f_varying_title', tag: '246$a', name: 'Varying Form of Title', group: 'Title & Statement', required: false, enabled: true },
+  { id: 'f_edition', tag: '250$a', name: 'Edition Statement', group: 'Publication', required: false, enabled: true },
+  { id: 'f_pub_place', tag: '260$a', name: 'Place of Publication', group: 'Publication', required: false, enabled: true },
+  { id: 'f_publisher', tag: '260$b', name: 'Publisher Name', group: 'Publication', required: false, enabled: true },
+  { id: 'f_pub_year', tag: '260$c', name: 'Year of Publication', group: 'Publication', required: false, enabled: true },
+  { id: 'f_physical', tag: '300$a', name: 'Physical Description / Extent (Pages)', group: 'Physical Description', required: false, enabled: true },
+  { id: 'f_series', tag: '490$a', name: 'Series Statement', group: 'Publication', required: false, enabled: true },
+  { id: 'f_note', tag: '500$a', name: 'General Cataloging Note', group: 'Notes', required: false, enabled: true },
+  { id: 'f_subjects', tag: '650$a', name: 'Topical Subject Terms', group: 'Subject Headings', required: false, enabled: true },
+  { id: 'f_added_person', tag: '700$a', name: 'Added Entry (Personal Name / Scribe)', group: 'Authorship', required: false, enabled: true },
+  { id: 'f_uri', tag: '856$u', name: 'Electronic Location & URI Access', group: 'Digital Access', required: false, enabled: true },
+];
 
 export default function CatalogueConfigurationPage() {
   const [activeTab, setActiveTab] = useState<'field_requirements' | 'categories' | 'record_types' | 'item_types' | 'classification' | 'import_export'>('field_requirements');
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadingFields, setLoadingFields] = useState(true);
+  const [savingFields, setSavingFields] = useState(false);
 
   // Field Requirements Configuration
-  const [catalogFields, setCatalogFields] = useState([
-    { id: 'f_title', tag: '245$a', name: 'Title Proper', group: 'Title & Statement', required: true, enabled: true, locked: true },
-    { id: 'f_subtitle', tag: '245$b', name: 'Subtitle / Remainder of Title', group: 'Title & Statement', required: false, enabled: true },
-    { id: 'f_author', tag: '100$a / 245$c', name: 'Author / Statement of Responsibility', group: 'Authorship', required: true, enabled: true },
-    { id: 'f_itemtype', tag: '942$c', name: 'Koha [default] Item Type', group: 'Item Definition', required: true, enabled: true, locked: true },
-    { id: 'f_lang', tag: '041$a', name: 'Language of Text', group: 'Classification', required: true, enabled: true },
-    { id: 'f_ddc', tag: '082', name: 'Dewey Decimal Classification (DDC)', group: 'Classification', required: false, enabled: true },
-    { id: 'f_isbn', tag: '020$a', name: 'ISBN / Standard Number', group: 'Identifiers', required: false, enabled: true },
-    { id: 'f_uniform_title', tag: '240$a', name: 'Uniform Title / Original Arabic Title', group: 'Title & Statement', required: false, enabled: true },
-    { id: 'f_varying_title', tag: '246$a', name: 'Varying Form of Title', group: 'Title & Statement', required: false, enabled: true },
-    { id: 'f_edition', tag: '250$a', name: 'Edition Statement', group: 'Publication', required: false, enabled: true },
-    { id: 'f_pub_place', tag: '260$a', name: 'Place of Publication', group: 'Publication', required: false, enabled: true },
-    { id: 'f_publisher', tag: '260$b', name: 'Publisher Name', group: 'Publication', required: false, enabled: true },
-    { id: 'f_pub_year', tag: '260$c', name: 'Year of Publication', group: 'Publication', required: false, enabled: true },
-    { id: 'f_physical', tag: '300$a', name: 'Physical Description / Extent (Pages)', group: 'Physical Description', required: false, enabled: true },
-    { id: 'f_series', tag: '490$a', name: 'Series Statement', group: 'Publication', required: false, enabled: true },
-    { id: 'f_note', tag: '500$a', name: 'General Cataloging Note', group: 'Notes', required: false, enabled: true },
-    { id: 'f_subjects', tag: '650$a', name: 'Topical Subject Terms', group: 'Subject Headings', required: false, enabled: true },
-    { id: 'f_added_person', tag: '700$a', name: 'Added Entry (Personal Name / Scribe)', group: 'Authorship', required: false, enabled: true },
-    { id: 'f_uri', tag: '856$u', name: 'Electronic Location & URI Access', group: 'Digital Access', required: false, enabled: true },
-  ]);
+  const [catalogFields, setCatalogFields] = useState(DEFAULT_CATALOG_FIELDS);
+
+  // Load persisted field requirement settings (required/enabled toggles) from backend.
+  // Categories, record types, and item types below remain static reference lists — they're
+  // lists of records (like the Departments page) rather than flat config values, so they are
+  // not wired to the settings store here.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const setting = await api.getSetting(`${PREFIX}fieldRequirements`);
+        if (!cancelled && setting?.value) {
+          const saved = setting.value as Array<{ id: string; required: boolean; enabled: boolean }>;
+          setCatalogFields(
+            DEFAULT_CATALOG_FIELDS.map((f) => {
+              const match = saved.find((s) => s.id === f.id);
+              return match ? { ...f, required: f.locked ? f.required : match.required, enabled: f.locked ? f.enabled : match.enabled } : f;
+            })
+          );
+        }
+      } catch (err: any) {
+        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load field requirement settings.' });
+      } finally {
+        if (!cancelled) setLoadingFields(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Categories
   const [categories, setCategories] = useState([
@@ -74,7 +110,6 @@ export default function CatalogueConfigurationPage() {
   // Import / Export State
   const [importFormat, setImportFormat] = useState('MARC21_XML');
   const [exportFormat, setExportFormat] = useState('MARC21_BINARY');
-  const [importing, setImporting] = useState(false);
 
   const toggleRequired = (id: string) => {
     setCatalogFields(
@@ -98,24 +133,31 @@ export default function CatalogueConfigurationPage() {
     );
   };
 
-  const handleSaveFieldSettings = () => {
-    setNotification('Catalogue field requirement settings saved successfully.');
-    setTimeout(() => setNotification(null), 4000);
+  const handleSaveFieldSettings = async () => {
+    setSavingFields(true);
+    try {
+      await api.setSetting(
+        `${PREFIX}fieldRequirements`,
+        catalogFields.map((f) => ({ id: f.id, required: f.required, enabled: f.enabled }))
+      );
+      setNotification({ type: 'success', text: 'Catalogue field requirement settings saved successfully.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to save field requirement settings.' });
+    } finally {
+      setSavingFields(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   const handleImport = (e: React.FormEvent) => {
     e.preventDefault();
-    setImporting(true);
-    setTimeout(() => {
-      setImporting(false);
-      setNotification('Catalogue dataset imported successfully (24 records parsed with MARC21 authority headers).');
-      setTimeout(() => setNotification(null), 4000);
-    }, 1200);
+    setNotification({ type: 'error', text: 'Catalogue dataset import is not yet connected — no import pipeline is wired up on the backend.' });
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const handleExport = (fmt: string) => {
-    setNotification(`Exporting full institutional catalogue in ${fmt} format...`);
-    setTimeout(() => setNotification(null), 3500);
+    setNotification({ type: 'error', text: `Export to ${fmt} is not yet connected — no export pipeline is wired up on the backend.` });
+    setTimeout(() => setNotification(null), 4000);
   };
 
   return (
@@ -126,17 +168,27 @@ export default function CatalogueConfigurationPage() {
         description="Configure required and optional cataloging fields, manage taxonomy categories, record classifications, item loan rules, and import/export library datasets."
         actions={
           activeTab === 'field_requirements' ? (
-            <Button variant="primary" icon={Save} onClick={handleSaveFieldSettings}>
-              Save Field Settings
+            <Button variant="primary" icon={Save} onClick={handleSaveFieldSettings} disabled={savingFields || loadingFields}>
+              {savingFields ? 'Saving…' : 'Save Field Settings'}
             </Button>
           ) : undefined
         }
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
+          <span>{notification.text}</span>
         </div>
       )}
 
@@ -386,11 +438,11 @@ export default function CatalogueConfigurationPage() {
 
               <button
                 type="submit"
-                disabled={importing}
-                className="w-full py-2.5 bg-[#A52307] text-white rounded font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 bg-[#A52307] text-white rounded font-bold hover:bg-red-700 transition-colors"
               >
-                {importing ? 'Parsing & Ingesting Dataset...' : 'Start Batch Import'}
+                Start Batch Import
               </button>
+              <p className="text-[11px] text-gray-500">Not yet connected — no import pipeline is wired up on the backend.</p>
             </form>
           </div>
 

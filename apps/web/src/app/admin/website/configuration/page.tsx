@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Globe, 
   Menu as MenuIcon, 
@@ -17,23 +17,44 @@ import {
   Tag
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+const PREFIX = 'website.';
+
+const DEFAULT_HOMEPAGE_SECTIONS = [
+  { id: 'sec-hero', name: 'Hero Banner & Universal Search', visible: true },
+  { id: 'sec-curated', name: 'Curated Archival Collections Carousel', visible: true },
+  { id: 'sec-stories', name: 'Featured Scholarly Stories', visible: true },
+  { id: 'sec-iiif', name: 'Interactive IIIF Manuscript Viewer Showcase', visible: true },
+  { id: 'sec-events', name: 'Upcoming Events & Symposiums', visible: true },
+  { id: 'sec-news', name: 'Latest Bulletins & Press Dispatches', visible: true },
+  { id: 'sec-fellowships', name: 'Fellowships & Open Opportunities', visible: true },
+];
+
+const DEFAULT_FOOTER_CONTACT = {
+  address: 'Kunhīn Musliyār Library & Research Institute, Ponnāni Heritage Precinct, Malappuram District, Kerala 679577, India',
+  email: 'curator@kmlri.in',
+  phone: '+91 494 266 0142',
+  hours: 'Mon–Sat: 08:30 AM – 06:00 PM (Reading Room & Archive)',
+};
+
+const DEFAULT_SOCIAL_LINKS = {
+  twitter: 'https://twitter.com/kmlri_archives',
+  github: 'https://github.com/kmlri-archives',
+  orcid: 'https://orcid.org/0000-0002-1825-0097',
+};
 
 export default function WebsiteConfigurationPage() {
   const [activeTab, setActiveTab] = useState<'homepage' | 'navbar' | 'footer' | 'content_types'>('homepage');
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Homepage Sections Config
-  const [homepageSections, setHomepageSections] = useState([
-    { id: 'sec-hero', name: 'Hero Banner & Universal Search', visible: true },
-    { id: 'sec-curated', name: 'Curated Archival Collections Carousel', visible: true },
-    { id: 'sec-stories', name: 'Featured Scholarly Stories', visible: true },
-    { id: 'sec-iiif', name: 'Interactive IIIF Manuscript Viewer Showcase', visible: true },
-    { id: 'sec-events', name: 'Upcoming Events & Symposiums', visible: true },
-    { id: 'sec-news', name: 'Latest Bulletins & Press Dispatches', visible: true },
-    { id: 'sec-fellowships', name: 'Fellowships & Open Opportunities', visible: true },
-  ]);
+  const [homepageSections, setHomepageSections] = useState(DEFAULT_HOMEPAGE_SECTIONS);
 
-  // Navbar Items Config
+  // Navbar Items Config — read-only reference list; no add/edit/delete wiring exists in this UI yet,
+  // so (like Departments) it is left as a static display and not persisted to the settings store.
   const [navItems, setNavItems] = useState([
     { id: 'nav-1', label: 'Collections', href: '/collections', hasDropdown: true, children: ['Archival Manuscripts', 'Arabi-Malayalam Lithographs', 'Maritime Treaties'] },
     { id: 'nav-2', label: 'Research Stories', href: '/stories', hasDropdown: false },
@@ -44,24 +65,43 @@ export default function WebsiteConfigurationPage() {
   ]);
 
   // Footer Config
-  const [footerContact, setFooterContact] = useState({
-    address: 'Kunhīn Musliyār Library & Research Institute, Ponnāni Heritage Precinct, Malappuram District, Kerala 679577, India',
-    email: 'curator@kmlri.in',
-    phone: '+91 494 266 0142',
-    hours: 'Mon–Sat: 08:30 AM – 06:00 PM (Reading Room & Archive)',
-  });
+  const [footerContact, setFooterContact] = useState(DEFAULT_FOOTER_CONTACT);
 
-  const [socialLinks, setSocialLinks] = useState({
-    twitter: 'https://twitter.com/kmlri_archives',
-    github: 'https://github.com/kmlri-archives',
-    orcid: 'https://orcid.org/0000-0002-1825-0097',
-  });
+  const [socialLinks, setSocialLinks] = useState(DEFAULT_SOCIAL_LINKS);
 
-  // Content Types Configuration
+  // Content Types Configuration — static reference lists with no add/edit UI, left untouched.
   const [storyCategories, setStoryCategories] = useState(['Conservation & Archives', 'Literary History', 'Maritime Studies', 'Oral Traditions']);
   const [newsCategories, setNewsCategories] = useState(['Institutional Announcement', 'Fellowships & Grants', 'Symposium & Lectures', 'Archival Acquisitions']);
   const [eventTypes, setEventTypes] = useState(['International Symposium', 'Scholarly Workshop', 'Public Lecture', 'Archival Exhibition']);
   const [oppTypes, setOppTypes] = useState(['Residential Fellowship', 'Archival Internship', 'Travel Grant', 'Call for Papers']);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await api.getSettings(PREFIX);
+        const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
+        if (cancelled) return;
+        const savedSections = map.get(`${PREFIX}homepageSections`) as Array<{ id: string; visible: boolean }> | undefined;
+        setHomepageSections(
+          savedSections
+            ? savedSections
+                .map((s) => DEFAULT_HOMEPAGE_SECTIONS.find((d) => d.id === s.id) && { ...DEFAULT_HOMEPAGE_SECTIONS.find((d) => d.id === s.id)!, visible: s.visible })
+                .filter((s): s is { id: string; name: string; visible: boolean } => Boolean(s))
+            : DEFAULT_HOMEPAGE_SECTIONS
+        );
+        setFooterContact({ ...DEFAULT_FOOTER_CONTACT, ...(map.get(`${PREFIX}footerContact`) ?? {}) });
+        setSocialLinks({ ...DEFAULT_SOCIAL_LINKS, ...(map.get(`${PREFIX}socialLinks`) ?? {}) });
+      } catch (err: any) {
+        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load website configuration.' });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleSection = (id: string) => {
     setHomepageSections(
@@ -78,9 +118,21 @@ export default function WebsiteConfigurationPage() {
     setHomepageSections(items);
   };
 
-  const handleSave = () => {
-    setNotification('Website layout & navigation configuration saved successfully.');
-    setTimeout(() => setNotification(null), 4000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.setSettings([
+        { key: `${PREFIX}homepageSections`, value: homepageSections.map((s) => ({ id: s.id, visible: s.visible })) },
+        { key: `${PREFIX}footerContact`, value: footerContact },
+        { key: `${PREFIX}socialLinks`, value: socialLinks },
+      ]);
+      setNotification({ type: 'success', text: 'Website layout & navigation configuration saved successfully.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to save website configuration.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   return (
@@ -90,17 +142,27 @@ export default function WebsiteConfigurationPage() {
         title="Website Configuration"
         description="Configure public website layout sections, header navigation items, footer contacts, and content taxonomy."
         actions={
-          <Button variant="primary" icon={Save} onClick={handleSave}>
-            Save Layout Settings
+          <Button variant="primary" icon={Save} onClick={handleSave} disabled={saving || loading}>
+            {saving ? 'Saving…' : 'Save Layout Settings'}
           </Button>
         }
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${notification.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`} />
+          <span>{notification.text}</span>
         </div>
+      )}
+
+      {loading && (
+        <div className="p-4 text-xs text-gray-500">Loading website configuration…</div>
       )}
 
       {/* Tabs */}
@@ -197,7 +259,7 @@ export default function WebsiteConfigurationPage() {
             </div>
             <button
               type="button"
-              onClick={() => alert('Add navigation item')}
+              onClick={() => alert('Navigation item management is not yet connected.')}
               className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
