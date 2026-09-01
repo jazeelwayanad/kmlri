@@ -992,4 +992,24 @@ export const api = {
   async updateReproductionRequestStatus(id: string, status: string) {
     return this.fetchWithAuth(`/reproduction-requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
   },
+
+  // Institutional repository submissions
+  async getRepositorySubmissions(stage?: string, q?: string) {
+    const query = new URLSearchParams();
+    if (stage) query.append('stage', stage);
+    if (q) query.append('q', q);
+    return this.fetchWithAuth(`/repository?${query.toString()}`);
+  },
+  async createRepositorySubmission(data: { title: string; type: string; authorName: string; advisorName?: string; departmentName?: string; doi?: string; notes?: string }) {
+    return this.fetchWithAuth('/repository', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateRepositorySubmission(id: string, data: any) {
+    return this.fetchWithAuth(`/repository/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async updateRepositorySubmissionStage(id: string, stage: string) {
+    return this.fetchWithAuth(`/repository/${id}/stage`, { method: 'PATCH', body: JSON.stringify({ stage }) });
+  },
+  async deleteRepositorySubmission(id: string) {
+    return this.fetchWithAuth(`/repository/${id}`, { method: 'DELETE' });
+  },
 };

@@ -22,6 +22,7 @@ import { AssetsModule } from './assets/assets.module';
 import { CollectionsModule } from './collections/collections.module';
 import { SerialsModule } from './serials/serials.module';
 import { ReproductionRequestsModule } from './reproduction-requests/reproduction-requests.module';
+import { RepositoryModule } from './repository/repository.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ReproductionRequestsModule } from './reproduction-requests/reproduction
     CollectionsModule,
     SerialsModule,
     ReproductionRequestsModule,
+    RepositoryModule,
   ],
 })
 export class AppModule {}
