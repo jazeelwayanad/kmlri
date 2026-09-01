@@ -654,6 +654,17 @@ export const api = {
     });
   },
 
+  async waiveFine(fineId: string) {
+    return this.fetchWithAuth(`/circulation/fines/${fineId}/waive`, {
+      method: 'POST',
+    });
+  },
+
+  async getAllFines(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`/circulation/fines${query}`);
+  },
+
   // Users & Members
   async getUsers(q?: string) {
     const query = q ? `?q=${encodeURIComponent(q)}` : '';

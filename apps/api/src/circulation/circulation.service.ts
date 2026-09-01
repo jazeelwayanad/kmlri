@@ -341,4 +341,25 @@ export class CirculationService {
       },
     });
   }
+
+  async waiveFine(fineId: string) {
+    const fine = await this.prisma.fine.findUnique({ where: { id: fineId } });
+    if (!fine) throw new NotFoundException('Fine not found.');
+
+    return this.prisma.fine.update({
+      where: { id: fineId },
+      data: { status: 'WAIVED' },
+    });
+  }
+
+  async getAllFines(status?: string) {
+    return this.prisma.fine.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, fullName: true, membershipNumber: true } },
+        loan: { include: { copy: { include: { bibRecord: { select: { titleLatin: true, shelfmark: true } } } } } },
+      },
+    });
+  }
 }

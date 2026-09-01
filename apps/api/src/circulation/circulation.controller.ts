@@ -74,8 +74,22 @@ export class CirculationController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Get('fines')
+  getAllFines(@Query('status') status?: string) {
+    return this.circulationService.getAllFines(status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
   @Post('fines/:fineId/settle')
   settleFine(@Param('fineId') fineId: string) {
     return this.circulationService.settleFine(fineId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Post('fines/:fineId/waive')
+  waiveFine(@Param('fineId') fineId: string) {
+    return this.circulationService.waiveFine(fineId);
   }
 }
