@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Terminal, Plus, Key, Copy, CheckCircle2, Shield, ExternalLink } from 'lucide-react';
+import { Terminal, Plus, Key, Copy, AlertCircle, Shield, ExternalLink } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 
 export default function ApiKeysAdminPage() {
@@ -40,8 +40,8 @@ export default function ApiKeysAdminPage() {
     },
   ];
 
-  const handleCreateKey = () => {
-    setNotification('Generated new API Key: kmlri_live_rnd_91a084c810294. Copy and store securely.');
+  const showNotConnected = (action: string) => {
+    setNotification(`${action} is not connected — there is no API key management backend wired up yet. This screen shows the intended layout only.`);
     setTimeout(() => setNotification(null), 5000);
   };
 
@@ -53,15 +53,15 @@ export default function ApiKeysAdminPage() {
         title="API Keys, Webhooks & REST Documentation"
         description="Issue and revoke API keys for external applications, configure granular scopes, inspect request rate limits, and view live API documentation."
         actions={
-          <Button variant="dark" icon={Plus} onClick={handleCreateKey}>
+          <Button variant="dark" icon={Plus} onClick={() => showNotConnected('Generating a new API key')}>
             Generate New API Key
           </Button>
         }
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className="p-4 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <span>{notification}</span>
         </div>
       )}
@@ -95,7 +95,7 @@ export default function ApiKeysAdminPage() {
                 <td className="py-3.5 px-3 text-right space-x-2">
                   <button
                     type="button"
-                    onClick={() => alert(`API Key ${k.id} revoked.`)}
+                    onClick={() => showNotConnected('Revoking API keys')}
                     className="px-2.5 py-1 border border-heritage-red text-heritage-red rounded-lg text-[11px] font-semibold hover:bg-heritage-red hover:text-white transition-colors"
                   >
                     Revoke Key

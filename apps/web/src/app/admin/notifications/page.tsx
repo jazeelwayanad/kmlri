@@ -62,8 +62,8 @@ export default function NotificationsAdminPage() {
             variant="dark"
             icon={Send}
             onClick={() => {
-              setNotification('Broadcast notification sent to all 890 active patrons.');
-              setTimeout(() => setNotification(null), 4000);
+              setNotification('Not connected — there is no email/SMS/push dispatch backend wired up yet. This screen shows the intended layout only.');
+              setTimeout(() => setNotification(null), 5000);
             }}
           >
             Send Instant Broadcast
@@ -83,34 +83,33 @@ export default function NotificationsAdminPage() {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
           <div className="flex justify-between items-start">
             <span className="text-[11px] uppercase font-semibold text-gray-500 tracking-wide">Email Gateway (SMTP)</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 mt-0.5"></span>
+            <span className="w-2 h-2 rounded-full bg-gray-400 mt-0.5"></span>
           </div>
-          <div className="text-xl font-bold text-gray-900 mt-1">Online</div>
-          <div className="text-[11px] font-medium mt-0.5 text-gray-400">mail.kmlri.in (99.9% uptime)</div>
+          <div className="text-xl font-bold text-gray-900 mt-1">Not Connected</div>
+          <div className="text-[11px] font-medium mt-0.5 text-gray-400">No SMTP provider configured</div>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
           <div className="flex justify-between items-start">
             <span className="text-[11px] uppercase font-semibold text-gray-500 tracking-wide">SMS Gateway</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 mt-0.5"></span>
+            <span className="w-2 h-2 rounded-full bg-gray-400 mt-0.5"></span>
           </div>
-          <div className="text-xl font-bold text-gray-900 mt-1">Online</div>
-          <div className="text-[11px] font-medium mt-0.5 text-gray-400">DLT Registered Headers</div>
+          <div className="text-xl font-bold text-gray-900 mt-1">Not Connected</div>
+          <div className="text-[11px] font-medium mt-0.5 text-gray-400">No SMS provider configured</div>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
           <div className="flex justify-between items-start">
             <span className="text-[11px] uppercase font-semibold text-gray-500 tracking-wide">In-App &amp; Push</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 mt-0.5"></span>
+            <span className="w-2 h-2 rounded-full bg-gray-400 mt-0.5"></span>
           </div>
-          <div className="text-xl font-bold text-gray-900 mt-1">Active</div>
-          <div className="text-[11px] font-medium mt-0.5 text-gray-400">Real-time WebSocket &amp; PWA</div>
+          <div className="text-xl font-bold text-gray-900 mt-1">Not Connected</div>
+          <div className="text-[11px] font-medium mt-0.5 text-gray-400">No push/WebSocket dispatch wired up</div>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
           <div className="flex justify-between items-start">
             <span className="text-[11px] uppercase font-semibold text-gray-500 tracking-wide">Dispatched Today</span>
-            <span className="text-[11px] text-emerald-600 font-bold font-mono">184 msgs</span>
           </div>
-          <div className="text-xl font-bold text-gray-900 mt-1">100% Sent</div>
-          <div className="text-[11px] font-medium mt-0.5 text-gray-400">0 failed delivery attempts</div>
+          <div className="text-xl font-bold text-gray-900 mt-1">—</div>
+          <div className="text-[11px] font-medium mt-0.5 text-gray-400">No dispatch backend to report from</div>
         </div>
       </div>
 
@@ -173,7 +172,10 @@ export default function NotificationsAdminPage() {
                   <td className="py-3.5 px-3 text-right">
                     <button
                       type="button"
-                      onClick={() => alert(`Editing template: ${t.title}`)}
+                      onClick={() => {
+                        setNotification('Not connected — template editing has no backend yet.');
+                        setTimeout(() => setNotification(null), 4000);
+                      }}
                       className="px-2.5 py-1 border border-gray-300 rounded-lg text-[11px] font-semibold hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-colors"
                     >
                       Edit Template

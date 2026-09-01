@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { PageHeader, Card, Button, Badge } from '@/components/admin/ui';
 
 export default function IntegrationsAdminPage() {
@@ -13,50 +13,40 @@ export default function IntegrationsAdminPage() {
       name: 'Student Information System (SIS / ERP)',
       category: 'AUTHENTICATION & USERS',
       description: 'Auto-sync student enrolments, department registrations, and graduation status.',
-      status: 'CONNECTED',
       syncSchedule: 'Hourly',
-      lastSync: '10 mins ago',
     },
     {
       id: 'INT-02',
       name: 'Institutional LDAP / Active Directory / SAML',
       category: 'AUTHENTICATION',
       description: 'Single Sign-On (SSO) for faculty and university network accounts.',
-      status: 'CONNECTED',
       syncSchedule: 'Real-time SSO',
-      lastSync: 'Active',
     },
     {
       id: 'INT-03',
       name: 'ORCID & Crossref Scholarly Sync',
       category: 'RESEARCH METRICS',
       description: 'Automated retrieval of faculty research outputs, DOIs, and citation counts.',
-      status: 'CONNECTED',
       syncSchedule: 'Daily 02:00 AM',
-      lastSync: 'Today 02:00 AM',
     },
     {
       id: 'INT-04',
       name: 'Razorpay / UPI Payment Gateway',
       category: 'FINANCE & BILLING',
       description: 'Accept online fine settlements and research document reproduction charges.',
-      status: 'CONNECTED',
       syncSchedule: 'Real-time Webhook',
-      lastSync: 'Live',
     },
     {
       id: 'INT-05',
       name: 'OpenAlex & DataCite Metadata Harvesting',
       category: 'HARVESTING & OAI-PMH',
       description: 'Bibliographic discovery enrichment and open citation indexing.',
-      status: 'CONNECTED',
       syncSchedule: 'Weekly',
-      lastSync: '30 Aug 2026',
     },
   ];
 
   const handleTestSync = (name: string) => {
-    setNotification(`Test connection to "${name}" successful. Latency: 42ms.`);
+    setNotification(`"${name}" is not connected — no integration credentials are configured on the backend yet.`);
     setTimeout(() => setNotification(null), 4000);
   };
 
@@ -70,8 +60,8 @@ export default function IntegrationsAdminPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className="p-4 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <span>{notification}</span>
         </div>
       )}
@@ -85,9 +75,9 @@ export default function IntegrationsAdminPage() {
                 <span className="text-[11px] uppercase font-semibold tracking-wide text-gray-400">
                   {int.category}
                 </span>
-                <Badge variant="success">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span>{int.status}</span>
+                <Badge variant="neutral">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                  <span>NOT CONFIGURED</span>
                 </Badge>
               </div>
               <h3 className="text-xl font-bold text-gray-900">{int.name}</h3>
@@ -96,7 +86,7 @@ export default function IntegrationsAdminPage() {
 
             <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
               <div className="text-gray-500">
-                <span>Schedule: <strong className="text-gray-900">{int.syncSchedule}</strong></span> · <span>Last: {int.lastSync}</span>
+                <span>Intended schedule: <strong className="text-gray-900">{int.syncSchedule}</strong></span>
               </div>
               <Button variant="outline" onClick={() => handleTestSync(int.name)}>
                 Test Connection

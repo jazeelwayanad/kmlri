@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Save, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
+import { api } from '@/lib/api';
 
 export default function SystemSecurityAdminPage() {
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [require2FA, setRequire2FA] = useState(true);
   const [sessionTimeoutMin, setSessionTimeoutMin] = useState(60);
@@ -13,10 +16,39 @@ export default function SystemSecurityAdminPage() {
   const [passwordMinLength, setPasswordMinLength] = useState(10);
   const [ipRateLimitRpm, setIpRateLimitRpm] = useState(120);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    api
+      .getSettings('security.')
+      .then((settings: any[]) => {
+        const find = (key: string) => settings.find((s) => s.key === `security.${key}`)?.value;
+        if (find('require2FA') !== undefined) setRequire2FA(find('require2FA'));
+        if (find('sessionTimeoutMin') !== undefined) setSessionTimeoutMin(find('sessionTimeoutMin'));
+        if (find('maxLoginAttempts') !== undefined) setMaxLoginAttempts(find('maxLoginAttempts'));
+        if (find('passwordMinLength') !== undefined) setPasswordMinLength(find('passwordMinLength'));
+        if (find('ipRateLimitRpm') !== undefined) setIpRateLimitRpm(find('ipRateLimitRpm'));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setNotification('System security settings and firewall parameters updated.');
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    try {
+      await api.setSettings([
+        { key: 'security.require2FA', value: require2FA },
+        { key: 'security.sessionTimeoutMin', value: sessionTimeoutMin },
+        { key: 'security.maxLoginAttempts', value: maxLoginAttempts },
+        { key: 'security.passwordMinLength', value: passwordMinLength },
+        { key: 'security.ipRateLimitRpm', value: ipRateLimitRpm },
+      ]);
+      setNotification({ type: 'success', text: 'Security policy values saved. Note: these are stored as configuration only — the login flow does not yet enforce them.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not save security settings.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 6000);
+    }
   };
 
   const inputClasses =
@@ -32,9 +64,13 @@ export default function SystemSecurityAdminPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 border rounded-lg text-sm font-semibold flex items-center gap-2 ${
+            notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />}
+          <span>{notification.text}</span>
         </div>
       )}
 
@@ -124,8 +160,8 @@ export default function SystemSecurityAdminPage() {
           </div>
 
           <div className="pt-4 border-t border-gray-100 flex justify-end">
-            <Button type="submit" variant="primary" icon={Save}>
-              Apply Security Hardening
+            <Button type="submit" variant="primary" icon={Save} disabled={saving}>
+              {saving ? 'Saving…' : 'Save Security Policy'}
             </Button>
           </div>
         </form>
