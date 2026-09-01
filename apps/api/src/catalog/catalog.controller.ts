@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
 import { CreateRecordDto } from './dto/create-record.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
@@ -35,5 +35,19 @@ export class CatalogController {
     @Body() body: { location?: string; barcode?: string },
   ) {
     return this.catalogService.addCopy(id, body.location, body.barcode);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: Partial<CreateRecordDto>) {
+    return this.catalogService.update(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.catalogService.remove(id);
   }
 }

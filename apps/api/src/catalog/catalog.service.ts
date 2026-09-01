@@ -28,11 +28,40 @@ export class CatalogService {
     }
 
     if (queryDto.format) {
-      where.format = queryDto.format;
+      const formats = queryDto.format.split(',').map((f) => f.trim()).filter(Boolean);
+      if (formats.length > 1) where.format = { in: formats };
+      else if (formats.length === 1) where.format = formats[0];
     }
 
     if (queryDto.access) {
-      where.accessLevel = queryDto.access;
+      const accessLevels = queryDto.access.split(',').map((a) => a.trim()).filter(Boolean);
+      if (accessLevels.length > 1) where.accessLevel = { in: accessLevels };
+      else if (accessLevels.length === 1) where.accessLevel = accessLevels[0];
+    }
+
+    if (queryDto.script) {
+      const languages = queryDto.script.split(',').map((s) => s.trim()).filter(Boolean);
+      if (languages.length > 1) where.language = { in: languages };
+      else if (languages.length === 1) where.language = languages[0];
+    }
+
+    if (queryDto.subject) {
+      where.subjects = { contains: queryDto.subject };
+    }
+
+    if (queryDto.yearFrom || queryDto.yearTo) {
+      const from = queryDto.yearFrom ? parseInt(queryDto.yearFrom, 10) : -Infinity;
+      const to = queryDto.yearTo ? parseInt(queryDto.yearTo, 10) : Infinity;
+      const allYears = await this.prisma.bibliographicRecord.findMany({
+        select: { id: true, publicationYear: true },
+      });
+      const idsInRange = allYears
+        .filter((r) => {
+          const y = parseInt(r.publicationYear || '', 10);
+          return !isNaN(y) && y >= from && y <= to;
+        })
+        .map((r) => r.id);
+      where.id = { in: idsInRange };
     }
 
     if (queryDto.author) {
@@ -42,12 +71,19 @@ export class CatalogService {
       ];
     }
 
+    const orderBy: any =
+      queryDto.sortBy === 'title'
+        ? { titleLatin: 'asc' }
+        : queryDto.sortBy === 'year'
+        ? { publicationYear: 'desc' }
+        : { createdAt: 'desc' };
+
     const [items, total] = await Promise.all([
       this.prisma.bibliographicRecord.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           copies: {
             select: {
@@ -73,8 +109,8 @@ export class CatalogService {
       this.prisma.bibliographicRecord.count({ where }),
     ]);
 
-    // Facet aggregation summaries
-    const [formatAgg, accessAgg] = await Promise.all([
+    // Facet aggregation summaries (computed over the whole collection, not just this page)
+    const [formatAgg, accessAgg, languageAgg] = await Promise.all([
       this.prisma.bibliographicRecord.groupBy({
         by: ['format'],
         _count: { format: true },
@@ -82,6 +118,10 @@ export class CatalogService {
       this.prisma.bibliographicRecord.groupBy({
         by: ['accessLevel'],
         _count: { accessLevel: true },
+      }),
+      this.prisma.bibliographicRecord.groupBy({
+        by: ['language'],
+        _count: { language: true },
       }),
     ]);
 
@@ -102,8 +142,64 @@ export class CatalogService {
       facets: {
         formats: formatAgg.map((f) => ({ key: f.format, count: f._count.format })),
         accessLevels: accessAgg.map((a) => ({ key: a.accessLevel, count: a._count.accessLevel })),
+        languages: languageAgg.map((l) => ({ key: l.language, count: l._count.language })),
       },
     };
+  }
+
+  async update(id: string, dto: Partial<CreateRecordDto>) {
+    const existing = await this.prisma.bibliographicRecord.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Bibliographic record #${id} not found.`);
+    }
+
+    if (dto.shelfmark && dto.shelfmark !== existing.shelfmark) {
+      const clash = await this.prisma.bibliographicRecord.findUnique({
+        where: { shelfmark: dto.shelfmark },
+      });
+      if (clash) {
+        throw new ConflictException(`Shelfmark ${dto.shelfmark} is already in use.`);
+      }
+    }
+
+    await this.prisma.bibliographicRecord.update({
+      where: { id },
+      data: {
+        ...(dto.titleArabic !== undefined && { titleArabic: dto.titleArabic }),
+        ...(dto.titleLatin !== undefined && { titleLatin: dto.titleLatin }),
+        ...(dto.subtitle !== undefined && { subtitle: dto.subtitle }),
+        ...(dto.authors !== undefined && { authors: JSON.stringify(dto.authors) }),
+        ...(dto.scribe !== undefined && { scribe: dto.scribe }),
+        ...(dto.shelfmark !== undefined && { shelfmark: dto.shelfmark }),
+        ...(dto.callNumber !== undefined && { callNumber: dto.callNumber }),
+        ...(dto.isbn !== undefined && { isbn: dto.isbn }),
+        ...(dto.issn !== undefined && { issn: dto.issn }),
+        ...(dto.doi !== undefined && { doi: dto.doi }),
+        ...(dto.format !== undefined && { format: dto.format }),
+        ...(dto.language !== undefined && { language: dto.language }),
+        ...(dto.publicationYear !== undefined && { publicationYear: dto.publicationYear }),
+        ...(dto.publisher !== undefined && { publisher: dto.publisher }),
+        ...(dto.extent !== undefined && { extent: dto.extent }),
+        ...(dto.material !== undefined && { material: dto.material }),
+        ...(dto.binding !== undefined && { binding: dto.binding }),
+        ...(dto.provenance !== undefined && { provenance: dto.provenance }),
+        ...(dto.summary !== undefined && { summary: dto.summary }),
+        ...(dto.subjects !== undefined && { subjects: JSON.stringify(dto.subjects) }),
+        ...(dto.accessLevel !== undefined && { accessLevel: dto.accessLevel }),
+        ...(dto.coverImageUrl !== undefined && { coverImageUrl: dto.coverImageUrl }),
+      },
+    });
+
+    return this.findOne(id);
+  }
+
+  async remove(id: string) {
+    const existing = await this.prisma.bibliographicRecord.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Bibliographic record #${id} not found.`);
+    }
+    await this.prisma.bibliographicRecord.delete({ where: { id } });
+    return { success: true };
   }
 
   async findOne(id: string) {

@@ -507,16 +507,35 @@ export const api = {
   },
 
   // Catalog
-  async searchCatalog(params: { q?: string; format?: string; accessLevel?: string; access?: string; page?: number; limit?: number }) {
+  async searchCatalog(params: {
+    q?: string;
+    format?: string;
+    accessLevel?: string;
+    access?: string;
+    script?: string;
+    subject?: string;
+    author?: string;
+    yearFrom?: string;
+    yearTo?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const query = new URLSearchParams();
     if (params.q) query.append('q', params.q);
     if (params.format) query.append('format', params.format);
     const accessVal = params.accessLevel || params.access;
-    if (accessVal) query.append('accessLevel', accessVal);
+    if (accessVal) query.append('access', accessVal);
+    if (params.script) query.append('script', params.script);
+    if (params.subject) query.append('subject', params.subject);
+    if (params.author) query.append('author', params.author);
+    if (params.yearFrom) query.append('yearFrom', params.yearFrom);
+    if (params.yearTo) query.append('yearTo', params.yearTo);
+    if (params.sortBy) query.append('sortBy', params.sortBy);
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return this.fetchWithAuth(`/catalog?${query.toString()}`);
+    return this.fetchWithAuth(`/catalog/search?${query.toString()}`);
   },
 
   async getCatalogItem(id: string) {
@@ -555,7 +574,11 @@ export const api = {
   async issueBook(barcode: string, userIdentifier: string, dueDays?: number) {
     return this.fetchWithAuth('/circulation/issue', {
       method: 'POST',
-      body: JSON.stringify({ barcode, userIdentifier, dueDays }),
+      body: JSON.stringify({
+        barcodeOrRfid: barcode,
+        userMembershipOrEmail: userIdentifier,
+        loanDurationDays: dueDays,
+      }),
     });
   },
 
@@ -563,15 +586,15 @@ export const api = {
     return this.issueBook(data.barcode, data.userIdentifier, data.dueDays);
   },
 
-  async returnBook(barcode: string) {
+  async returnBook(barcode: string, conditionNote?: string) {
     return this.fetchWithAuth('/circulation/return', {
       method: 'POST',
-      body: JSON.stringify({ barcode }),
+      body: JSON.stringify({ barcodeOrRfid: barcode, conditionNote }),
     });
   },
 
-  async checkIn(data: { barcode: string }) {
-    return this.returnBook(data.barcode);
+  async checkIn(data: { barcode: string; conditionNote?: string }) {
+    return this.returnBook(data.barcode, data.conditionNote);
   },
 
   async renewLoan(loanId: string) {

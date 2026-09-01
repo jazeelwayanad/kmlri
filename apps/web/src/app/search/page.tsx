@@ -10,6 +10,30 @@ import { api, BibliographicRecord } from '@/lib/api';
 import { getRecordSlug } from '@/lib/slugs';
 import { Filter, ChevronDown, Check } from 'lucide-react';
 
+const ACCESS_LABELS: Record<string, string> = {
+  DIGITISED_FULL: 'Digitised in full',
+  READING_ROOM_ONLY: 'Reading room only',
+  RESTRICTED: 'Restricted',
+};
+
+const FORMAT_LABELS: Record<string, string> = {
+  MANUSCRIPT: 'Manuscript',
+  ARABI_MALAYALAM_PRINT: 'Arabi-Malayalam print',
+  RARE_BOOK: 'Rare book',
+  PERIODICAL: 'Periodical',
+  THESIS: 'Thesis',
+  AUDIO: 'Audio',
+};
+
+interface Facet {
+  key: string;
+  count: number;
+}
+
+function toSet(param: string | null): Set<string> {
+  return new Set((param || '').split(',').map((s) => s.trim()).filter(Boolean));
+}
+
 export default function SearchPage() {
   return (
     <Suspense fallback={
@@ -30,120 +54,103 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryParam = searchParams.get('q') || '';
-  const formatParam = searchParams.get('format') || '';
-  const accessParam = searchParams.get('access') || '';
+  const formatParam = searchParams.get('format');
+  const scriptParam = searchParams.get('script');
+  const accessParam = searchParams.get('access');
+  const pageParam = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
   const [query, setQuery] = useState(queryParam);
   const [results, setResults] = useState<BibliographicRecord[]>([]);
-  const [totalCount, setTotalCount] = useState(248);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [selectedFormat, setSelectedFormat] = useState(formatParam);
+  const [error, setError] = useState(false);
+  const [facets, setFacets] = useState<{ formats: Facet[]; accessLevels: Facet[]; languages: Facet[] }>({
+    formats: [],
+    accessLevels: [],
+    languages: [],
+  });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const facets = [
-    { title: 'Format', options: ['Manuscript', 'Printed book', 'Periodical', 'Audio'] },
-    { title: 'Script', options: ['Arabic', 'Arabi-Malayalam', 'Malayalam', 'Latin'] },
-    { title: 'Access', options: ['Digitised in full', 'Reading room only', 'Restricted'] },
-  ];
-
-  // Fallback items if API is booting
-  const defaultResults: BibliographicRecord[] = [
-    {
-      id: 'rec-1',
-      titleLatin: 'Bayān al-Fawāʾid',
-      titleArabic: 'بيان الفوائد',
-      authors: ['Unnamed scribe, Malabar coast'],
-      shelfmark: 'MS 0142',
-      format: 'MANUSCRIPT',
-      language: 'Arabic',
-      extent: '84 folios',
-      subjects: ['Islamic Jurisprudence'],
-      accessLevel: 'DIGITISED_FULL',
-    },
-    {
-      id: 'rec-2',
-      titleLatin: 'Muḥyiddīn Mālā',
-      titleArabic: 'محي الدين مالا',
-      authors: ['Qāḍī Muḥammad'],
-      shelfmark: 'AM 0311',
-      format: 'ARABI_MALAYALAM_PRINT',
-      language: 'Arabi-Malayalam',
-      subjects: ['Poetry'],
-      accessLevel: 'DIGITISED_FULL',
-    },
-    {
-      id: 'rec-3',
-      titleLatin: 'Fatḥ al-Muʿīn, annotated copy',
-      authors: ['Zayn al-Dīn al-Malībārī'],
-      shelfmark: 'RB 0908',
-      format: 'RARE_BOOK',
-      language: 'Arabic',
-      subjects: ['Fiqh'],
-      accessLevel: 'READING_ROOM_ONLY',
-    },
-    {
-      id: 'rec-4',
-      titleLatin: 'Al-Bayān monthly, bound run 1954–1961',
-      authors: ['Various'],
-      shelfmark: 'PER 0044',
-      format: 'PERIODICAL',
-      language: 'Arabic',
-      subjects: ['Periodical'],
-      accessLevel: 'READING_ROOM_ONLY',
-    },
-    {
-      id: 'rec-5',
-      titleLatin: 'Notes on a family collection, Parappur',
-      authors: ['Deposited papers'],
-      shelfmark: 'ARC 0026',
-      format: 'THESIS',
-      language: 'Malayalam',
-      subjects: ['Archive'],
-      accessLevel: 'RESTRICTED',
-    },
-    {
-      id: 'rec-6',
-      titleLatin: 'Kappappāṭṭu: nautical poem in Arabi-Malayalam',
-      titleArabic: 'كف فattu',
-      authors: ['Kunhāyaṉ Musliyār'],
-      shelfmark: 'MS 0089',
-      format: 'MANUSCRIPT',
-      language: 'Arabi-Malayalam',
-      subjects: ['Maritime Poetry'],
-      accessLevel: 'DIGITISED_FULL',
-    }
-  ];
+  const selectedFormats = toSet(formatParam);
+  const selectedScripts = toSet(scriptParam);
+  const selectedAccess = toSet(accessParam);
 
   useEffect(() => {
     async function fetchResults() {
       setLoading(true);
+      setError(false);
       try {
         const data = await api.searchCatalog({
           q: queryParam,
-          format: formatParam,
-          accessLevel: accessParam,
+          format: formatParam || undefined,
+          script: scriptParam || undefined,
+          access: accessParam || undefined,
+          page: pageParam,
+          limit: 10,
         });
-        if (data && data.items && data.items.length > 0) {
-          setResults(data.items);
-          setTotalCount(data.total || data.items.length);
-        } else {
-          setResults(defaultResults);
-          setTotalCount(defaultResults.length);
-        }
+        setResults(data.data || []);
+        setTotalCount(data.meta?.total ?? (data.data || []).length);
+        setTotalPages(data.meta?.totalPages ?? 1);
+        setFacets({
+          formats: data.facets?.formats || [],
+          accessLevels: data.facets?.accessLevels || [],
+          languages: data.facets?.languages || [],
+        });
       } catch (err) {
-        setResults(defaultResults);
-        setTotalCount(defaultResults.length);
+        setError(true);
+        setResults([]);
+        setTotalCount(0);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
     }
     fetchResults();
-  }, [queryParam, formatParam, accessParam]);
+  }, [queryParam, formatParam, scriptParam, accessParam, pageParam]);
+
+  const updateParams = (mutate: (p: URLSearchParams) => void) => {
+    const next = new URLSearchParams(searchParams.toString());
+    mutate(next);
+    next.delete('page');
+    router.push(`/search?${next.toString()}`);
+  };
+
+  const toggleFacet = (paramKey: string, current: Set<string>, value: string) => {
+    updateParams((p) => {
+      const next = new Set(current);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      if (next.size > 0) p.set(paramKey, Array.from(next).join(','));
+      else p.delete(paramKey);
+    });
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+    updateParams((p) => {
+      if (query.trim()) p.set('q', query.trim());
+      else p.delete('q');
+    });
   };
+
+  const goToPage = (page: number) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('page', String(page));
+    router.push(`/search?${next.toString()}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const facetGroups = [
+    { title: 'Format', param: 'format', selected: selectedFormats, options: facets.formats, labels: FORMAT_LABELS },
+    { title: 'Script / Language', param: 'script', selected: selectedScripts, options: facets.languages, labels: {} as Record<string, string> },
+    { title: 'Access', param: 'access', selected: selectedAccess, options: facets.accessLevels, labels: ACCESS_LABELS },
+  ];
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+    Math.max(0, pageParam - 3),
+    Math.max(0, pageParam - 3) + 5,
+  );
 
   return (
     <div className="min-h-screen bg-paper text-black font-amiri">
@@ -181,7 +188,7 @@ function SearchContent() {
             Advanced Search →
           </Link>
           <span className="text-heritage-subtle text-[15px] sm:text-[17px] font-sans">
-            {totalCount} results found
+            {loading ? 'Searching…' : `${totalCount} result${totalCount === 1 ? '' : 's'} found`}
           </span>
         </div>
 
@@ -194,7 +201,7 @@ function SearchContent() {
           >
             <span className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-heritage-red" />
-              <span>Filter Results {selectedFormat ? `(${selectedFormat})` : ''}</span>
+              <span>Filter Results {selectedFormats.size + selectedScripts.size + selectedAccess.size > 0 ? `(${selectedFormats.size + selectedScripts.size + selectedAccess.size})` : ''}</span>
             </span>
             <ChevronDown className={`w-4 h-4 transition-transform ${mobileFilterOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -205,26 +212,25 @@ function SearchContent() {
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 sm:gap-8 pt-4 sm:pt-[30px]">
           {/* Facets Sidebar (Always on desktop, Collapsible on mobile) */}
           <aside className={`flex flex-col gap-6 sm:gap-[30px] font-sans ${mobileFilterOpen ? 'block' : 'hidden md:flex'}`}>
-            {facets.map((f, i) => (
+            {facetGroups.map((f, i) => (
               <div key={i} className="bg-white md:bg-transparent p-4 md:p-0 border md:border-0 border-gray-300 rounded">
                 <p className="font-averia text-[12px] sm:text-[13px] tracking-[0.06em] text-heritage-muted mb-2 sm:mb-3 font-bold uppercase">{f.title}</p>
                 <div className="flex flex-col gap-2 sm:gap-[9px] text-[15px] sm:text-[17px]">
+                  {f.options.length === 0 && (
+                    <span className="text-[13px] text-heritage-subtle">No items yet</span>
+                  )}
                   {f.options.map((o, j) => (
                     <label key={j} className="flex items-center gap-2.5 cursor-pointer text-heritage-body hover:text-heritage-red">
                       <input
                         type="checkbox"
-                        checked={selectedFormat === o}
-                        onChange={() => {
-                          const nextVal = selectedFormat === o ? '' : o;
-                          setSelectedFormat(nextVal);
-                          router.push(`/search?format=${encodeURIComponent(nextVal)}`);
-                        }}
+                        checked={f.selected.has(o.key)}
+                        onChange={() => toggleFacet(f.param, f.selected, o.key)}
                         className="hidden"
                       />
-                      <span className={`w-[14px] h-[14px] border-[1.5px] border-black inline-flex items-center justify-center ${selectedFormat === o ? 'bg-black text-white' : 'bg-white'}`}>
-                        {selectedFormat === o && <Check className="w-3 h-3 stroke-[3]" />}
+                      <span className={`w-[14px] h-[14px] border-[1.5px] border-black inline-flex items-center justify-center flex-shrink-0 ${f.selected.has(o.key) ? 'bg-black text-white' : 'bg-white'}`}>
+                        {f.selected.has(o.key) && <Check className="w-3 h-3 stroke-[3]" />}
                       </span>
-                      <span>{o}</span>
+                      <span>{f.labels[o.key] || o.key} <span className="text-heritage-subtle">({o.count})</span></span>
                     </label>
                   ))}
                 </div>
@@ -234,6 +240,18 @@ function SearchContent() {
 
           {/* Search Result List */}
           <div className="flex flex-col min-w-0">
+            {error && (
+              <div className="py-8 text-center font-sans text-heritage-red border border-heritage-red bg-red-50">
+                Couldn&apos;t reach the catalogue service. Please try again shortly.
+              </div>
+            )}
+
+            {!error && !loading && results.length === 0 && (
+              <div className="py-8 text-center font-sans text-heritage-subtle">
+                No items matched your search.
+              </div>
+            )}
+
             {results.map((r, idx) => (
               <Link
                 key={r.id || idx}
@@ -261,14 +279,38 @@ function SearchContent() {
             ))}
 
             {/* Pagination */}
-            <div className="flex gap-2 pt-6 sm:pt-7 text-[16px] sm:text-[17px] flex-wrap items-center">
-              <button type="button" className="border border-black bg-black text-white px-3 py-1 font-bold">1</button>
-              <button type="button" className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white">2</button>
-              <button type="button" className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white">3</button>
-              <span className="px-2">...</span>
-              <button type="button" className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white">25</button>
-              <button type="button" className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white ml-2">Next →</button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex gap-2 pt-6 sm:pt-7 text-[16px] sm:text-[17px] flex-wrap items-center">
+                <button
+                  type="button"
+                  disabled={pageParam <= 1}
+                  onClick={() => goToPage(pageParam - 1)}
+                  className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-black"
+                >
+                  ← Prev
+                </button>
+                {pageNumbers[0] > 1 && <span className="px-2">…</span>}
+                {pageNumbers.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => goToPage(p)}
+                    className={`border border-black px-3 py-1 font-bold ${p === pageParam ? 'bg-black text-white' : 'bg-transparent hover:bg-black hover:text-white'}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                {pageNumbers[pageNumbers.length - 1] < totalPages && <span className="px-2">…</span>}
+                <button
+                  type="button"
+                  disabled={pageParam >= totalPages}
+                  onClick={() => goToPage(pageParam + 1)}
+                  className="border border-black bg-transparent px-3 py-1 hover:bg-black hover:text-white ml-2 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-black"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

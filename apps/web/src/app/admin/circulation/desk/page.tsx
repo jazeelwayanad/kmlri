@@ -1,197 +1,146 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
-import { 
-  Scan, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  User, 
-  CheckCircle2, 
+import {
+  Scan,
+  ArrowUpRight,
+  ArrowDownLeft,
+  User,
+  CheckCircle2,
   AlertCircle,
   Barcode,
   RotateCcw,
-  Clock,
-  Printer,
-  Search,
   Check,
-  CreditCard,
-  Layers,
-  Sparkles,
-  Bookmark
+  Bookmark,
+  Loader2,
 } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { PageHeader, Button } from '@/components/admin/ui';
+
+function formatDate(d: string | Date) {
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
 export default function CirculationDeskCheckinCheckoutPage() {
   const [activeTab, setActiveTab] = useState<'checkout' | 'checkin'>('checkout');
-  
-  // Checkout State
-  const [patronSearch, setPatronSearch] = useState('KMLRI-2026-0001');
-  const [selectedPatron, setSelectedPatron] = useState<any>({
-    fullName: 'Rashid Vattaparamba',
-    membershipNumber: 'KMLRI-2026-0001',
-    role: 'RESEARCHER',
-    maxBorrowLimit: 8,
-    activeLoansCount: 2,
-    unpaidFines: 80,
-    status: 'ACTIVE',
-    holdsWaiting: 1
-  });
+
+  // Patron lookup state
+  const [patronSearch, setPatronSearch] = useState('');
+  const [selectedPatron, setSelectedPatron] = useState<any>(null);
+  const [patronLoading, setPatronLoading] = useState(false);
+
+  // Checkout state
   const [checkoutBarcode, setCheckoutBarcode] = useState('');
   const [checkoutDays, setCheckoutDays] = useState(21);
-  const [cart, setCart] = useState<any[]>([]);
+  const [issuedThisSession, setIssuedThisSession] = useState<any[]>([]);
+  const [issuing, setIssuing] = useState(false);
 
-  // Checkin State
+  // Checkin state
   const [checkinBarcode, setCheckinBarcode] = useState('');
   const [checkinCondition, setCheckinCondition] = useState('GOOD');
-  const [recentReturns, setRecentReturns] = useState<any[]>([
-    {
-      id: 'RET-01',
-      barcode: 'MS0140-01',
-      title: 'Fatḥ al-Muʿīn Vol. 1',
-      patron: 'Rashid Vattaparamba',
-      returnTime: 'Just now',
-      condition: 'GOOD',
-      fineAssessed: 0,
-      routing: 'Return to Manuscript Vault Box 14'
-    }
-  ]);
+  const [recentReturns, setRecentReturns] = useState<any[]>([]);
+  const [returning, setReturning] = useState(false);
 
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string; action?: string } | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handlePatronSelect = (memNumber: string) => {
-    setPatronSearch(memNumber);
-    if (memNumber === 'MEM-2231') {
-      setSelectedPatron({
-        fullName: 'Dr. R. Naseer',
-        membershipNumber: 'MEM-2231',
-        role: 'FACULTY',
-        maxBorrowLimit: 12,
-        activeLoansCount: 1,
-        unpaidFines: 0,
-        status: 'ACTIVE',
-        holdsWaiting: 0
-      });
-      setCheckoutDays(30);
-    } else if (memNumber === 'MEM-1187') {
-      setSelectedPatron({
-        fullName: 'S. Fathima',
-        membershipNumber: 'MEM-1187',
-        role: 'STUDENT',
-        maxBorrowLimit: 5,
-        activeLoansCount: 3,
-        unpaidFines: 0,
-        status: 'ACTIVE',
-        holdsWaiting: 0
-      });
-      setCheckoutDays(14);
-    } else {
-      setSelectedPatron({
-        fullName: 'Rashid Vattaparamba',
-        membershipNumber: 'KMLRI-2026-0001',
-        role: 'RESEARCHER',
-        maxBorrowLimit: 8,
-        activeLoansCount: 2,
-        unpaidFines: 80,
-        status: 'ACTIVE',
-        holdsWaiting: 1
-      });
-      setCheckoutDays(21);
+  const refreshPatron = async (userId: string) => {
+    try {
+      const full = await api.getUser(userId);
+      setSelectedPatron(full);
+      return full;
+    } catch {
+      return null;
     }
   };
 
-  const handleAddCheckoutItem = (e: React.FormEvent) => {
+  const handlePatronLookup = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!patronSearch.trim()) return;
+    setPatronLoading(true);
+    try {
+      const matches = await api.getUsers(patronSearch.trim());
+      if (!matches || matches.length === 0) {
+        setSelectedPatron(null);
+        setNotification({ type: 'error', text: `No member found matching "${patronSearch}".` });
+        return;
+      }
+      const full = await api.getUser(matches[0].id);
+      setSelectedPatron(full);
+    } catch (err: any) {
+      setSelectedPatron(null);
+      setNotification({ type: 'error', text: err.message || 'Patron lookup failed.' });
+    } finally {
+      setPatronLoading(false);
+    }
+  };
+
+  const handleAddCheckoutItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!checkoutBarcode.trim()) return;
-    
-    let title = 'General Library Volume';
-    let shelfmark = 'GEN-001';
-    if (checkoutBarcode.toUpperCase().includes('MS0142')) {
-      title = 'Bayān al-Fawāʾid';
-      shelfmark = 'MS 0142';
-    } else if (checkoutBarcode.toUpperCase().includes('RB0908')) {
-      title = 'Tuḥfat al-Mujāhidīn (Latin Edition)';
-      shelfmark = 'RB 0908';
-    } else if (checkoutBarcode.toUpperCase().includes('AM0311')) {
-      title = 'Muḥyiddīn Mālā Print';
-      shelfmark = 'AM 0311';
-    } else {
-      title = `Volume (${checkoutBarcode.toUpperCase()})`;
-      shelfmark = 'ACC-8891';
+    if (!checkoutBarcode.trim() || !selectedPatron) return;
+    setIssuing(true);
+    try {
+      const loan = await api.checkOut({
+        barcode: checkoutBarcode.trim(),
+        userIdentifier: selectedPatron.membershipNumber,
+        dueDays: checkoutDays,
+      });
+      setIssuedThisSession([
+        {
+          id: loan.id,
+          barcode: loan.copy?.barcode || checkoutBarcode,
+          title: loan.copy?.bibRecord?.titleLatin || 'Item',
+          shelfmark: loan.copy?.bibRecord?.shelfmark || '',
+          days: checkoutDays,
+          dueDate: formatDate(loan.dueDate),
+        },
+        ...issuedThisSession,
+      ]);
+      setCheckoutBarcode('');
+      setNotification({ type: 'success', text: `Issued "${loan.copy?.bibRecord?.titleLatin}" to ${selectedPatron.fullName}. Due ${formatDate(loan.dueDate)}.` });
+      await refreshPatron(selectedPatron.id);
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not issue item.' });
+    } finally {
+      setIssuing(false);
     }
-
-    const newItem = {
-      id: `ITEM-${Date.now()}`,
-      barcode: checkoutBarcode.toUpperCase(),
-      title,
-      shelfmark,
-      days: checkoutDays,
-      dueDate: new Date(Date.now() + checkoutDays * 86400000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    };
-
-    setCart([...cart, newItem]);
-    setCheckoutBarcode('');
-    setNotification({
-      type: 'success',
-      text: `Added "${title}" (${newItem.barcode}) to issue cart.`
-    });
   };
 
-  const handleFinalizeCheckout = () => {
-    if (cart.length === 0) return;
-    setNotification({
-      type: 'success',
-      text: `Successfully issued ${cart.length} volume(s) to ${selectedPatron.fullName}. Due dates recorded.`
-    });
-    setCart([]);
-  };
-
-  const handleCheckinSubmit = (e: React.FormEvent) => {
+  const handleCheckinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkinBarcode.trim()) return;
-    
-    const bc = checkinBarcode.toUpperCase();
-    let title = 'Returned Library Item';
-    let patron = selectedPatron?.fullName || 'Rashid Vattaparamba';
-    let fine = 0;
-    let routing = 'Return to Stack 4 / Shelf B';
-
-    if (bc.includes('RB0908')) {
-      title = 'Tuḥfat al-Mujāhidīn (Latin Edition)';
-      patron = 'Rashid Vattaparamba';
-      fine = 80;
-      routing = 'Hold Shelf A1 (Waiting for Dr. Tariq al-Omani)';
-    } else if (bc.includes('MS0142')) {
-      title = 'Bayān al-Fawāʾid';
-      patron = 'Dr. Naseer';
-      fine = 0;
-      routing = 'Return to Manuscript Vault Box 14';
-    } else if (bc.includes('AM0311')) {
-      title = 'Muḥyiddīn Mālā Print';
-      patron = 'S. Fathima';
-      fine = 0;
-      routing = 'Rare Print Vault Shelf 2';
+    setReturning(true);
+    try {
+      const result = await api.checkIn({ barcode: checkinBarcode.trim(), conditionNote: checkinCondition });
+      const record = {
+        id: `RET-${Date.now().toString().slice(-6)}`,
+        barcode: result.barcode,
+        title: result.title,
+        patron: result.patron,
+        returnTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        condition: checkinCondition,
+        fineAssessed: result.fineAssessed || 0,
+      };
+      setRecentReturns([record, ...recentReturns]);
+      setCheckinBarcode('');
+      setNotification({
+        type: result.fineAssessed > 0 ? 'error' : 'success',
+        text: `Check-in complete: "${result.title}". ${result.fineAssessed > 0 ? `Late fine assessed: ₹${result.fineAssessed}.` : 'No late fines.'}`,
+      });
+      if (selectedPatron) await refreshPatron(selectedPatron.id);
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not process return.' });
+    } finally {
+      setReturning(false);
     }
-
-    const record = {
-      id: `RET-${Date.now().toString().slice(-4)}`,
-      barcode: bc,
-      title,
-      patron,
-      returnTime: 'Just now',
-      condition: checkinCondition,
-      fineAssessed: fine,
-      routing
-    };
-
-    setRecentReturns([record, ...recentReturns]);
-    setCheckinBarcode('');
-    setNotification({
-      type: fine > 0 ? 'error' : 'success',
-      text: `Check-in complete: "${title}". ${fine > 0 ? `Late Fine Assessed: ₹${fine}. ` : 'No late fines. '}Routing: ${routing}`
-    });
   };
+
+  const activeLoansCount = selectedPatron?.loans?.filter((l: any) => l.status === 'ACTIVE').length || 0;
+  const unpaidFinesTotal = (selectedPatron?.fines || [])
+    .filter((f: any) => f.status === 'UNPAID')
+    .reduce((acc: number, f: any) => acc + f.amount, 0);
+  const holdsWaiting = (selectedPatron?.reservations || []).filter(
+    (r: any) => r.status === 'PENDING' || r.status === 'READY_FOR_PICKUP',
+  ).length;
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
@@ -222,8 +171,8 @@ export default function CirculationDeskCheckinCheckoutPage() {
             )}
             <span>{notification.text}</span>
           </div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => setNotification(null)}
             className="text-gray-400 hover:text-gray-700 ml-4 font-bold"
           >
@@ -264,7 +213,6 @@ export default function CirculationDeskCheckinCheckoutPage() {
       {/* MODE 1: CHECK OUT (ISSUE ITEMS) */}
       {activeTab === 'checkout' && (
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-          
           {/* Left Column: Patron Verification Card */}
           <div className="space-y-4">
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-sm space-y-4">
@@ -273,94 +221,83 @@ export default function CirculationDeskCheckinCheckoutPage() {
                   <User className="w-3.5 h-3.5 text-[#A52307]" />
                   <span>Step 1: Patron Lookup</span>
                 </span>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                  {selectedPatron?.status}
-                </span>
+                {selectedPatron && (
+                  <span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                      selectedPatron.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {selectedPatron.status}
+                  </span>
+                )}
               </div>
 
-              {/* Patron Search & Fast Select */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700 block">Patron Membership ID / Barcode</label>
+              {/* Patron Search */}
+              <form onSubmit={handlePatronLookup} className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-700 block">Patron Membership ID / Email</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={patronSearch}
                     onChange={(e) => setPatronSearch(e.target.value)}
-                    placeholder="Scan patron card..."
+                    placeholder="Scan patron card, e.g. KMLRI-2026-0001"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
                   />
                   <button
-                    type="button"
-                    onClick={() => handlePatronSelect(patronSearch)}
-                    className="px-3 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307]"
+                    type="submit"
+                    disabled={patronLoading}
+                    className="px-3 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] disabled:opacity-50 flex items-center gap-1.5"
                   >
+                    {patronLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     Lookup
                   </button>
                 </div>
-              </div>
-
-              {/* Quick Select Preset Buttons */}
-              <div className="space-y-1.5 pt-1">
-                <span className="text-[10px] text-gray-400 uppercase font-bold block">Quick Demo Patrons:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'KMLRI-2026-0001', name: 'Rashid (Researcher)' },
-                    { id: 'MEM-2231', name: 'Dr. Naseer (Faculty)' },
-                    { id: 'MEM-1187', name: 'S. Fathima (Student)' },
-                  ].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handlePatronSelect(p.id)}
-                      className={`px-2 py-1 border text-[10px] rounded font-mono transition-colors ${
-                        selectedPatron?.membershipNumber === p.id
-                          ? 'bg-black text-white border-black font-bold'
-                          : 'bg-[#FAF8F5] text-gray-700 border-gray-300 hover:border-black'
-                      }`}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </form>
 
               {/* Patron Eligibility Summary Box */}
               {selectedPatron && (
                 <div className="bg-[#FAF8F5] p-3.5 rounded border border-[#E2E0DB] space-y-2.5 text-xs">
                   <div>
                     <h4 className="font-bold text-gray-900 text-sm">{selectedPatron.fullName}</h4>
-                    <span className="text-gray-500 font-mono text-[11px]">{selectedPatron.membershipNumber} · {selectedPatron.role}</span>
+                    <span className="text-gray-500 font-mono text-[11px]">
+                      {selectedPatron.membershipNumber} · {selectedPatron.role}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E0DB] text-[11px]">
                     <div>
                       <span className="text-gray-500 block">Borrow Quota:</span>
                       <strong className="text-gray-900 font-mono font-bold">
-                        {selectedPatron.activeLoansCount + cart.length} / {selectedPatron.maxBorrowLimit} Books
+                        {activeLoansCount} / {selectedPatron.maxBorrowLimit} Books
                       </strong>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Unpaid Fines:</span>
-                      <strong className={`font-mono font-bold ${selectedPatron.unpaidFines > 0 ? 'text-[#A52307]' : 'text-emerald-700'}`}>
-                        ₹{selectedPatron.unpaidFines}
+                      <strong className={`font-mono font-bold ${unpaidFinesTotal > 0 ? 'text-[#A52307]' : 'text-emerald-700'}`}>
+                        ₹{unpaidFinesTotal}
                       </strong>
                     </div>
                   </div>
 
-                  {selectedPatron.holdsWaiting > 0 && (
+                  {holdsWaiting > 0 && (
                     <div className="bg-amber-100 text-amber-900 p-2 rounded text-[11px] font-bold flex items-center gap-1.5">
                       <Bookmark className="w-3.5 h-3.5 text-amber-700" />
-                      <span>1 Hold ready for pickup on Hold Shelf A1</span>
+                      <span>{holdsWaiting} hold{holdsWaiting > 1 ? 's' : ''} waiting for this patron</span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {!selectedPatron && (
+                <div className="py-4 text-center text-gray-400 font-mono text-[11px]">
+                  Look up a patron to begin an issue session.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column: Barcode Scan & Issue Cart */}
+          {/* Right Column: Barcode Scan & Issue Log */}
           <div className="space-y-4">
-            
             {/* Step 2: Item Barcode Scan */}
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-sm space-y-4">
               <div className="border-b border-[#E2E0DB] pb-2.5 flex justify-between items-center">
@@ -368,9 +305,7 @@ export default function CirculationDeskCheckinCheckoutPage() {
                   <Barcode className="w-3.5 h-3.5 text-[#A52307]" />
                   <span>Step 2: Scan Item Barcode &amp; Set Duration</span>
                 </span>
-                <span className="text-[11px] font-bold font-mono text-gray-500">
-                  Loan Duration: {checkoutDays} Days
-                </span>
+                <span className="text-[11px] font-bold font-mono text-gray-500">Loan Duration: {checkoutDays} Days</span>
               </div>
 
               <form onSubmit={handleAddCheckoutItem} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-3">
@@ -380,8 +315,9 @@ export default function CirculationDeskCheckinCheckoutPage() {
                     type="text"
                     value={checkoutBarcode}
                     onChange={(e) => setCheckoutBarcode(e.target.value)}
-                    placeholder="Scan MS0142-01 or RB0908-01..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                    placeholder="Scan copy barcode..."
+                    disabled={!selectedPatron}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none disabled:bg-gray-100"
                     autoFocus
                   />
                 </div>
@@ -404,65 +340,32 @@ export default function CirculationDeskCheckinCheckoutPage() {
                 <div className="flex items-end">
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px]"
+                    disabled={!selectedPatron || issuing}
+                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px] disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    + Add Volume
+                    {issuing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>Issue Volume</span>
                   </button>
                 </div>
               </form>
 
-              {/* Preset Sample Barcodes */}
-              <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
-                <span className="font-bold">Test Barcodes:</span>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutBarcode('MS0142-01')}
-                  className="underline hover:text-black font-mono"
-                >
-                  MS0142-01 (Bayān)
-                </button>
-                <span>·</span>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutBarcode('RB0908-01')}
-                  className="underline hover:text-black font-mono"
-                >
-                  RB0908-01 (Tuḥfat)
-                </button>
-                <span>·</span>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutBarcode('AM0311-01')}
-                  className="underline hover:text-black font-mono"
-                >
-                  AM0311-01 (Mālā)
-                </button>
-              </div>
+              {!selectedPatron && (
+                <p className="text-[11px] text-gray-400">Look up a patron on the left before scanning items.</p>
+              )}
             </div>
 
-            {/* Step 3: Checkout Cart Table */}
+            {/* Step 3: Issued This Session */}
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-sm space-y-4">
               <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">Items Queued for Issue ({cart.length})</h3>
-                  <span className="text-xs text-gray-500">Volumes will be stamped with the respective return due date.</span>
+                  <h3 className="text-base font-bold text-gray-900">Issued This Session ({issuedThisSession.length})</h3>
+                  <span className="text-xs text-gray-500">Each scan issues immediately and stamps the due date.</span>
                 </div>
-
-                {cart.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleFinalizeCheckout}
-                    className="px-6 py-2 bg-emerald-700 text-white rounded text-xs font-bold hover:bg-emerald-800 transition-colors flex items-center gap-1.5 shadow"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>Complete Issue ({cart.length})</span>
-                  </button>
-                )}
               </div>
 
-              {cart.length === 0 ? (
+              {issuedThisSession.length === 0 ? (
                 <div className="py-10 text-center text-gray-400 font-mono text-xs">
-                  Scan an item barcode above to add books to this patron's issue session.
+                  Scan an item barcode above to issue a book to this patron.
                 </div>
               ) : (
                 <table className="w-full border-collapse text-left text-xs font-sans">
@@ -471,13 +374,12 @@ export default function CirculationDeskCheckinCheckoutPage() {
                       <th className="py-2.5 px-3">Volume Title &amp; Shelfmark</th>
                       <th className="py-2.5 px-3">Barcode</th>
                       <th className="py-2.5 px-3">Loan Days</th>
-                      <th className="py-2.5 px-3">Calculated Due Date</th>
-                      <th className="py-2.5 px-3 text-right">Action</th>
+                      <th className="py-2.5 px-3">Due Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#EEECE7]">
-                    {cart.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-[#FAF8F5]">
+                    {issuedThisSession.map((item, idx) => (
+                      <tr key={item.id || idx} className="hover:bg-[#FAF8F5]">
                         <td className="py-3 px-3">
                           <strong className="text-gray-900 block">{item.title}</strong>
                           <span className="font-mono text-gray-500 text-[11px]">{item.shelfmark}</span>
@@ -485,22 +387,12 @@ export default function CirculationDeskCheckinCheckoutPage() {
                         <td className="py-3 px-3 font-mono font-bold text-gray-900">{item.barcode}</td>
                         <td className="py-3 px-3 text-gray-700">{item.days} Days</td>
                         <td className="py-3 px-3 font-mono font-bold text-emerald-800">{item.dueDate}</td>
-                        <td className="py-3 px-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setCart(cart.filter((_, i) => i !== idx))}
-                            className="text-red-600 hover:underline text-[11px] font-bold"
-                          >
-                            Remove
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
             </div>
-
           </div>
         </div>
       )}
@@ -508,7 +400,6 @@ export default function CirculationDeskCheckinCheckoutPage() {
       {/* MODE 2: CHECK IN (RETURN ITEMS) */}
       {activeTab === 'checkin' && (
         <div className="space-y-6">
-          
           {/* Checkin Scanner Input Card */}
           <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
             <div className="border-b border-[#E2E0DB] pb-3">
@@ -517,18 +408,18 @@ export default function CirculationDeskCheckinCheckoutPage() {
                 <span>Rapid Return Scanning Station</span>
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Scan returned barcodes or RFID tags. Overdue penalties and routing triggers calculate automatically.
+                Scan returned barcodes or RFID tags. Overdue penalties calculate automatically.
               </p>
             </div>
 
             <form onSubmit={handleCheckinSubmit} className="grid grid-cols-1 sm:grid-cols-[1fr_200px_auto] gap-3">
               <div>
-                <label className="text-[11px] font-bold text-gray-700 block mb-1">Scanned Item Barcode / Shelfmark</label>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">Scanned Item Barcode</label>
                 <input
                   type="text"
                   value={checkinBarcode}
                   onChange={(e) => setCheckinBarcode(e.target.value)}
-                  placeholder="Scan returned book barcode (e.g. RB0908-01)..."
+                  placeholder="Scan returned book barcode..."
                   className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
                   autoFocus
                 />
@@ -551,32 +442,14 @@ export default function CirculationDeskCheckinCheckoutPage() {
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px] flex items-center gap-1.5"
+                  disabled={returning}
+                  className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px] flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  <Check className="w-4 h-4" />
+                  {returning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   <span>Process Check-In</span>
                 </button>
               </div>
             </form>
-
-            <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
-              <span className="font-bold">Test Return Barcodes:</span>
-              <button
-                type="button"
-                onClick={() => setCheckinBarcode('RB0908-01')}
-                className="underline hover:text-black font-mono text-[#A52307]"
-              >
-                RB0908-01 (Overdue with Fine)
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={() => setCheckinBarcode('MS0142-01')}
-                className="underline hover:text-black font-mono"
-              >
-                MS0142-01 (Standard Return)
-              </button>
-            </div>
           </div>
 
           {/* Session Returns Log */}
@@ -586,50 +459,50 @@ export default function CirculationDeskCheckinCheckoutPage() {
               <span className="text-xs text-gray-500 font-mono">{recentReturns.length} volumes returned</span>
             </div>
 
-            <table className="w-full border-collapse text-left text-xs font-sans">
-              <thead>
-                <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                  <th className="py-3 px-3">Item Title &amp; Barcode</th>
-                  <th className="py-3 px-3">Returning Patron</th>
-                  <th className="py-3 px-3">Condition</th>
-                  <th className="py-3 px-3">Overdue Fine</th>
-                  <th className="py-3 px-3">Re-Shelving / Hold Routing</th>
-                  <th className="py-3 px-3 text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EEECE7]">
-                {recentReturns.map((ret) => (
-                  <tr key={ret.id} className="hover:bg-[#FAF8F5]">
-                    <td className="py-3.5 px-3">
-                      <strong className="text-gray-900 block">{ret.title}</strong>
-                      <span className="font-mono text-gray-500 text-[11px]">{ret.barcode}</span>
-                    </td>
-                    <td className="py-3.5 px-3 font-semibold text-gray-800">{ret.patron}</td>
-                    <td className="py-3.5 px-3">
-                      <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                        {ret.condition}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      {ret.fineAssessed > 0 ? (
-                        <span className="font-mono font-bold text-[#A52307] bg-red-50 border border-red-200 px-2 py-0.5 rounded">
-                          ₹{ret.fineAssessed} (Cashier Due)
-                        </span>
-                      ) : (
-                        <span className="text-emerald-700 font-bold">₹0 (On Time)</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 font-mono font-semibold text-gray-900">{ret.routing}</td>
-                    <td className="py-3.5 px-3 text-right text-gray-500 font-mono">{ret.returnTime}</td>
+            {recentReturns.length === 0 ? (
+              <div className="py-10 text-center text-gray-400 font-mono text-xs">
+                No returns processed yet this session.
+              </div>
+            ) : (
+              <table className="w-full border-collapse text-left text-xs font-sans">
+                <thead>
+                  <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                    <th className="py-3 px-3">Item Title &amp; Barcode</th>
+                    <th className="py-3 px-3">Returning Patron</th>
+                    <th className="py-3 px-3">Condition</th>
+                    <th className="py-3 px-3">Overdue Fine</th>
+                    <th className="py-3 px-3 text-right">Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#EEECE7]">
+                  {recentReturns.map((ret) => (
+                    <tr key={ret.id} className="hover:bg-[#FAF8F5]">
+                      <td className="py-3.5 px-3">
+                        <strong className="text-gray-900 block">{ret.title}</strong>
+                        <span className="font-mono text-gray-500 text-[11px]">{ret.barcode}</span>
+                      </td>
+                      <td className="py-3.5 px-3 font-semibold text-gray-800">{ret.patron}</td>
+                      <td className="py-3.5 px-3">
+                        <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-[10px] font-bold">{ret.condition}</span>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {ret.fineAssessed > 0 ? (
+                          <span className="font-mono font-bold text-[#A52307] bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                            ₹{ret.fineAssessed} (Cashier Due)
+                          </span>
+                        ) : (
+                          <span className="text-emerald-700 font-bold">₹0 (On Time)</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right text-gray-500 font-mono">{ret.returnTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

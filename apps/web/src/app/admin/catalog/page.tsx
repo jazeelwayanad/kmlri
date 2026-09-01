@@ -86,47 +86,8 @@ export default function CatalogueRecordsPage() {
       const res = await api.searchCatalog({ q: search, limit: 50 });
       setRecords(res.data || []);
     } catch {
-      setRecords([
-        {
-          id: 'rec-1',
-          titleLatin: 'Bayān al-Fawāʾid',
-          titleArabic: 'بيان الفوائد',
-          authors: ['Unnamed scribe, Malabar coast'],
-          shelfmark: 'MS 0142',
-          format: 'MANUSCRIPT',
-          language: 'Arabic',
-          accessLevel: 'DIGITISED_FULL',
-          totalCopiesCount: 3,
-          availableCopiesCount: 2,
-          subjects: ['Islamic Jurisprudence', 'Malabar Manuscripts'],
-        },
-        {
-          id: 'rec-2',
-          titleLatin: 'Muḥyiddīn Mālā',
-          titleArabic: 'محي الدين مالا',
-          authors: ['Qāḍī Muḥammad'],
-          shelfmark: 'AM 0311',
-          format: 'ARABI_MALAYALAM_PRINT',
-          language: 'Arabi-Malayalam',
-          accessLevel: 'DIGITISED_FULL',
-          totalCopiesCount: 2,
-          availableCopiesCount: 1,
-          subjects: ['Sufi Poetry', 'Arabi-Malayalam Literature'],
-        },
-        {
-          id: 'rec-3',
-          titleLatin: 'Tuḥfat al-Mujāhidīn fī Baʿḍ Akhbār al-Purtuk͟hālīyīn',
-          titleArabic: 'تحفة المجاهدين في بعض أخبار البرتغاليين',
-          authors: ['Shaykh Zayn al-Dīn al-Makhdūm II'],
-          shelfmark: 'RB 0908',
-          format: 'RARE_BOOK',
-          language: 'Arabic',
-          accessLevel: 'READING_ROOM_ONLY',
-          totalCopiesCount: 4,
-          availableCopiesCount: 3,
-          subjects: ['Malabar History', 'Portuguese Conflict'],
-        },
-      ]);
+      setRecords([]);
+      setNotification({ type: 'error', text: 'Could not load catalogue records from the server.' });
     } finally {
       setLoading(false);
     }
