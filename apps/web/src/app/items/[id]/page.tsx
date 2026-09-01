@@ -18,6 +18,29 @@ export default function ItemDetailPage() {
   const [folioIndex, setFolioIndex] = useState(0);
   const [holdStatus, setHoldStatus] = useState<string | null>(null);
   const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
+  const [readingLists, setReadingLists] = useState<{ id: string; name: string }[]>([]);
+  const [selectedListId, setSelectedListId] = useState('');
+  const [listStatus, setListStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .getReadingLists()
+      .then((lists) => setReadingLists(lists || []))
+      .catch(() => {});
+  }, [user]);
+
+  const handleAddToList = async () => {
+    if (!selectedListId || !record) return;
+    try {
+      await api.addToReadingList(selectedListId, record.id);
+      setListStatus('Added to reading list.');
+    } catch (err: any) {
+      setListStatus(err.message || 'Could not add to reading list.');
+    } finally {
+      setTimeout(() => setListStatus(null), 3000);
+    }
+  };
 
   useEffect(() => {
     async function loadItem() {
@@ -119,7 +142,7 @@ export default function ItemDetailPage() {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={handlePlaceHold}
@@ -127,11 +150,40 @@ export default function ItemDetailPage() {
               >
                 Place Hold / Reserve
               </button>
+              {user && readingLists.length > 0 && (
+                <div className="flex items-center gap-2 font-sans">
+                  <select
+                    value={selectedListId}
+                    onChange={(e) => setSelectedListId(e.target.value)}
+                    className="border border-black text-xs px-2 py-2.5 rounded outline-none bg-white"
+                  >
+                    <option value="">Add to reading list…</option>
+                    {readingLists.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddToList}
+                    disabled={!selectedListId}
+                    className="px-4 py-2.5 border-2 border-black text-xs uppercase font-bold tracking-wider hover:bg-black hover:text-white transition-colors disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {holdStatus && (
             <div className="mt-3 p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-sans rounded">
               {holdStatus}
+            </div>
+          )}
+          {listStatus && (
+            <div className="mt-3 p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-sans rounded">
+              {listStatus}
             </div>
           )}
         </div>

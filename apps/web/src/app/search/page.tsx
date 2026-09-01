@@ -7,8 +7,9 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, BibliographicRecord } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { getRecordSlug } from '@/lib/slugs';
-import { Filter, ChevronDown, Check } from 'lucide-react';
+import { Filter, ChevronDown, Check, BookmarkPlus } from 'lucide-react';
 
 const ACCESS_LABELS: Record<string, string> = {
   DIGITISED_FULL: 'Digitised in full',
@@ -53,6 +54,8 @@ export default function SearchPage() {
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const queryParam = searchParams.get('q') || '';
   const formatParam = searchParams.get('format');
   const scriptParam = searchParams.get('script');
@@ -184,9 +187,30 @@ function SearchContent() {
         </form>
 
         <div className="flex justify-between items-baseline my-3 sm:my-[14px] mb-4 sm:mb-[26px] text-[16px] sm:text-[18px] flex-wrap gap-2">
-          <Link href="/advanced" className="hover:text-heritage-red font-semibold">
-            Advanced Search →
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/advanced" className="hover:text-heritage-red font-semibold">
+              Advanced Search →
+            </Link>
+            {user && queryParam && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setSaveStatus('saving');
+                  try {
+                    await api.createSavedSearch(queryParam);
+                    setSaveStatus('saved');
+                  } catch {
+                    setSaveStatus('error');
+                  }
+                }}
+                disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                className="text-sm font-sans font-semibold text-heritage-muted hover:text-heritage-red flex items-center gap-1 disabled:opacity-60"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+                {saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Could not save' : 'Save this search'}
+              </button>
+            )}
+          </div>
           <span className="text-heritage-subtle text-[15px] sm:text-[17px] font-sans">
             {loading ? 'Searching…' : `${totalCount} result${totalCount === 1 ? '' : 's'} found`}
           </span>

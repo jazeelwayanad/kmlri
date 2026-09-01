@@ -15,10 +15,29 @@ export class ReadingListsService {
     const items = ids.length
       ? await this.prisma.bibliographicRecord.findMany({
           where: { id: { in: ids } },
-          select: { id: true, titleLatin: true, titleArabic: true, shelfmark: true, format: true, coverImageUrl: true },
+          select: {
+            id: true,
+            titleLatin: true,
+            titleArabic: true,
+            shelfmark: true,
+            format: true,
+            coverImageUrl: true,
+            authors: true,
+            publicationYear: true,
+          },
         })
       : [];
-    return { ...list, itemIds: ids, items };
+    return {
+      ...list,
+      itemIds: ids,
+      items: items.map((i) => {
+        let authors: string[] = [];
+        try {
+          authors = JSON.parse(i.authors);
+        } catch {}
+        return { ...i, authors };
+      }),
+    };
   }
 
   async findAll(userId: string) {
