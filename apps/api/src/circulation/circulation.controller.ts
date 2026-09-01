@@ -40,9 +40,9 @@ export class CirculationController {
 
   @UseGuards(JwtAuthGuard)
   @Get('loans/history')
-  getLoanHistory(@Request() req: any) {
+  getLoanHistory(@Query('userId') userId: string | undefined, @Request() req: any) {
     const isStaff = ['SUPER_ADMIN', 'ADMIN', 'LIBRARIAN'].includes(req.user.role);
-    return this.circulationService.getLoanHistory(isStaff ? undefined : req.user.id);
+    return this.circulationService.getLoanHistory(isStaff ? userId : req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

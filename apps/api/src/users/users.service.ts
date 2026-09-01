@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -67,24 +67,28 @@ export class UsersService {
     });
   }
 
-  async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        roleRel: true,
-        loans: {
-          include: { copy: { include: { bibRecord: true } } },
-          orderBy: { createdAt: 'desc' },
-        },
-        reservations: {
-          include: { bibRecord: true },
-          orderBy: { createdAt: 'desc' },
-        },
-        fines: {
-          orderBy: { createdAt: 'desc' },
-        },
+  async findOne(idOrMembershipNumber: string) {
+    const include = {
+      roleRel: true,
+      loans: {
+        include: { copy: { include: { bibRecord: true } } },
+        orderBy: { createdAt: 'desc' as const },
       },
-    });
+      reservations: {
+        include: { bibRecord: true },
+        orderBy: { createdAt: 'desc' as const },
+      },
+      fines: {
+        include: { loan: { include: { copy: { include: { bibRecord: true } } } } },
+        orderBy: { createdAt: 'desc' as const },
+      },
+    };
+
+    let user = await this.prisma.user.findUnique({ where: { id: idOrMembershipNumber }, include });
+
+    if (!user) {
+      user = await this.prisma.user.findUnique({ where: { membershipNumber: idOrMembershipNumber }, include });
+    }
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -123,5 +127,27 @@ export class UsersService {
         maxBorrowLimit: true,
       },
     });
+  }
+
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { loans: true, fines: true } },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user._count.loans > 0 || user._count.fines > 0) {
+      throw new ConflictException(
+        'This member has circulation history (loans or fines) and cannot be deleted. Suspend the account instead.',
+      );
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+    return { success: true };
   }
 }

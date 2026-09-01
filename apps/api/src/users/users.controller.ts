@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -23,8 +23,14 @@ export class UsersController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() body: { role?: string; status?: string; maxBorrowLimit?: number },
+    @Body() body: { role?: string; status?: string; maxBorrowLimit?: number; [key: string]: any },
   ) {
     return this.usersService.updateRoleOrStatus(id, body);
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }

@@ -635,8 +635,9 @@ export const api = {
     });
   },
 
-  async getLoanHistory() {
-    return this.fetchWithAuth('/circulation/loans/history');
+  async getLoanHistory(userId?: string) {
+    const query = userId ? `?userId=${userId}` : '';
+    return this.fetchWithAuth(`/circulation/loans/history${query}`);
   },
 
   async getAllHolds(status?: string) {
@@ -679,6 +680,12 @@ export const api = {
     return this.fetchWithAuth(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  },
+
+  async deleteUser(id: string) {
+    return this.fetchWithAuth(`/users/${id}`, {
+      method: 'DELETE',
     });
   },
 
