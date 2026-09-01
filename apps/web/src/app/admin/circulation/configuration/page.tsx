@@ -22,6 +22,35 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { DynamicRole, getDynamicRoles, saveDynamicRoles } from '@/lib/dynamic-roles';
+import { api } from '@/lib/api';
+
+const PREFIX = 'circulation.';
+
+const DEFAULT_RENEWAL_SETTINGS = {
+  defaultRenewalDays: 14,
+  maxRenewalsAllowed: 2,
+  allowOnlineRenewal: true,
+  blockRenewalIfOverdue: true,
+  blockRenewalIfHoldPlaced: true,
+  allowRenewalOverdueGraceLimit: 1,
+};
+
+const DEFAULT_FINE_SETTINGS = {
+  dailyFineRate: 10,
+  rareMaterialDailyFine: 25,
+  maxFineCapPerItem: 500,
+  fineThresholdBlockCirculation: 100,
+  enableAutoFines: true,
+};
+
+const DEFAULT_NOTIFICATION_SETTINGS = {
+  preDueReminderDays: 3,
+  firstOverdueNoticeDays: 1,
+  secondOverdueNoticeDays: 7,
+  finalRecallNoticeDays: 14,
+  sendEmailAlerts: true,
+  sendSmsAlerts: false,
+};
 
 interface CirculationRule {
   roleSlug: string;
@@ -35,7 +64,9 @@ interface CirculationRule {
 export default function CirculationConfigurationPage() {
   const [activeTab, setActiveTab] = useState<'loan_rules' | 'renewals' | 'fines' | 'notifications'>('loan_rules');
   const [saved, setSaved] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Dynamic Loan rules per member type
   const [loanRules, setLoanRules] = useState<CirculationRule[]>([]);
@@ -49,33 +80,35 @@ export default function CirculationConfigurationPage() {
   const [newRuleGrace, setNewRuleGrace] = useState(1);
 
   // Renewal settings
-  const [renewalSettings, setRenewalSettings] = useState({
-    defaultRenewalDays: 14,
-    maxRenewalsAllowed: 2,
-    allowOnlineRenewal: true,
-    blockRenewalIfOverdue: true,
-    blockRenewalIfHoldPlaced: true,
-    allowRenewalOverdueGraceLimit: 1,
-  });
+  const [renewalSettings, setRenewalSettings] = useState(DEFAULT_RENEWAL_SETTINGS);
 
   // Fine settings
-  const [fineSettings, setFineSettings] = useState({
-    dailyFineRate: 10,
-    rareMaterialDailyFine: 25,
-    maxFineCapPerItem: 500,
-    fineThresholdBlockCirculation: 100,
-    enableAutoFines: true,
-  });
+  const [fineSettings, setFineSettings] = useState(DEFAULT_FINE_SETTINGS);
 
   // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
-    preDueReminderDays: 3,
-    firstOverdueNoticeDays: 1,
-    secondOverdueNoticeDays: 7,
-    finalRecallNoticeDays: 14,
-    sendEmailAlerts: true,
-    sendSmsAlerts: false,
-  });
+  const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
+
+  // Load persisted settings from backend
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await api.getSettings(PREFIX);
+        const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
+        if (cancelled) return;
+        setRenewalSettings({ ...DEFAULT_RENEWAL_SETTINGS, ...(map.get(`${PREFIX}renewalSettings`) ?? {}) });
+        setFineSettings({ ...DEFAULT_FINE_SETTINGS, ...(map.get(`${PREFIX}fineSettings`) ?? {}) });
+        setNotificationSettings({ ...DEFAULT_NOTIFICATION_SETTINGS, ...(map.get(`${PREFIX}notificationSettings`) ?? {}) });
+      } catch (err: any) {
+        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load circulation configuration.' });
+      } finally {
+        if (!cancelled) setLoadingSettings(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load dynamic roles from storage / registry
   useEffect(() => {
@@ -114,7 +147,7 @@ export default function CirculationConfigurationPage() {
     setLoanRules(updated);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Sync back to dynamic roles storage
     const currentRoles = getDynamicRoles();
     const updatedRoles = currentRoles.map((r) => {
@@ -148,13 +181,25 @@ export default function CirculationConfigurationPage() {
       }
     });
 
-    saveDynamicRoles(updatedRoles);
-    setSaved(true);
-    setNotification('Circulation configuration & dynamic role loan limits saved successfully.');
-    setTimeout(() => {
-      setSaved(false);
-      setNotification(null);
-    }, 4000);
+    setSaving(true);
+    try {
+      saveDynamicRoles(updatedRoles);
+      await api.setSettings([
+        { key: `${PREFIX}renewalSettings`, value: renewalSettings },
+        { key: `${PREFIX}fineSettings`, value: fineSettings },
+        { key: `${PREFIX}notificationSettings`, value: notificationSettings },
+      ]);
+      setSaved(true);
+      setNotification({ type: 'success', text: 'Circulation configuration & dynamic role loan limits saved successfully.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to save circulation configuration.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => {
+        setSaved(false);
+        setNotification(null);
+      }, 4000);
+    }
   };
 
   const handleAddCustomRule = (e: React.FormEvent) => {
@@ -178,7 +223,7 @@ export default function CirculationConfigurationPage() {
     setShowAddRuleModal(false);
     setNewRuleName('');
     setNewRuleSlug('');
-    setNotification(`Dynamic circulation rule added for role "${newRule.roleName}". Click Save to commit.`);
+    setNotification({ type: 'success', text: `Dynamic circulation rule added for role "${newRule.roleName}". Click Save to commit.` });
     setTimeout(() => setNotification(null), 4000);
   };
 
@@ -189,7 +234,7 @@ export default function CirculationConfigurationPage() {
     }
     if (confirm(`Remove circulation loan rule for "${roleName}"?`)) {
       setLoanRules(loanRules.filter((r) => r.roleSlug !== roleSlug));
-      setNotification(`Rule for "${roleName}" removed. Click Save Changes to commit.`);
+      setNotification({ type: 'success', text: `Rule for "${roleName}" removed. Click Save Changes to commit.` });
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -201,17 +246,31 @@ export default function CirculationConfigurationPage() {
         title="Circulation Configuration"
         description="Configure default loan periods, renewal rules, borrow quotas by dynamic member role, daily fine calculations, and automated return notice triggers."
         actions={
-          <Button variant="primary" icon={Save} onClick={handleSave}>
-            Save Changes
+          <Button variant="primary" icon={Save} onClick={handleSave} disabled={saving || loadingSettings}>
+            {saving ? 'Saving…' : 'Save Changes'}
           </Button>
         }
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <ShieldAlert className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
+          <span>{notification.text}</span>
         </div>
+      )}
+
+      {loadingSettings && (
+        <div className="p-4 text-xs text-gray-500">Loading circulation configuration…</div>
       )}
 
       {/* Tabs */}

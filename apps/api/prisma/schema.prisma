@@ -46,6 +46,7 @@ model User {
   readingLists      ReadingList[]
   auditLogs         AuditLog[]
   referenceQuestions ReferenceQuestion[]
+  reproductionRequests ReproductionRequest[]
 }
 
 model BibliographicRecord {
@@ -72,9 +73,11 @@ model BibliographicRecord {
   subjects          String    // JSON array string of subject terms
   accessLevel       String    @default("DIGITISED_FULL") // DIGITISED_FULL, READING_ROOM_ONLY, RESTRICTED
   coverImageUrl     String?
+  collectionId      String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  collection        Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   copies            ItemCopy[]
   reservations      Reservation[]
   digitalFolios     DigitalFolio[]
@@ -276,4 +279,131 @@ model ContentItem {
   tags              String    @default("[]")     // JSON array of strings
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model Vendor {
+  id                String    @id @default(uuid())
+  name              String
+  type              String?   // e.g. Publisher, Bindery, Subscription Agent
+  contactPerson     String?
+  email             String?
+  phone             String?
+  notes             String?
+  status            String    @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Department {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  headOfDepartment  String?
+  budget            Float?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  assets            Asset[]
+}
+
+model MembershipType {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  maxBorrowLimit    Int       @default(5)
+  loanDurationDays  Int       @default(14)
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Asset {
+  id                String    @id @default(uuid())
+  name              String
+  category          String?   // e.g. Furniture, Equipment, Conservation Tool
+  serialNumber      String?
+  location          String?
+  status            String    @default("ACTIVE") // ACTIVE, IN_MAINTENANCE, RETIRED, LOST
+  purchaseDate      DateTime?
+  purchaseCost      Float?
+  notes             String?
+  departmentId      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  maintenanceLogs   AssetMaintenance[]
+  audits            AssetAudit[]
+}
+
+model AssetMaintenance {
+  id                String    @id @default(uuid())
+  assetId           String
+  description       String
+  cost              Float?
+  performedBy       String?
+  performedAt       DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  asset             Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model AssetAudit {
+  id                String    @id @default(uuid())
+  assetId           String
+  condition         String    // GOOD, FAIR, DAMAGED, MISSING
+  notes             String?
+  auditedBy         String?
+  auditedAt         DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  asset             Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  slug              String    @unique
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  records           BibliographicRecord[]
+}
+
+model Serial {
+  id                String    @id @default(uuid())
+  title             String
+  shelfmark         String?
+  frequency         String?   // e.g. Monthly, Quarterly, Annual
+  publisher         String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  issues            SerialIssue[]
+}
+
+model SerialIssue {
+  id                String    @id @default(uuid())
+  serialId          String
+  issueLabel        String
+  expectedDate      DateTime?
+  receivedDate      DateTime?
+  status            String    @default("EXPECTED") // EXPECTED, RECEIVED, MISSING, CLAIMED
+  createdAt         DateTime  @default(now())
+
+  serial            Serial    @relation(fields: [serialId], references: [id], onDelete: Cascade)
+}
+
+model ReproductionRequest {
+  id                String    @id @default(uuid())
+  userId            String
+  itemDescription   String
+  format            String?   // e.g. PDF/300 DPI, TIFF/600 DPI
+  purpose           String?
+  status            String    @default("SUBMITTED") // SUBMITTED, IN_PROGRESS, READY, DELIVERED, REJECTED
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

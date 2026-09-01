@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sliders, Save, CheckCircle2, AlertTriangle, Database, Search, HardDrive, RefreshCw } from 'lucide-react';
 import { PageHeader, Button, Card } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+const PREFIX = 'system.';
 
 export default function SystemSettingsAdminPage() {
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [instituteName, setInstituteName] = useState('Kunhīn Musliyār Research & Resource Institute');
   const [instituteDomain, setInstituteDomain] = useState('kmlri.in');
@@ -14,10 +19,49 @@ export default function SystemSettingsAdminPage() {
   const [cacheTTL, setCacheTTL] = useState(3600);
   const [searchIndexingEngine, setSearchIndexingEngine] = useState('POSTGRES_FTS_ARABIC');
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await api.getSettings(PREFIX);
+        const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
+        if (cancelled) return;
+        setInstituteName(map.get(`${PREFIX}instituteName`) ?? 'Kunhīn Musliyār Research & Resource Institute');
+        setInstituteDomain(map.get(`${PREFIX}instituteDomain`) ?? 'kmlri.in');
+        setAdminEmail(map.get(`${PREFIX}adminEmail`) ?? 'admin@kmlri.in');
+        setMaintenanceMode(map.get(`${PREFIX}maintenanceMode`) ?? false);
+        setCacheTTL(map.get(`${PREFIX}cacheTTL`) ?? 3600);
+        setSearchIndexingEngine(map.get(`${PREFIX}searchIndexingEngine`) ?? 'POSTGRES_FTS_ARABIC');
+      } catch (err: any) {
+        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load system settings.' });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setNotification('System configuration parameters saved and updated across cluster.');
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    try {
+      await api.setSettings([
+        { key: `${PREFIX}instituteName`, value: instituteName },
+        { key: `${PREFIX}instituteDomain`, value: instituteDomain },
+        { key: `${PREFIX}adminEmail`, value: adminEmail },
+        { key: `${PREFIX}maintenanceMode`, value: maintenanceMode },
+        { key: `${PREFIX}cacheTTL`, value: cacheTTL },
+        { key: `${PREFIX}searchIndexingEngine`, value: searchIndexingEngine },
+      ]);
+      setNotification({ type: 'success', text: 'System configuration parameters saved and updated across cluster.' });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to save system configuration.' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   const inputClasses =
@@ -33,13 +77,28 @@ export default function SystemSettingsAdminPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
+        <div
+          className={`p-4 rounded-lg text-sm font-semibold flex items-center gap-2 ring-1 ring-inset ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+              : 'bg-red-50 text-red-700 ring-red-600/20'
+          }`}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
+          <span>{notification.text}</span>
         </div>
       )}
 
+      {loading && (
+        <div className="p-4 text-sm text-gray-500">Loading system settings…</div>
+      )}
+
       {/* Settings Form */}
+      {!loading && (
       <Card className="max-w-3xl">
         <form onSubmit={handleSave} className="space-y-6 text-xs">
           <div className="space-y-4">
@@ -128,12 +187,13 @@ export default function SystemSettingsAdminPage() {
           </div>
 
           <div className="pt-4 border-t border-gray-100 flex justify-end">
-            <Button type="submit" variant="primary" icon={Save}>
-              Save System Configuration
+            <Button type="submit" variant="primary" icon={Save} disabled={saving}>
+              {saving ? 'Saving…' : 'Save System Configuration'}
             </Button>
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }
