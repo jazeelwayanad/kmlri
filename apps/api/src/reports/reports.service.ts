@@ -82,4 +82,14 @@ export class ReportsService {
 
     return loans;
   }
+
+  async getAuditLogs(limit = 100) {
+    return this.prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 500),
+      include: {
+        user: { select: { fullName: true, membershipNumber: true } },
+      },
+    });
+  }
 }

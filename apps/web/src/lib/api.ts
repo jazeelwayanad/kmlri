@@ -724,6 +724,11 @@ export const api = {
     return this.fetchWithAuth('/reports/circulation');
   },
 
+  async getAuditLogs(limit?: number) {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.fetchWithAuth(`/reports/audit-logs${query}`);
+  },
+
   // Newsletter
   async subscribeNewsletter(email: string) {
     return this.fetchWithAuth('/newsletter/subscribe', {
