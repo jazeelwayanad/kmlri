@@ -1,52 +1,63 @@
 'use client';
 
-import { useState } from 'react';
-import { Building2, Search, CheckCircle2, Calendar, Clock } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { useState, useEffect } from 'react';
+import { Search, CheckCircle2, X } from 'lucide-react';
+import { PageHeader } from '@/components/admin/ui';
+import { api } from '@/lib/api';
+
+interface Booking {
+  id: string;
+  type: string;
+  resourceName: string;
+  date: string;
+  timeSlot: string;
+  notes?: string;
+  status: 'CONFIRMED' | 'CANCELLED';
+  user: { fullName: string; membershipNumber: string };
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
 export default function ReservationsAndBookingsPage() {
-  const [bookings, setBookings] = useState([
-    {
-      id: 'CAR-301',
-      patron: 'Rashid Vattaparamba (MEM-2026-0001)',
-      facility: 'Manuscript Consultation Carrel #02',
-      date: '02 Sep 2026',
-      timeSlot: '09:30 AM – 01:30 PM',
-      purpose: 'Foliated codicological examination of MS 0142',
-      status: 'APPROVED',
-    },
-    {
-      id: 'CAR-302',
-      patron: 'Amina Sabeelul (MEM-2026-0002)',
-      facility: 'Digital Microfilm Reader Station #01',
-      date: '03 Sep 2026',
-      timeSlot: '02:00 PM – 05:00 PM',
-      purpose: 'Review of Al-Bayān periodical microfiches',
-      status: 'PENDING_APPROVAL',
-    },
-    {
-      id: 'CAR-303',
-      patron: 'Prof. Ananya Sen (Visiting Fellow)',
-      facility: 'Archival Seminar Room A',
-      date: '05 Sep 2026',
-      timeSlot: '10:00 AM – 01:00 PM',
-      purpose: 'Research colloquium preparatory group work',
-      status: 'APPROVED',
-    },
-  ]);
-
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
-  const handleApprove = (id: string) => {
-    setBookings(bookings.map((b) => b.id === id ? { ...b, status: 'APPROVED' } : b));
-    setNotification(`Booking #${id} confirmed.`);
-    setTimeout(() => setNotification(null), 3500);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getAllBookings();
+      setBookings(data || []);
+    } catch {
+      setNotification('Could not load facility bookings from the server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = bookings.filter((b) =>
-    b.facility.toLowerCase().includes(search.toLowerCase()) ||
-    b.patron.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleCancel = async (id: string) => {
+    try {
+      await api.cancelBooking(id);
+      setNotification('Booking cancelled.');
+      await load();
+    } catch (err: any) {
+      setNotification(err.message || 'Could not cancel this booking.');
+    } finally {
+      setTimeout(() => setNotification(null), 3500);
+    }
+  };
+
+  const filtered = bookings.filter(
+    (b) =>
+      b.resourceName.toLowerCase().includes(search.toLowerCase()) ||
+      b.user.fullName.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -54,7 +65,7 @@ export default function ReservationsAndBookingsPage() {
       <PageHeader
         eyebrow="Support &amp; Services · Facilities Desk"
         title="Reservations &amp; Facility Bookings"
-        description="Review and manage study carrel reservations, microfilm reading station allocations, and seminar room bookings."
+        description="Review reading desk, study room, and consultation bookings made by members through the self-service portal."
       />
 
       {notification && (
@@ -80,49 +91,59 @@ export default function ReservationsAndBookingsPage() {
 
       {/* Bookings Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">Booking Ref</th>
-              <th className="py-3 px-4">Scholar / Patron</th>
-              <th className="py-3 px-4">Facility &amp; Time Slot</th>
-              <th className="py-3 px-4">Research Purpose</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Desk Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((b) => (
-              <tr key={b.id} className="hover:bg-[#FAF8F5]">
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{b.id}</td>
-                <td className="py-3.5 px-4 font-semibold text-gray-900">{b.patron}</td>
-                <td className="py-3.5 px-4">
-                  <span className="font-bold text-gray-900 block">{b.facility}</span>
-                  <span className="text-gray-500 text-[11px] font-mono">{b.date} · {b.timeSlot}</span>
-                </td>
-                <td className="py-3.5 px-4 text-gray-600">{b.purpose}</td>
-                <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    b.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                  }`}>
-                    {b.status.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right">
-                  {b.status === 'PENDING_APPROVAL' && (
-                    <button
-                      type="button"
-                      onClick={() => handleApprove(b.id)}
-                      className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors"
-                    >
-                      Approve
-                    </button>
-                  )}
-                </td>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500 text-xs">Loading bookings…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-xs">No facility bookings found.</div>
+        ) : (
+          <table className="w-full border-collapse text-left text-xs font-sans">
+            <thead>
+              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                <th className="py-3 px-4">Scholar / Patron</th>
+                <th className="py-3 px-4">Facility &amp; Time Slot</th>
+                <th className="py-3 px-4">Notes</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Desk Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#EEECE7]">
+              {filtered.map((b) => (
+                <tr key={b.id} className="hover:bg-[#FAF8F5]">
+                  <td className="py-3.5 px-4 font-semibold text-gray-900">
+                    {b.user.fullName}
+                    <div className="text-gray-500 text-[11px] font-mono font-normal">{b.user.membershipNumber}</div>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="font-bold text-gray-900 block">{b.resourceName}</span>
+                    <span className="text-gray-500 text-[11px] font-mono">{formatDate(b.date)} · {b.timeSlot}</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-gray-600">{b.notes || '—'}</td>
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        b.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {b.status}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    {b.status === 'CONFIRMED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(b.id)}
+                        className="px-2.5 py-1 bg-white border border-gray-300 text-gray-700 rounded text-[11px] font-semibold hover:bg-red-50 hover:text-heritage-red hover:border-heritage-red transition-colors inline-flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>Cancel</span>
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

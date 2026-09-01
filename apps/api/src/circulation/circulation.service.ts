@@ -277,6 +277,28 @@ export class CirculationService {
     });
   }
 
+  async getAllHolds(status?: string) {
+    return this.prisma.reservation.findMany({
+      where: status ? { status } : { status: { in: ['PENDING', 'READY_FOR_PICKUP'] } },
+      orderBy: { requestedAt: 'asc' },
+      include: {
+        user: { select: { id: true, fullName: true, membershipNumber: true } },
+        bibRecord: { select: { id: true, titleLatin: true, shelfmark: true } },
+      },
+    });
+  }
+
+  async markHoldReady(reservationId: string) {
+    const reservation = await this.prisma.reservation.findUnique({ where: { id: reservationId } });
+    if (!reservation) throw new NotFoundException('Reservation not found.');
+    const availableUntil = new Date();
+    availableUntil.setDate(availableUntil.getDate() + 5);
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: 'READY_FOR_PICKUP', availableUntil },
+    });
+  }
+
   async cancelHold(reservationId: string, currentUserId?: string) {
     const reservation = await this.prisma.reservation.findUnique({ where: { id: reservationId } });
     if (!reservation) {

@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 
 export default function ServicesPage() {
   const services = [
-    { name: 'Reading Room', note: 'Open to researchers, Monday to Saturday, 9:00 to 17:00.', action: 'Plan a visit', href: '/ask' },
+    { name: 'Reading Room', note: 'Open to researchers, Monday to Saturday, 9:00 to 17:00.', action: 'Book a desk or room', href: '/account/bookings' },
     { name: 'Reproduction', note: 'Digital copies of catalogued items on request.', action: 'Request a scan', href: '/ask' },
     { name: 'Reference Help', note: 'Ask a librarian about sources, scripts and citations.', action: 'Ask a question', href: '/ask' },
     { name: 'Membership', note: 'Borrowing and remote access for members of the institute.', action: 'Become a member', href: '/ask' },

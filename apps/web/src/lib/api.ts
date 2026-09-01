@@ -619,6 +619,15 @@ export const api = {
     return this.fetchWithAuth('/circulation/loans/history');
   },
 
+  async getAllHolds(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`/circulation/holds${query}`);
+  },
+
+  async markHoldReady(reservationId: string) {
+    return this.fetchWithAuth(`/circulation/hold/${reservationId}/ready`, { method: 'PATCH' });
+  },
+
   async settleFine(fineId: string) {
     return this.fetchWithAuth(`/circulation/fines/${fineId}/settle`, {
       method: 'POST',

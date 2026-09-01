@@ -12,7 +12,6 @@ import {
   Receipt,
   FileText,
   ListOrdered,
-  Bookmark,
   Search,
   Bell,
   Settings,
@@ -21,8 +20,7 @@ import {
   Sparkles,
   ChevronDown,
   Menu,
-  BookCheck,
-  FolderHeart
+  CalendarClock
 } from 'lucide-react';
 
 export function AccountNav() {
@@ -33,17 +31,17 @@ export function AccountNav() {
   const mainCirculation = [
     { label: 'Dashboard', href: '/account', icon: LayoutDashboard, exact: true },
     { label: 'Profile & ID Pass', href: '/account/profile', icon: User },
-    { label: 'My Loans', href: '/account/loans', icon: BookOpen, count: user?.loans?.length ?? 3 },
-    { label: 'My Reservations', href: '/account/reservations', icon: BookmarkCheck, count: user?.reservations?.length ?? 1, badgeColor: 'bg-heritage-red text-white' },
+    { label: 'My Loans', href: '/account/loans', icon: BookOpen, count: user?.loans?.length },
+    { label: 'My Reservations', href: '/account/reservations', icon: BookmarkCheck, count: user?.reservations?.length, badgeColor: 'bg-heritage-red text-white' },
+    { label: 'My Bookings', href: '/account/bookings', icon: CalendarClock },
     { label: 'My Fines', href: '/account/fines', icon: Receipt },
   ];
 
-  const researchDiscovery = [
-    { label: 'My Requests', href: '/account/requests', icon: FileText, count: 2 },
-    { label: 'My Reading Lists', href: '/account/reading-lists', icon: ListOrdered, count: 2 },
-    { label: 'Saved Resources', href: '/account/saved-resources', icon: FolderHeart, count: 3 },
-    { label: 'Saved Searches', href: '/account/saved-searches', icon: Search, count: 3 },
-    { label: 'Notifications', href: '/account/notifications', icon: Bell, count: 2, badgeColor: 'bg-heritage-red text-white' },
+  const researchDiscovery: { label: string; href: string; icon: any; count?: number; badgeColor?: string }[] = [
+    { label: 'My Requests', href: '/account/requests', icon: FileText },
+    { label: 'My Reading Lists', href: '/account/reading-lists', icon: ListOrdered },
+    { label: 'Saved Searches', href: '/account/saved-searches', icon: Search },
+    { label: 'Notifications', href: '/account/notifications', icon: Bell },
   ];
 
   const scholarSettings = [
