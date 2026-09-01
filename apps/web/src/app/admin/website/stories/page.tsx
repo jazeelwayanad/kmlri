@@ -1,76 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  BookOpen, 
-  Plus, 
-  Search, 
-  Image as ImageIcon, 
-  Tag, 
-  CheckCircle2, 
-  Eye, 
-  Edit3, 
-  Trash2, 
-  Star, 
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Image as ImageIcon,
+  Tag,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  Edit3,
+  Trash2,
+  Star,
   Calendar,
   X,
   Upload,
   Globe
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
-
-interface Story {
-  id: string;
-  title: string;
-  slug: string;
-  kicker?: string;
-  excerpt: string;
-  content?: string;
-  category: string;
-  author: string;
-  tags: string[];
-  featured: boolean;
-  status: 'PUBLISHED' | 'DRAFT';
-  publishedAt: string;
-  imageUrl?: string;
-}
+import { api, ContentItem } from '@/lib/api';
+import { slugify } from '@/lib/slugs';
 
 export default function WebsiteStoriesPage() {
-  const [stories, setStories] = useState<Story[]>([
-    {
-      id: 'STY-01',
-      title: 'Preserving the 18th Century Maritime Manuscripts of Ponnāni',
-      slug: 'preserving-18th-century-maritime-manuscripts',
-      kicker: 'Conservation Spotlight',
-      excerpt: 'How digital restoration techniques and paper conservation are breathing new life into Malabar trading codices.',
-      content: 'Detailed archival inquiry into maritime logs, fatwa manuscripts, and coastal trading contracts preserved in Makhdūm vaults.',
-      category: 'Conservation & Archives',
-      author: 'Dr. Fatima Zahra',
-      tags: ['Manuscripts', 'Maritime History', 'Conservation'],
-      featured: true,
-      status: 'PUBLISHED',
-      publishedAt: '24 Aug 2026',
-    },
-    {
-      id: 'STY-02',
-      title: 'The Poetics of Arabi-Malayalam: From Devotion to Chronicle',
-      slug: 'poetics-of-arabi-malayalam',
-      kicker: 'Literary Traditions',
-      excerpt: 'An inquiry into the hybrid linguistic register that linked Kerala with the Persian Gulf and Indian Ocean networks.',
-      content: 'Exploration of poetic metrics, devotional qasidas, and oral chronicles composed in the Arabi-Malayalam script between the 17th and 20th centuries.',
-      category: 'Literary History',
-      author: 'Prof. K. A. Najeeb',
-      tags: ['Arabi-Malayalam', 'Linguistics', 'Poetry'],
-      featured: false,
-      status: 'PUBLISHED',
-      publishedAt: '12 Aug 2026',
-    },
-  ]);
+  const [stories, setStories] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [notification, setNotification] = useState<string | null>(null);
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+
+  const loadStories = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getContentItems({ category: 'Stories' });
+      setStories(res.items);
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError(err.message || 'Could not load stories from the server.');
+      setStories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStories();
+  }, []);
 
   // Modal State (Used for both Create and Edit)
   const [showModal, setShowModal] = useState(false);
@@ -81,12 +59,12 @@ export default function WebsiteStoriesPage() {
   const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState('Conservation & Archives');
   const [author, setAuthor] = useState('Staff Researcher');
   const [tags, setTags] = useState('');
   const [featured, setFeatured] = useState(false);
-  const [status, setStatus] = useState<'PUBLISHED' | 'DRAFT'>('PUBLISHED');
+  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT'>('ACTIVE');
   const [imageUrl, setImageUrl] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
     setEditingStoryId(null);
@@ -95,27 +73,25 @@ export default function WebsiteStoriesPage() {
     setKicker('Feature Essay');
     setExcerpt('');
     setContent('');
-    setCategory('Conservation & Archives');
     setAuthor('Editorial Staff');
     setTags('Manuscripts, History');
     setFeatured(false);
-    setStatus('PUBLISHED');
+    setStatus('ACTIVE');
     setImageUrl('');
     setShowModal(true);
   };
 
-  const openEditModal = (story: Story) => {
+  const openEditModal = (story: ContentItem) => {
     setEditingStoryId(story.id);
     setTitle(story.title);
     setSlug(story.slug);
     setKicker(story.kicker || 'Feature Essay');
-    setExcerpt(story.excerpt);
+    setExcerpt(story.summary);
     setContent(story.content || '');
-    setCategory(story.category);
-    setAuthor(story.author);
-    setTags(story.tags.join(', '));
-    setFeatured(story.featured);
-    setStatus(story.status);
+    setAuthor(story.author || '');
+    setTags((story.tags || []).join(', '));
+    setFeatured(!!story.featured);
+    setStatus(story.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE');
     setImageUrl(story.imageUrl || '');
     setShowModal(true);
   };
@@ -123,72 +99,62 @@ export default function WebsiteStoriesPage() {
   const handleTitleChange = (val: string) => {
     setTitle(val);
     if (!editingStoryId) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
-      );
+      setSlug(slugify(val));
     }
   };
 
-  const handleSaveStory = (e: React.FormEvent) => {
+  const handleSaveStory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    if (editingStoryId) {
-      // Update existing story
-      setStories(
-        stories.map((s) => {
-          if (s.id === editingStoryId) {
-            return {
-              ...s,
-              title,
-              slug,
-              kicker,
-              excerpt,
-              content,
-              category,
-              author,
-              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-              featured,
-              status,
-              imageUrl,
-            };
-          }
-          return s;
-        })
-      );
-      setNotification(`Story "${title}" updated successfully.`);
-    } else {
-      // Create new story
-      const newStory: Story = {
-        id: `STY-${Date.now().toString().slice(-4)}`,
-        title,
-        slug: slug || `story-${Date.now().toString().slice(-4)}`,
-        kicker,
-        excerpt,
-        content,
-        category,
-        author,
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-        featured,
-        status,
-        publishedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        imageUrl,
-      };
-      setStories([newStory, ...stories]);
-      setNotification(`Story "${title}" published successfully.`);
-    }
+    const payload: Partial<ContentItem> = {
+      category: 'STORY',
+      title,
+      slug: slug || slugify(title),
+      kicker,
+      summary: excerpt,
+      content,
+      author,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      featured,
+      status,
+      imageUrl: imageUrl || undefined,
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    };
 
-    setShowModal(false);
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    try {
+      if (editingStoryId) {
+        await api.updateContentItem(editingStoryId, payload);
+        setNotificationType('success');
+        setNotification(`Story "${title}" updated successfully.`);
+      } else {
+        await api.createContentItem(payload);
+        setNotificationType('success');
+        setNotification(`Story "${title}" published successfully.`);
+      }
+      setShowModal(false);
+      await loadStories();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not save the story.');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to permanently delete story "${name}"?`)) {
-      setStories(stories.filter((s) => s.id !== id));
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete story "${name}"?`)) return;
+    try {
+      await api.deleteContentItem(id);
+      setNotificationType('success');
       setNotification(`Story "${name}" deleted successfully.`);
+      await loadStories();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not delete this story.');
+    } finally {
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -196,13 +162,11 @@ export default function WebsiteStoriesPage() {
   const filtered = stories.filter((s) => {
     const matchesSearch =
       s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.author.toLowerCase().includes(search.toLowerCase()) ||
+      (s.author || '').toLowerCase().includes(search.toLowerCase()) ||
       s.slug.toLowerCase().includes(search.toLowerCase()) ||
-      s.excerpt.toLowerCase().includes(search.toLowerCase());
+      s.summary.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory = categoryFilter === 'ALL' || s.category === categoryFilter;
-
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   return (
@@ -219,9 +183,24 @@ export default function WebsiteStoriesPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
+          notificationType === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {notificationType === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
           <span>{notification}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{loadError}</span>
         </div>
       )}
 
@@ -238,8 +217,10 @@ export default function WebsiteStoriesPage() {
           </span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Active Categories</span>
-          <span className="text-2xl font-bold text-gray-900 mt-1 block">2 Sections</span>
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Draft Stories</span>
+          <span className="text-2xl font-bold text-gray-900 mt-1 block">
+            {stories.filter((s) => s.status === 'DRAFT').length} Drafts
+          </span>
         </div>
       </div>
 
@@ -255,19 +236,6 @@ export default function WebsiteStoriesPage() {
             className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
           />
         </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="Conservation & Archives">Conservation &amp; Archives</option>
-            <option value="Literary History">Literary History</option>
-            <option value="Exhibitions & Public Events">Exhibitions &amp; Public Events</option>
-          </select>
-        </div>
       </div>
 
       {/* Stories Table */}
@@ -276,7 +244,7 @@ export default function WebsiteStoriesPage() {
           <thead>
             <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
               <th className="py-3 px-4">Article Title &amp; Slug</th>
-              <th className="py-3 px-4">Category</th>
+              <th className="py-3 px-4">Kicker</th>
               <th className="py-3 px-4">Author</th>
               <th className="py-3 px-4">Tags</th>
               <th className="py-3 px-4">Date</th>
@@ -285,7 +253,19 @@ export default function WebsiteStoriesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((s) => (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  Loading stories...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  No stories found.
+                </td>
+              </tr>
+            ) : filtered.map((s) => (
               <tr key={s.id} className="hover:bg-[#FAF8F5] transition-colors">
                 <td className="py-3.5 px-4 max-w-sm">
                   <div className="flex items-center gap-1.5 mb-0.5">
@@ -300,23 +280,23 @@ export default function WebsiteStoriesPage() {
                 </td>
                 <td className="py-3.5 px-4">
                   <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                    {s.category}
+                    {s.kicker || '—'}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 font-semibold text-gray-800">{s.author}</td>
                 <td className="py-3.5 px-4">
                   <div className="flex flex-wrap gap-1">
-                    {s.tags.map((t, idx) => (
+                    {(s.tags || []).map((t, idx) => (
                       <span key={idx} className="bg-[#FAF8F5] text-gray-600 border border-[#E2E0DB] px-1.5 py-0.5 rounded text-[10px]">
                         #{t}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="py-3.5 px-4 text-gray-600 font-mono">{s.publishedAt}</td>
+                <td className="py-3.5 px-4 text-gray-600 font-mono">{s.date}</td>
                 <td className="py-3.5 px-4">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    s.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
                   }`}>
                     {s.status}
                   </span>
@@ -416,19 +396,6 @@ export default function WebsiteStoriesPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                  >
-                    <option value="Conservation & Archives">Conservation &amp; Archives</option>
-                    <option value="Literary History">Literary History</option>
-                    <option value="Exhibitions & Public Events">Exhibitions &amp; Public Events</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="font-bold text-gray-800 block mb-1">Author / Contributor</label>
                   <input
                     type="text"
@@ -505,9 +472,10 @@ export default function WebsiteStoriesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow"
+                    disabled={saving}
+                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow disabled:opacity-50"
                   >
-                    {editingStoryId ? 'Save Changes' : 'Publish Story'}
+                    {saving ? 'Saving…' : editingStoryId ? 'Save Changes' : 'Publish Story'}
                   </button>
                 </div>
               </div>

@@ -29,7 +29,6 @@ export default function WebsiteNewsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [notification, setNotification] = useState<string | null>(null);
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
 
@@ -167,9 +166,7 @@ export default function WebsiteNewsPage() {
       n.slug.toLowerCase().includes(search.toLowerCase()) ||
       n.summary.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory = categoryFilter === 'ALL' || n.kicker === categoryFilter;
-
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   return (
@@ -186,9 +183,24 @@ export default function WebsiteNewsPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
+          notificationType === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {notificationType === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
           <span>{notification}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{loadError}</span>
         </div>
       )}
 
@@ -205,8 +217,10 @@ export default function WebsiteNewsPage() {
           </span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Public Categories</span>
-          <span className="text-2xl font-bold text-gray-900 mt-1 block">3 Active</span>
+          <span className="text-[11px] font-bold uppercase text-gray-500 block">Draft Bulletins</span>
+          <span className="text-2xl font-bold text-gray-900 mt-1 block">
+            {news.filter((n) => n.status === 'DRAFT').length} Drafts
+          </span>
         </div>
       </div>
 
@@ -222,19 +236,6 @@ export default function WebsiteNewsPage() {
             className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
           />
         </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="Institutional Announcement">Institutional Announcement</option>
-            <option value="Fellowships & Grants">Fellowships &amp; Grants</option>
-            <option value="Preservation Update">Preservation Update</option>
-          </select>
-        </div>
       </div>
 
       {/* News Table */}
@@ -243,7 +244,7 @@ export default function WebsiteNewsPage() {
           <thead>
             <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
               <th className="py-3 px-4">News Title &amp; Slug</th>
-              <th className="py-3 px-4">Category</th>
+              <th className="py-3 px-4">Kicker</th>
               <th className="py-3 px-4">Author Desk</th>
               <th className="py-3 px-4">Tags</th>
               <th className="py-3 px-4">Date</th>
@@ -252,7 +253,19 @@ export default function WebsiteNewsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((n) => (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  Loading news bulletins...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  No news bulletins found.
+                </td>
+              </tr>
+            ) : filtered.map((n) => (
               <tr key={n.id} className="hover:bg-[#FAF8F5] transition-colors">
                 <td className="py-3.5 px-4 max-w-sm">
                   <div className="flex items-center gap-1.5 mb-0.5">
@@ -267,23 +280,23 @@ export default function WebsiteNewsPage() {
                 </td>
                 <td className="py-3.5 px-4">
                   <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                    {n.category}
+                    {n.kicker || '—'}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 font-semibold text-gray-800">{n.author}</td>
                 <td className="py-3.5 px-4">
                   <div className="flex flex-wrap gap-1">
-                    {n.tags.map((t, idx) => (
+                    {(n.tags || []).map((t, idx) => (
                       <span key={idx} className="bg-[#FAF8F5] text-gray-600 border border-[#E2E0DB] px-1.5 py-0.5 rounded text-[10px]">
                         #{t}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="py-3.5 px-4 text-gray-600 font-mono">{n.publishedAt}</td>
+                <td className="py-3.5 px-4 text-gray-600 font-mono">{n.date}</td>
                 <td className="py-3.5 px-4">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    n.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    n.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
                   }`}>
                     {n.status}
                   </span>
@@ -383,19 +396,6 @@ export default function WebsiteNewsPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                  >
-                    <option value="Institutional Announcement">Institutional Announcement</option>
-                    <option value="Fellowships & Grants">Fellowships &amp; Grants</option>
-                    <option value="Preservation Update">Preservation Update</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="font-bold text-gray-800 block mb-1">Author / Communications Desk</label>
                   <input
                     type="text"
@@ -472,9 +472,10 @@ export default function WebsiteNewsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow"
+                    disabled={saving}
+                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow disabled:opacity-50"
                   >
-                    {editingNewsId ? 'Save Changes' : 'Publish Bulletin'}
+                    {saving ? 'Saving…' : editingNewsId ? 'Save Changes' : 'Publish Bulletin'}
                   </button>
                 </div>
               </div>

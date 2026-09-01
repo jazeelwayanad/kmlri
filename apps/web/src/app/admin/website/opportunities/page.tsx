@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Briefcase, 
-  Plus, 
-  Search, 
-  Calendar, 
-  Award, 
-  CheckCircle2, 
-  Paperclip, 
-  Download, 
-  Trash2, 
-  Star, 
+import {
+  Briefcase,
+  Plus,
+  Search,
+  Calendar,
+  Award,
+  CheckCircle2,
+  AlertCircle,
+  Paperclip,
+  Download,
+  Trash2,
+  Star,
   X,
   FileCheck,
   Edit3,
@@ -20,86 +21,35 @@ import {
   Settings2
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
-
-interface OpportunityItem {
-  id: string;
-  title: string;
-  slug: string;
-  kicker?: string;
-  excerpt: string;
-  programDescription?: string;
-  criteria?: string;
-  deadline: string;
-  stipend?: string;
-  venue?: string;
-  capacity?: number;
-  featured: boolean;
-  status: 'PUBLISHED' | 'DRAFT' | 'CLOSED';
-  enableApplication: boolean;
-  applicationsCount: number;
-  tags: string[];
-}
+import { api, ContentItem } from '@/lib/api';
+import { slugify } from '@/lib/slugs';
 
 export default function WebsiteOpportunitiesPage() {
-  const [opportunities, setOpportunities] = useState<OpportunityItem[]>([
-    {
-      id: 'OPP-01',
-      title: '2026–2027 Residential Research Fellowships in Malabar Studies',
-      slug: 'residential-research-fellowships-malabar-studies-2026',
-      kicker: 'Research Fellowships',
-      excerpt: 'Stipendiary 6-month residential fellowships for postdoctoral and doctoral scholars.',
-      programDescription: 'Fellows receive unrestricted access to rare manuscripts, conservation labs, and private collections, plus a monthly stipend.',
-      criteria: 'Scholars holding or pursuing a PhD in Islamic Studies, Indian Ocean History, or South Asian Linguistics.',
-      deadline: '30 November 2026',
-      stipend: '₹45,000 / month + On-campus Housing',
-      venue: 'KMLRI Research Wing, Calicut',
-      capacity: 4,
-      applicationsCount: 18,
-      featured: true,
-      status: 'PUBLISHED',
-      enableApplication: true,
-      tags: ['Fellowship', 'Fully Funded', 'Research', 'Stipend'],
-    },
-    {
-      id: 'OPP-02',
-      title: 'Archival Manuscript Digitisation & Metadata Internship (Winter 2026)',
-      slug: 'manuscript-digitisation-metadata-internship-2026',
-      kicker: 'Graduate Internship',
-      excerpt: 'Paid 8-week internship for graduate students in library & information science.',
-      programDescription: 'Hands-on exposure to IIIF ingestion, Dublin Core tagging, and archival handling of 18th-century paper manuscripts.',
-      criteria: 'Enrolled in MLIS or archival studies program. Basic Arabic reading ability preferred.',
-      deadline: '15 December 2026',
-      stipend: '₹22,000 / month',
-      venue: 'Conservation & Digitization Lab',
-      capacity: 3,
-      applicationsCount: 9,
-      featured: false,
-      status: 'PUBLISHED',
-      enableApplication: true,
-      tags: ['Internship', 'Conservation', 'Paid'],
-    },
-    {
-      id: 'OPP-03',
-      title: 'Call for Papers: 3rd International Indian Ocean Codicology Symposium',
-      slug: 'call-for-papers-indian-ocean-codicology-symposium',
-      kicker: 'Call for Papers',
-      excerpt: 'Submissions invited on scribal traditions, watermark chronologies, and littoral text transmission.',
-      programDescription: 'Selected peer-reviewed papers will be published in the KMLRI Journal of Manuscript Studies.',
-      criteria: 'Original research papers with primary source archival documentation.',
-      deadline: '10 December 2026',
-      stipend: 'Travel Grants & Publication',
-      venue: 'Hybrid / KMLRI Auditorium',
-      capacity: 30,
-      applicationsCount: 12,
-      featured: false,
-      status: 'PUBLISHED',
-      enableApplication: true,
-      tags: ['Call for Papers', 'Symposium', 'Publication'],
-    },
-  ]);
+  const [opportunities, setOpportunities] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+
+  const loadOpportunities = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getContentItems({ category: 'Opportunities' });
+      setOpportunities(res.items);
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError(err.message || 'Could not load opportunities from the server.');
+      setOpportunities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOpportunities();
+  }, []);
 
   // Create / Edit Modal
   const [showModal, setShowModal] = useState(false);
@@ -110,15 +60,14 @@ export default function WebsiteOpportunitiesPage() {
   const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [programDescription, setProgramDescription] = useState('');
-  const [criteria, setCriteria] = useState('');
   const [deadline, setDeadline] = useState('');
   const [stipend, setStipend] = useState('');
   const [venue, setVenue] = useState('KMLRI Campus');
   const [capacity, setCapacity] = useState(4);
   const [featured, setFeatured] = useState(false);
-  const [enableApplication, setEnableApplication] = useState(true);
   const [tags, setTags] = useState('');
-  const [status, setStatus] = useState<'PUBLISHED' | 'DRAFT' | 'CLOSED'>('PUBLISHED');
+  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
+  const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
     setEditingOppId(null);
@@ -127,112 +76,94 @@ export default function WebsiteOpportunitiesPage() {
     setKicker('Fellowship');
     setExcerpt('');
     setProgramDescription('');
-    setCriteria('');
     setDeadline('30 Nov 2026');
     setStipend('₹35,000 / month');
     setVenue('KMLRI Research Wing');
     setCapacity(3);
     setFeatured(false);
-    setEnableApplication(true);
     setTags('Fellowship, Research');
-    setStatus('PUBLISHED');
+    setStatus('ACTIVE');
     setShowModal(true);
   };
 
-  const openEditModal = (opp: OpportunityItem) => {
+  const openEditModal = (opp: ContentItem) => {
     setEditingOppId(opp.id);
     setTitle(opp.title);
     setSlug(opp.slug);
     setKicker(opp.kicker || 'Opportunity');
-    setExcerpt(opp.excerpt);
-    setProgramDescription(opp.programDescription || '');
-    setCriteria(opp.criteria || '');
-    setDeadline(opp.deadline);
+    setExcerpt(opp.summary);
+    setProgramDescription(opp.content || '');
+    setDeadline(opp.deadline || '');
     setStipend(opp.stipend || '');
     setVenue(opp.venue || 'KMLRI Campus');
     setCapacity(opp.capacity || 4);
-    setFeatured(opp.featured);
-    setEnableApplication(opp.enableApplication);
-    setTags(opp.tags.join(', '));
-    setStatus(opp.status);
+    setFeatured(!!opp.featured);
+    setTags((opp.tags || []).join(', '));
+    setStatus(opp.status === 'DRAFT' ? 'DRAFT' : opp.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE');
     setShowModal(true);
   };
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
     if (!editingOppId) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
-      );
+      setSlug(slugify(val));
     }
   };
 
-  const handleSaveOpportunity = (e: React.FormEvent) => {
+  const handleSaveOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    if (editingOppId) {
-      // Update
-      setOpportunities(
-        opportunities.map((opp) => {
-          if (opp.id === editingOppId) {
-            return {
-              ...opp,
-              title,
-              slug,
-              kicker,
-              excerpt,
-              programDescription,
-              criteria,
-              deadline,
-              stipend,
-              venue,
-              capacity: Number(capacity),
-              featured,
-              enableApplication,
-              tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-              status,
-            };
-          }
-          return opp;
-        })
-      );
-      setNotification(`Opportunity "${title}" updated successfully.`);
-    } else {
-      // Create
-      const newOpp: OpportunityItem = {
-        id: `OPP-${Date.now().toString().slice(-4)}`,
-        title,
-        slug: slug || `opportunity-${Date.now().toString().slice(-4)}`,
-        kicker,
-        excerpt,
-        programDescription,
-        criteria,
-        deadline,
-        stipend,
-        venue,
-        capacity: Number(capacity),
-        applicationsCount: 0,
-        featured,
-        enableApplication,
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-        status,
-      };
-      setOpportunities([newOpp, ...opportunities]);
-      setNotification(`Opportunity "${title}" published successfully.`);
-    }
+    const payload: Partial<ContentItem> = {
+      category: 'OPPORTUNITY',
+      title,
+      slug: slug || slugify(title),
+      kicker,
+      summary: excerpt,
+      content: programDescription,
+      deadline,
+      date: deadline ? `Deadline: ${deadline}` : undefined,
+      stipend,
+      venue,
+      capacity: Number(capacity),
+      featured,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      status,
+    };
 
-    setShowModal(false);
-    setTimeout(() => setNotification(null), 4000);
+    setSaving(true);
+    try {
+      if (editingOppId) {
+        await api.updateContentItem(editingOppId, payload);
+        setNotificationType('success');
+        setNotification(`Opportunity "${title}" updated successfully.`);
+      } else {
+        await api.createContentItem(payload);
+        setNotificationType('success');
+        setNotification(`Opportunity "${title}" published successfully.`);
+      }
+      setShowModal(false);
+      await loadOpportunities();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not save the opportunity.');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to permanently delete opportunity "${name}"?`)) {
-      setOpportunities(opportunities.filter((o) => o.id !== id));
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete opportunity "${name}"?`)) return;
+    try {
+      await api.deleteContentItem(id);
+      setNotificationType('success');
       setNotification(`Opportunity "${name}" deleted successfully.`);
+      await loadOpportunities();
+    } catch (err: any) {
+      setNotificationType('error');
+      setNotification(err.message || 'Could not delete this opportunity.');
+    } finally {
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -241,7 +172,7 @@ export default function WebsiteOpportunitiesPage() {
     (o) =>
       o.title.toLowerCase().includes(search.toLowerCase()) ||
       o.slug.toLowerCase().includes(search.toLowerCase()) ||
-      o.excerpt.toLowerCase().includes(search.toLowerCase())
+      o.summary.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -258,9 +189,24 @@ export default function WebsiteOpportunitiesPage() {
       />
 
       {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
+          notificationType === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {notificationType === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          )}
           <span>{notification}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{loadError}</span>
         </div>
       )}
 
@@ -273,7 +219,7 @@ export default function WebsiteOpportunitiesPage() {
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Candidate Applications</span>
           <span className="text-2xl font-bold text-emerald-700 mt-1 block">
-            {opportunities.reduce((acc, cur) => acc + cur.applicationsCount, 0)} Applications
+            {opportunities.reduce((acc, cur) => acc + (cur.registered || 0), 0)} Applications
           </span>
         </div>
         <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
@@ -290,7 +236,7 @@ export default function WebsiteOpportunitiesPage() {
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
-            placeholder="Search opportunities by title, slug, criteria..."
+            placeholder="Search opportunities by title, slug, summary..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
@@ -304,7 +250,7 @@ export default function WebsiteOpportunitiesPage() {
           <thead>
             <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
               <th className="py-3 px-4">Opportunity Title &amp; Slug</th>
-              <th className="py-3 px-4">Type &amp; Stipend</th>
+              <th className="py-3 px-4">Kicker &amp; Stipend</th>
               <th className="py-3 px-4">Application Deadline</th>
               <th className="py-3 px-4">Positions / Capacity</th>
               <th className="py-3 px-4">Applications Received</th>
@@ -313,7 +259,19 @@ export default function WebsiteOpportunitiesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
-            {filtered.map((opp) => (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  Loading opportunities...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
+                  No opportunities found.
+                </td>
+              </tr>
+            ) : filtered.map((opp) => (
               <tr key={opp.id} className="hover:bg-[#FAF8F5] transition-colors">
                 <td className="py-3.5 px-4 max-w-sm">
                   <div className="flex items-center gap-1.5 mb-0.5">
@@ -339,12 +297,12 @@ export default function WebsiteOpportunitiesPage() {
                 <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{opp.capacity || 4} Seats</td>
                 <td className="py-3.5 px-4">
                   <span className="inline-block px-2.5 py-0.5 rounded bg-blue-50 text-blue-800 font-bold font-mono">
-                    {opp.applicationsCount} Candidates
+                    {opp.registered || 0} Candidates
                   </span>
                 </td>
                 <td className="py-3.5 px-4">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    opp.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    opp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
                   }`}>
                     {opp.status}
                   </span>
@@ -498,17 +456,6 @@ export default function WebsiteOpportunitiesPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-gray-800 block mb-1">Eligibility Criteria</label>
-                  <input
-                    type="text"
-                    value={criteria}
-                    onChange={(e) => setCriteria(e.target.value)}
-                    placeholder="e.g. Doctoral and Postdoctoral scholars in Islamic Studies or Codicology"
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
                   <label className="font-bold text-gray-800 block mb-1">Program Scope &amp; Fellowship Details (Markdown)</label>
                   <textarea
                     rows={6}
@@ -543,15 +490,6 @@ export default function WebsiteOpportunitiesPage() {
                     <span className="font-bold text-gray-800">Pin as Featured</span>
                   </label>
 
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={enableApplication}
-                      onChange={(e) => setEnableApplication(e.target.checked)}
-                      className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
-                    />
-                    <span className="font-bold text-gray-800">Enable Online Application Form</span>
-                  </label>
                 </div>
 
                 <div className="flex gap-2">
@@ -564,9 +502,10 @@ export default function WebsiteOpportunitiesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow"
+                    disabled={saving}
+                    className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow disabled:opacity-50"
                   >
-                    {editingOppId ? 'Save Changes' : 'Post Opportunity'}
+                    {saving ? 'Saving…' : editingOppId ? 'Save Changes' : 'Post Opportunity'}
                   </button>
                 </div>
               </div>
