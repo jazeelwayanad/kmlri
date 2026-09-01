@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Settings2, 
   Clock, 
@@ -12,22 +13,40 @@ import {
   CheckCircle2, 
   RotateCw,
   Users,
-  Info
+  Info,
+  Plus,
+  Trash2,
+  Edit3,
+  X,
+  Shield
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { DynamicRole, getDynamicRoles, saveDynamicRoles } from '@/lib/dynamic-roles';
+
+interface CirculationRule {
+  roleSlug: string;
+  roleName: string;
+  defaultDays: number;
+  maxQuota: number;
+  gracePeriodDays: number;
+  isSystem?: boolean;
+}
 
 export default function CirculationConfigurationPage() {
   const [activeTab, setActiveTab] = useState<'loan_rules' | 'renewals' | 'fines' | 'notifications'>('loan_rules');
   const [saved, setSaved] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
-  // Loan rules per member type
-  const [loanRules, setLoanRules] = useState([
-    { role: 'STUDENT', name: 'Student Patron', defaultDays: 14, maxQuota: 5, gracePeriodDays: 1 },
-    { role: 'FACULTY', name: 'Faculty & Professors', defaultDays: 30, maxQuota: 12, gracePeriodDays: 3 },
-    { role: 'RESEARCHER', name: 'Research Fellows', defaultDays: 21, maxQuota: 8, gracePeriodDays: 2 },
-    { role: 'GENERAL', name: 'General Public Member', defaultDays: 7, maxQuota: 3, gracePeriodDays: 0 },
-    { role: 'STAFF', name: 'Institutional Staff', defaultDays: 30, maxQuota: 6, gracePeriodDays: 2 },
-  ]);
+  // Dynamic Loan rules per member type
+  const [loanRules, setLoanRules] = useState<CirculationRule[]>([]);
+
+  // Add Dynamic Rule Modal State
+  const [showAddRuleModal, setShowAddRuleModal] = useState(false);
+  const [newRuleName, setNewRuleName] = useState('');
+  const [newRuleSlug, setNewRuleSlug] = useState('');
+  const [newRuleDays, setNewRuleDays] = useState(14);
+  const [newRuleQuota, setNewRuleQuota] = useState(5);
+  const [newRuleGrace, setNewRuleGrace] = useState(1);
 
   // Renewal settings
   const [renewalSettings, setRenewalSettings] = useState({
@@ -58,15 +77,121 @@ export default function CirculationConfigurationPage() {
     sendSmsAlerts: false,
   });
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3500);
+  // Load dynamic roles from storage / registry
+  useEffect(() => {
+    const roles = getDynamicRoles();
+    const dynamicRules: CirculationRule[] = roles.map((r) => ({
+      roleSlug: r.slug,
+      roleName: r.name,
+      defaultDays: r.defaultDays || 14,
+      maxQuota: r.maxQuota || 5,
+      gracePeriodDays: r.gracePeriodDays ?? 1,
+      isSystem: r.isSystem,
+    }));
+    setLoanRules(dynamicRules);
+
+    const handleRolesUpdate = () => {
+      const updated = getDynamicRoles();
+      setLoanRules(
+        updated.map((r) => ({
+          roleSlug: r.slug,
+          roleName: r.name,
+          defaultDays: r.defaultDays || 14,
+          maxQuota: r.maxQuota || 5,
+          gracePeriodDays: r.gracePeriodDays ?? 1,
+          isSystem: r.isSystem,
+        }))
+      );
+    };
+
+    window.addEventListener('kmlri_roles_updated', handleRolesUpdate);
+    return () => window.removeEventListener('kmlri_roles_updated', handleRolesUpdate);
+  }, []);
+
+  const handleRuleChange = (index: number, field: keyof CirculationRule, value: any) => {
+    const updated = [...loanRules];
+    (updated[index] as any)[field] = field === 'roleName' || field === 'roleSlug' ? value : Number(value);
+    setLoanRules(updated);
   };
 
-  const handleRuleChange = (index: number, field: string, value: number) => {
-    const updated = [...loanRules];
-    (updated[index] as any)[field] = Number(value);
-    setLoanRules(updated);
+  const handleSave = () => {
+    // Sync back to dynamic roles storage
+    const currentRoles = getDynamicRoles();
+    const updatedRoles = currentRoles.map((r) => {
+      const matched = loanRules.find((lr) => lr.roleSlug === r.slug);
+      if (matched) {
+        return {
+          ...r,
+          defaultDays: matched.defaultDays,
+          maxQuota: matched.maxQuota,
+          gracePeriodDays: matched.gracePeriodDays,
+        };
+      }
+      return r;
+    });
+
+    // Also include any new rules created in this page
+    loanRules.forEach((lr) => {
+      if (!updatedRoles.some((r) => r.slug === lr.roleSlug)) {
+        updatedRoles.push({
+          id: `role-${Date.now()}-${lr.roleSlug}`,
+          name: lr.roleName,
+          slug: lr.roleSlug,
+          description: `Dynamic role configured in circulation rules.`,
+          isSystem: lr.roleSlug === 'super-admin',
+          permissions: ['CATALOG_READ', 'CIRCULATION_CHECKOUT', 'HOLD_PLACE'],
+          defaultDays: lr.defaultDays,
+          maxQuota: lr.maxQuota,
+          gracePeriodDays: lr.gracePeriodDays,
+          memberCount: 0,
+        });
+      }
+    });
+
+    saveDynamicRoles(updatedRoles);
+    setSaved(true);
+    setNotification('Circulation configuration & dynamic role loan limits saved successfully.');
+    setTimeout(() => {
+      setSaved(false);
+      setNotification(null);
+    }, 4000);
+  };
+
+  const handleAddCustomRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleName.trim()) return;
+
+    const slug = newRuleSlug
+      ? newRuleSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      : newRuleName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const newRule: CirculationRule = {
+      roleSlug: slug,
+      roleName: newRuleName,
+      defaultDays: Number(newRuleDays),
+      maxQuota: Number(newRuleQuota),
+      gracePeriodDays: Number(newRuleGrace),
+      isSystem: false,
+    };
+
+    setLoanRules([...loanRules, newRule]);
+    setShowAddRuleModal(false);
+    setNewRuleName('');
+    setNewRuleSlug('');
+    setNotification(`Dynamic circulation rule added for role "${newRule.roleName}". Click Save to commit.`);
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleDeleteRule = (roleSlug: string, roleName: string) => {
+    if (roleSlug === 'super-admin') {
+      alert('Super Administrator is the system protected role and cannot be removed.');
+      return;
+    }
+    if (confirm(`Remove circulation loan rule for "${roleName}"?`)) {
+      setLoanRules(loanRules.filter((r) => r.roleSlug !== roleSlug));
+      setNotification(`Rule for "${roleName}" removed. Click Save Changes to commit.`);
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   return (
@@ -74,7 +199,7 @@ export default function CirculationConfigurationPage() {
       <PageHeader
         eyebrow="Library Operations · Circulation"
         title="Circulation Configuration"
-        description="Configure default loan periods, renewal rules, borrow quotas by member role, daily fine calculations, and automated return notice triggers."
+        description="Configure default loan periods, renewal rules, borrow quotas by dynamic member role, daily fine calculations, and automated return notice triggers."
         actions={
           <Button variant="primary" icon={Save} onClick={handleSave}>
             Save Changes
@@ -82,17 +207,17 @@ export default function CirculationConfigurationPage() {
         }
       />
 
-      {saved && (
+      {notification && (
         <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>Circulation rules &amp; loan policies saved successfully across all desks.</span>
+          <span>{notification}</span>
         </div>
       )}
 
       {/* Tabs */}
       <div className="border-b border-[#E2E0DB] flex gap-2 flex-wrap">
         {[
-          { key: 'loan_rules', label: 'Loan Periods & Quotas', icon: Clock },
+          { key: 'loan_rules', label: `Dynamic Role Loan Periods (${loanRules.length})`, icon: Clock },
           { key: 'renewals', label: 'Renewal Policies', icon: RotateCcw },
           { key: 'fines', label: 'Fines & Penalties', icon: CreditCard },
           { key: 'notifications', label: 'Overdue & Reminder Triggers', icon: Bell },
@@ -116,19 +241,38 @@ export default function CirculationConfigurationPage() {
         })}
       </div>
 
-      {/* TAB 1: Loan Periods & Quotas */}
+      {/* TAB 1: Loan Periods & Quotas (Dynamic Roles) */}
       {activeTab === 'loan_rules' && (
         <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
-          <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3">
+          <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-3">
             <div>
-              <h3 className="text-base font-bold text-gray-900">Member Type Loan Durations &amp; Quotas</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-gray-900">Dynamic Member Role Loan Durations &amp; Quotas</h3>
+                <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                  Fully Dynamic
+                </span>
+              </div>
               <p className="text-xs text-gray-500 mt-0.5">
-                Define the default loan period (days) and maximum concurrent books allowed per member role.
+                Automatically synced with the <Link href="/admin/members/roles" className="text-[#A52307] underline font-semibold">Roles &amp; Permissions Matrix</Link>. Super Admin is the single default system role; all other role rules can be created, customized, or removed.
               </p>
             </div>
-            <span className="text-[11px] font-mono bg-gray-100 text-gray-700 px-2.5 py-1 rounded font-bold uppercase">
-              {loanRules.length} Member Categories
-            </span>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin/members/roles"
+                className="px-3 py-1.5 border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Manage Roles Registry</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAddRuleModal(true)}
+                className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Role Rule</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -136,56 +280,81 @@ export default function CirculationConfigurationPage() {
               <thead>
                 <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
                   <th className="py-3 px-4">Membership Role</th>
+                  <th className="py-3 px-4">Role Key / Type</th>
                   <th className="py-3 px-4">Default Loan Period (Days)</th>
                   <th className="py-3 px-4">Max Borrow Quota (Books)</th>
                   <th className="py-3 px-4">Grace Period (Days)</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EEECE7]">
                 {loanRules.map((rule, idx) => (
-                  <tr key={rule.role} className="hover:bg-[#FAF8F5]">
+                  <tr key={rule.roleSlug} className="hover:bg-[#FAF8F5]">
                     <td className="py-3.5 px-4">
-                      <strong className="text-gray-900 block text-sm">{rule.name}</strong>
-                      <span className="font-mono text-[10px] text-gray-500 font-bold uppercase">{rule.role}</span>
+                      <strong className="text-gray-900 block text-sm">{rule.roleName}</strong>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="font-mono text-gray-500 text-[11px] bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
+                        {rule.roleSlug}
+                      </span>
+                      {rule.roleSlug === 'super-admin' && (
+                        <span className="ml-1.5 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                          System
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          min="1"
-                          max="90"
+                          min={1}
+                          max={180}
                           value={rule.defaultDays}
-                          onChange={(e) => handleRuleChange(idx, 'defaultDays', Number(e.target.value))}
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                          onChange={(e) => handleRuleChange(idx, 'defaultDays', e.target.value)}
+                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
                         />
-                        <span className="text-gray-500 text-xs">Days</span>
+                        <span className="text-gray-500 text-[11px]">days</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          min="1"
-                          max="30"
+                          min={1}
+                          max={50}
                           value={rule.maxQuota}
-                          onChange={(e) => handleRuleChange(idx, 'maxQuota', Number(e.target.value))}
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                          onChange={(e) => handleRuleChange(idx, 'maxQuota', e.target.value)}
+                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
                         />
-                        <span className="text-gray-500 text-xs">Volumes</span>
+                        <span className="text-gray-500 text-[11px]">books</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          min="0"
-                          max="10"
+                          min={0}
+                          max={30}
                           value={rule.gracePeriodDays}
-                          onChange={(e) => handleRuleChange(idx, 'gracePeriodDays', Number(e.target.value))}
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                          onChange={(e) => handleRuleChange(idx, 'gracePeriodDays', e.target.value)}
+                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
                         />
-                        <span className="text-gray-500 text-xs">Days before fine</span>
+                        <span className="text-gray-500 text-[11px]">days grace</span>
                       </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      {rule.roleSlug !== 'super-admin' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRule(rule.roleSlug, rule.roleName)}
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                          title="Delete Rule"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-mono italic">Protected</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -193,99 +362,94 @@ export default function CirculationConfigurationPage() {
             </table>
           </div>
 
-          <div className="p-4 bg-[#FAF8F5] border border-[#E2E0DB] rounded text-xs text-gray-600 flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-[#A52307] flex-shrink-0 mt-0.5" />
-            <p>
-              When an item is checked out at the circulation desk, the loan due date is calculated automatically from today's date plus the patron's role default days. Staff can manually override the duration on individual issues if needed.
-            </p>
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900 flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold">Automatic Synchronization with Member Quotas</strong>
+              <p className="mt-0.5 text-[11px]">
+                When a new patron is registered or updated under a dynamic role, their default checkout quotas and due date calculations will automatically utilize the day limits defined above.
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* TAB 2: Renewal Policies */}
       {activeTab === 'renewals' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
+        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
           <div className="border-b border-[#E2E0DB] pb-3">
-            <h3 className="text-base font-bold text-gray-900">Loan Renewal Limits &amp; Safeguards</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Control extension lengths, maximum renewal counts, and hold reservation blocks.
-            </p>
+            <h3 className="text-base font-bold text-gray-900">Renewal Limits &amp; Online Self-Service Rules</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Control how many times a patron can extend an active loan.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-            <div className="space-y-4">
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Default Renewal Period (Days)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="60"
-                    value={renewalSettings.defaultRenewalDays}
-                    onChange={(e) => setRenewalSettings({ ...renewalSettings, defaultRenewalDays: Number(e.target.value) })}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
-                  />
-                  <span className="text-gray-500">Days extended per renewal</span>
-                </div>
-                <span className="text-[11px] text-gray-400 block mt-1">Recommended: 14 days</span>
-              </div>
-
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Max Renewals Allowed Per Item</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    value={renewalSettings.maxRenewalsAllowed}
-                    onChange={(e) => setRenewalSettings({ ...renewalSettings, maxRenewalsAllowed: Number(e.target.value) })}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
-                  />
-                  <span className="text-gray-500">Consecutive renewals max</span>
-                </div>
-                <span className="text-[11px] text-gray-400 block mt-1">After reaching this limit, patron must return the volume to the library</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">Standard Extension Duration</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={renewalSettings.defaultRenewalDays}
+                  onChange={(e) => setRenewalSettings({ ...renewalSettings, defaultRenewalDays: Number(e.target.value) })}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                />
+                <span className="text-gray-600">days added to current due date</span>
               </div>
             </div>
 
-            <div className="space-y-4 border-l border-[#E2E0DB] pl-0 md:pl-6">
-              <label className="font-bold text-gray-800 block mb-2">Automated Renewal Guardrails</label>
-              
-              <label className="flex items-start gap-3 cursor-pointer">
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">Maximum Consecutive Renewals Allowed</label>
+              <div className="flex items-center gap-2">
                 <input
-                  type="checkbox"
-                  checked={renewalSettings.blockRenewalIfHoldPlaced}
-                  onChange={(e) => setRenewalSettings({ ...renewalSettings, blockRenewalIfHoldPlaced: e.target.checked })}
-                  className="mt-0.5 rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={renewalSettings.maxRenewalsAllowed}
+                  onChange={(e) => setRenewalSettings({ ...renewalSettings, maxRenewalsAllowed: Number(e.target.value) })}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <div>
-                  <strong className="text-gray-900 block">Block renewal if item has active hold</strong>
-                  <span className="text-gray-500 text-[11px]">Prevents renewing a book if another patron is waiting on the reservation queue.</span>
-                </div>
-              </label>
+                <span className="text-gray-600">times per item copy</span>
+              </div>
+            </div>
 
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={renewalSettings.blockRenewalIfOverdue}
-                  onChange={(e) => setRenewalSettings({ ...renewalSettings, blockRenewalIfOverdue: e.target.checked })}
-                  className="mt-0.5 rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
-                />
-                <div>
-                  <strong className="text-gray-900 block">Block renewal if item is already overdue</strong>
-                  <span className="text-gray-500 text-[11px]">Patron must visit the circulation desk to clear overdue fines before renewal.</span>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3 cursor-pointer">
+            <div className="sm:col-span-2 space-y-3 pt-3 border-t border-[#E2E0DB]">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={renewalSettings.allowOnlineRenewal}
                   onChange={(e) => setRenewalSettings({ ...renewalSettings, allowOnlineRenewal: e.target.checked })}
-                  className="mt-0.5 rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                  className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
                 />
                 <div>
-                  <strong className="text-gray-900 block">Allow self-service renewal via OPAC / Account</strong>
-                  <span className="text-gray-500 text-[11px]">Members can renew their loans online from their personal account portal.</span>
+                  <span className="font-bold text-gray-800 block">Allow Online Self-Renewal via Patron OPAC Account</span>
+                  <span className="text-[11px] text-gray-500">Patrons can renew their own loans without visiting the desk.</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={renewalSettings.blockRenewalIfHoldPlaced}
+                  onChange={(e) => setRenewalSettings({ ...renewalSettings, blockRenewalIfHoldPlaced: e.target.checked })}
+                  className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                />
+                <div>
+                  <span className="font-bold text-gray-800 block">Block Renewal if Another Member has Placed a Hold</span>
+                  <span className="text-[11px] text-gray-500">Prevents monopolization of high-demand items reserved by other scholars.</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={renewalSettings.blockRenewalIfOverdue}
+                  onChange={(e) => setRenewalSettings({ ...renewalSettings, blockRenewalIfOverdue: e.target.checked })}
+                  className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                />
+                <div>
+                  <span className="font-bold text-gray-800 block">Block Renewal if Item is Already Overdue</span>
+                  <span className="text-[11px] text-gray-500">Requires physical desk inspection and fine settlement before renewing.</span>
                 </div>
               </label>
             </div>
@@ -295,174 +459,239 @@ export default function CirculationConfigurationPage() {
 
       {/* TAB 3: Fines & Penalties */}
       {activeTab === 'fines' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
+        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
           <div className="border-b border-[#E2E0DB] pb-3">
-            <h3 className="text-base font-bold text-gray-900">Fine Rates &amp; Cashier Thresholds</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Set standard overdue fines, rare book penalties, and circulation lockouts.
-            </p>
+            <h3 className="text-base font-bold text-gray-900">Overdue Fine Rates &amp; Cashier Parameters</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Define automated daily fines for overdue physical items.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label className="font-bold text-gray-800 block mb-1">Standard Daily Overdue Fine (₹)</label>
+              <label className="font-bold text-gray-800 block mb-1">Standard Daily Fine Rate</label>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-gray-500 font-bold">₹</span>
+                <span className="font-bold text-gray-600">₹</span>
                 <input
                   type="number"
-                  min="0"
+                  min={0}
                   value={fineSettings.dailyFineRate}
                   onChange={(e) => setFineSettings({ ...fineSettings, dailyFineRate: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <span className="text-gray-500">/day</span>
+                <span className="text-gray-600">per day / per overdue item</span>
               </div>
-              <span className="text-[11px] text-gray-400 block mt-1">General catalog items</span>
             </div>
 
             <div>
-              <label className="font-bold text-gray-800 block mb-1">Special Collection / Rare Book Daily Fine (₹)</label>
+              <label className="font-bold text-gray-800 block mb-1">Rare Books &amp; Manuscripts Daily Fine</label>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-gray-500 font-bold">₹</span>
+                <span className="font-bold text-gray-600">₹</span>
                 <input
                   type="number"
-                  min="0"
+                  min={0}
                   value={fineSettings.rareMaterialDailyFine}
                   onChange={(e) => setFineSettings({ ...fineSettings, rareMaterialDailyFine: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <span className="text-gray-500">/day</span>
+                <span className="text-gray-600">per day for special collection items</span>
               </div>
-              <span className="text-[11px] text-gray-400 block mt-1">Manuscripts &amp; rare prints</span>
             </div>
 
             <div>
-              <label className="font-bold text-gray-800 block mb-1">Maximum Fine Cap Per Item (₹)</label>
+              <label className="font-bold text-gray-800 block mb-1">Maximum Fine Cap Per Item</label>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-gray-500 font-bold">₹</span>
+                <span className="font-bold text-gray-600">₹</span>
                 <input
                   type="number"
-                  min="50"
+                  min={100}
                   value={fineSettings.maxFineCapPerItem}
                   onChange={(e) => setFineSettings({ ...fineSettings, maxFineCapPerItem: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
+                  className="w-28 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
+                <span className="text-gray-600">maximum penalty before replacement fee</span>
               </div>
-              <span className="text-[11px] text-gray-400 block mt-1">Fines cannot exceed this limit per volume</span>
             </div>
-          </div>
 
-          <div className="pt-4 border-t border-[#E2E0DB] flex items-center justify-between flex-wrap gap-4">
             <div>
-              <strong className="text-gray-900 text-sm block">Auto-Block Borrowing Privileges</strong>
-              <p className="text-xs text-gray-500">
-                Suspend circulation privileges if a patron has unpaid fines exceeding ₹{fineSettings.fineThresholdBlockCirculation}.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-700">Threshold: ₹</span>
-              <input
-                type="number"
-                min="0"
-                value={fineSettings.fineThresholdBlockCirculation}
-                onChange={(e) => setFineSettings({ ...fineSettings, fineThresholdBlockCirculation: Number(e.target.value) })}
-                className="w-24 px-3 py-1.5 border border-gray-300 rounded text-xs font-mono font-bold text-gray-900 focus:border-[#A52307] outline-none"
-              />
+              <label className="font-bold text-gray-800 block mb-1">Circulation Lockout Threshold</label>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-600">₹</span>
+                <input
+                  type="number"
+                  min={50}
+                  value={fineSettings.fineThresholdBlockCirculation}
+                  onChange={(e) => setFineSettings({ ...fineSettings, fineThresholdBlockCirculation: Number(e.target.value) })}
+                  className="w-28 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                />
+                <span className="text-gray-600">unpaid fine balance blocks new check-outs</span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 4: Notifications & Triggers */}
+      {/* TAB 4: Overdue & Reminder Triggers */}
       {activeTab === 'notifications' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
+        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
           <div className="border-b border-[#E2E0DB] pb-3">
-            <h3 className="text-base font-bold text-gray-900">Automated Notification Schedules</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Set the timeline for automated email reminders and overdue recall notices.
-            </p>
+            <h3 className="text-base font-bold text-gray-900">Automated Patron Email &amp; SMS Notice Triggers</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Configure when the system dispatches automated return reminder notices.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
-            <div className="p-4 bg-[#FAF8F5] border border-[#E2E0DB] rounded">
-              <span className="font-bold text-gray-900 block mb-1">Pre-Due Courtesy Reminder</span>
-              <p className="text-gray-500 text-[11px] mb-3">Send reminder email to patron before the due date.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">Pre-Due Courtesy Reminder</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  min="1"
-                  max="7"
+                  min={1}
+                  max={7}
                   value={notificationSettings.preDueReminderDays}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, preDueReminderDays: Number(e.target.value) })}
-                  className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <span className="text-gray-600">Days before due date</span>
+                <span className="text-gray-600">days before due date</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#FAF8F5] border border-[#E2E0DB] rounded">
-              <span className="font-bold text-[#A52307] block mb-1">1st Overdue Notice</span>
-              <p className="text-gray-500 text-[11px] mb-3">Initial notification dispatched once due date expires.</p>
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">1st Overdue Notice</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  min="1"
-                  max="10"
+                  min={1}
+                  max={5}
                   value={notificationSettings.firstOverdueNoticeDays}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, firstOverdueNoticeDays: Number(e.target.value) })}
-                  className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <span className="text-gray-600">Day after due date</span>
+                <span className="text-gray-600">day(s) after due date</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#FAF8F5] border border-[#E2E0DB] rounded">
-              <span className="font-bold text-red-800 block mb-1">Final Urgent Recall</span>
-              <p className="text-gray-500 text-[11px] mb-3">Final escalation notice with account hold warning.</p>
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">2nd Overdue Warning Notice</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  min="7"
-                  max="30"
+                  min={5}
+                  max={14}
+                  value={notificationSettings.secondOverdueNoticeDays}
+                  onChange={(e) => setNotificationSettings({ ...notificationSettings, secondOverdueNoticeDays: Number(e.target.value) })}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                />
+                <span className="text-gray-600">days after due date</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="font-bold text-gray-800 block mb-1">Final Legal Recall Notice</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={14}
+                  max={30}
                   value={notificationSettings.finalRecallNoticeDays}
                   onChange={(e) => setNotificationSettings({ ...notificationSettings, finalRecallNoticeDays: Number(e.target.value) })}
-                  className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs"
                 />
-                <span className="text-gray-600">Days overdue</span>
+                <span className="text-gray-600">days overdue (Triggers account freeze)</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Save Action Footer */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E0DB]">
-        <button
-          type="button"
-          onClick={() => {
-            setLoanRules([
-              { role: 'STUDENT', name: 'Student Patron', defaultDays: 14, maxQuota: 5, gracePeriodDays: 1 },
-              { role: 'FACULTY', name: 'Faculty & Professors', defaultDays: 30, maxQuota: 12, gracePeriodDays: 3 },
-              { role: 'RESEARCHER', name: 'Research Fellows', defaultDays: 21, maxQuota: 8, gracePeriodDays: 2 },
-              { role: 'GENERAL', name: 'General Public Member', defaultDays: 7, maxQuota: 3, gracePeriodDays: 0 },
-              { role: 'STAFF', name: 'Institutional Staff', defaultDays: 30, maxQuota: 6, gracePeriodDays: 2 },
-            ]);
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-          }}
-          className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold hover:bg-gray-100 text-gray-700 transition-colors"
-        >
-          Reset to System Defaults
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-sm flex items-center gap-1.5"
-        >
-          <Save className="w-4 h-4" />
-          <span>Save Circulation Settings</span>
-        </button>
-      </div>
+      {/* POPUP MODAL: Add Custom Role Rule */}
+      {showAddRuleModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-200">
+            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-gray-200 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-sm">Add Dynamic Role Circulation Rule</h3>
+              <button onClick={() => setShowAddRuleModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomRule} className="p-6 space-y-4 text-xs font-sans">
+              <div>
+                <label className="font-bold text-gray-800 block mb-1">Role Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Visiting Scholar / PhD Fellow"
+                  value={newRuleName}
+                  onChange={(e) => {
+                    setNewRuleName(e.target.value);
+                    setNewRuleSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-800 block mb-1">Role Key / Slug</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. visiting-scholar"
+                  value={newRuleSlug}
+                  onChange={(e) => setNewRuleSlug(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Loan Days</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newRuleDays}
+                    onChange={(e) => setNewRuleDays(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded font-mono text-xs text-gray-900 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Borrow Quota</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newRuleQuota}
+                    onChange={(e) => setNewRuleQuota(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded font-mono text-xs text-gray-900 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Grace Days</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newRuleGrace}
+                    onChange={(e) => setNewRuleGrace(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded font-mono text-xs text-gray-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRuleModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800"
+                >
+                  Add Rule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
