@@ -277,6 +277,36 @@ export class CirculationService {
     });
   }
 
+  async cancelHold(reservationId: string, currentUserId?: string) {
+    const reservation = await this.prisma.reservation.findUnique({ where: { id: reservationId } });
+    if (!reservation) {
+      throw new NotFoundException('Reservation not found.');
+    }
+    if (currentUserId && reservation.userId !== currentUserId) {
+      throw new BadRequestException('You are not authorized to cancel this reservation.');
+    }
+    return this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: 'CANCELLED' },
+    });
+  }
+
+  async getLoanHistory(userId?: string) {
+    const where: any = { status: { in: ['RETURNED', 'OVERDUE'] } };
+    if (userId) {
+      where.userId = userId;
+    }
+
+    return this.prisma.circulationLoan.findMany({
+      where,
+      orderBy: { returnedAt: 'desc' },
+      include: {
+        user: { select: { id: true, fullName: true, membershipNumber: true, email: true } },
+        copy: { include: { bibRecord: true } },
+      },
+    });
+  }
+
   async settleFine(fineId: string) {
     const fine = await this.prisma.fine.findUnique({ where: { id: fineId } });
     if (!fine) throw new NotFoundException('Fine not found.');

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { CirculationService } from './circulation.service';
 import { IssueBookDto } from './dto/issue-book.dto';
 import { ReturnBookDto } from './dto/return-book.dto';
@@ -39,9 +39,23 @@ export class CirculationController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('loans/history')
+  getLoanHistory(@Request() req: any) {
+    const isStaff = ['SUPER_ADMIN', 'ADMIN', 'LIBRARIAN'].includes(req.user.role);
+    return this.circulationService.getLoanHistory(isStaff ? undefined : req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('hold/:bibRecordId')
   createHold(@Param('bibRecordId') bibRecordId: string, @Request() req: any) {
     return this.circulationService.createHold(bibRecordId, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('hold/:reservationId')
+  cancelHold(@Param('reservationId') reservationId: string, @Request() req: any) {
+    const isStaff = ['SUPER_ADMIN', 'ADMIN', 'LIBRARIAN'].includes(req.user.role);
+    return this.circulationService.cancelHold(reservationId, isStaff ? undefined : req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

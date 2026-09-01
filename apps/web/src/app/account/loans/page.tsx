@@ -1,37 +1,60 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { BookOpen, RefreshCw, CheckCircle2, AlertCircle, History, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+
+function formatDate(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function daysLeft(dueDate: string) {
+  return Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
 
 export default function MyLoansPage() {
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
-  const [renewMsg, setRenewMsg] = useState('');
+  const [renewMsg, setRenewMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [renewingId, setRenewingId] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
 
-  const activeLoans = [
-    { id: '1', title: 'Fatḥ al-Muʿīn, annotated copy', call: 'RB 0908', borrowDate: '01 Sep 2026', due: '14 Sep 2026', daysLeft: 13, barcode: 'RB0908-01', renewals: 1 },
-    { id: '2', title: 'Al-Bayān monthly, vol. 3', call: 'PER 0044', borrowDate: '24 Aug 2026', due: '21 Sep 2026', daysLeft: 20, barcode: 'PER0044-01', renewals: 0 },
-    { id: '3', title: 'Malabar and its people', call: 'RB 1177', borrowDate: '15 Aug 2026', due: '03 Oct 2026', daysLeft: 32, barcode: 'RB1177-01', renewals: 0 },
-  ];
+  const activeLoans = (user?.loans || []).filter((l: any) => l.status === 'ACTIVE');
 
-  const pastLoans = [
-    { id: 'p1', title: 'Tuḥfat al-Mujāhidīn fī Baʿḍ Akhbār al-Purtughāliyyīn', call: 'MS 0012', returnedOn: '18 Aug 2026', barcode: 'MS0012-01' },
-    { id: 'p2', title: 'Qurʾān manuscript, North Malabar illumination', call: 'MS 0088', returnedOn: '04 Jul 2026', barcode: 'MS0088-02' },
-    { id: 'p3', title: 'Linguistic Roots of Arabi-Malayalam Literature', call: 'BK 4019', returnedOn: '12 May 2026', barcode: 'BK4019-01' },
-  ];
+  useEffect(() => {
+    if (activeTab !== 'history' || !user) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    api
+      .getLoanHistory()
+      .then((data) => {
+        if (!cancelled) setHistory(data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, user]);
 
   const handleRenew = async (loanId: string) => {
-    setRenewMsg('');
+    setRenewMsg(null);
     setRenewingId(loanId);
     try {
       const res = await api.renewLoan(loanId);
-      setRenewMsg(res.message || 'Loan successfully renewed for an additional 14 days.');
+      setRenewMsg({ type: 'success', text: res.message || `Loan renewed. New due date: ${formatDate(res.newDueDate)}.` });
       await refreshUser();
     } catch (err: any) {
-      setRenewMsg('Loan extended successfully for 14 days.');
+      setRenewMsg({ type: 'error', text: err.message || 'Could not renew this loan.' });
     } finally {
       setRenewingId(null);
     }
@@ -39,10 +62,24 @@ export default function MyLoansPage() {
 
   const handleRenewAll = async () => {
     setRenewingId('all');
-    setTimeout(() => {
-      setRenewMsg('All eligible active loans extended for an additional 14 days.');
-      setRenewingId(null);
-    }, 800);
+    setRenewMsg(null);
+    let succeeded = 0;
+    let failed = 0;
+    for (const loan of activeLoans) {
+      try {
+        await api.renewLoan(loan.id);
+        succeeded++;
+      } catch {
+        failed++;
+      }
+    }
+    await refreshUser();
+    setRenewingId(null);
+    if (failed === 0) {
+      setRenewMsg({ type: 'success', text: `Renewed ${succeeded} loan(s) successfully.` });
+    } else {
+      setRenewMsg({ type: 'error', text: `Renewed ${succeeded} loan(s); ${failed} could not be renewed (limit reached or held by another reader).` });
+    }
   };
 
   if (!user) return null;
@@ -60,7 +97,7 @@ export default function MyLoansPage() {
           </p>
         </div>
 
-        {activeTab === 'current' && (
+        {activeTab === 'current' && activeLoans.length > 0 && (
           <button
             type="button"
             disabled={renewingId !== null}
@@ -68,7 +105,7 @@ export default function MyLoansPage() {
             className="px-4 py-2 border-2 border-black bg-black text-white rounded text-xs font-bold hover:bg-heritage-red hover:text-white  transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${renewingId === 'all' ? 'animate-spin' : ''}`} />
-            <span>Renew All (14 Days)</span>
+            <span>Renew All (Where Eligible)</span>
           </button>
         )}
       </div>
@@ -91,68 +128,95 @@ export default function MyLoansPage() {
           className={`px-4 py-2 font-amiri text-lg font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'history' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'
             }`}
         >
-          Loan History ({pastLoans.length})
+          Loan History
         </button>
       </div>
 
       {renewMsg && (
-        <div className="p-3.5 bg-green-50 text-green-800 border border-green-300 text-xs font-semibold flex items-center gap-2 rounded">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-          <span>{renewMsg}</span>
+        <div
+          className={`p-3.5 border text-xs font-semibold flex items-center gap-2 rounded ${
+            renewMsg.type === 'success' ? 'bg-green-50 text-green-800 border-green-300' : 'bg-red-50 text-heritage-red border-heritage-red/30'
+          }`}
+        >
+          {renewMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+          <span>{renewMsg.text}</span>
         </div>
       )}
 
       {activeTab === 'current' ? (
         <div className="space-y-4">
-          <div className="overflow-x-auto border border-black bg-white rounded">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-black bg-[#F7F4EF] text-left text-xs uppercase font-averia font-bold text-heritage-muted">
-                  <th className="py-3 px-4">Item Details</th>
-                  <th className="py-3 px-4">Call Number</th>
-                  <th className="py-3 px-4">Barcode</th>
-                  <th className="py-3 px-4">Issued On</th>
-                  <th className="py-3 px-4">Due Date</th>
-                  <th className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {activeLoans.map((loan) => (
-                  <tr key={loan.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <p className="font-amiri text-lg font-bold text-black leading-snug">{loan.title}</p>
-                      <span className="text-[11px] text-heritage-muted font-averia">Renewed {loan.renewals} of 3 times</span>
-                    </td>
-                    <td className="py-3.5 px-4 font-averia text-xs text-heritage-muted font-bold">{loan.call}</td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-gray-600">{loan.barcode}</td>
-                    <td className="py-3.5 px-4 text-xs text-gray-500">{loan.borrowDate}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-bold text-black text-xs block">{loan.due}</span>
-                      <span className="text-[10px] bg-green-100 text-green-800 px-1.5 py-0.2 rounded font-mono font-bold">
-                        {loan.daysLeft} days remaining
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        type="button"
-                        disabled={renewingId === loan.id}
-                        onClick={() => handleRenew(loan.id)}
-                        className="px-3.5 py-1.5 bg-black text-white rounded text-xs font-semibold hover:bg-heritage-red hover:text-white  transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {renewingId === loan.id ? 'Renewing...' : 'Renew (+14d)'}
-                      </button>
-                    </td>
+          {activeLoans.length === 0 ? (
+            <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+              You have no active loans right now.
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-black bg-white rounded">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-black bg-[#F7F4EF] text-left text-xs uppercase font-averia font-bold text-heritage-muted">
+                    <th className="py-3 px-4">Item Details</th>
+                    <th className="py-3 px-4">Call Number</th>
+                    <th className="py-3 px-4">Barcode</th>
+                    <th className="py-3 px-4">Issued On</th>
+                    <th className="py-3 px-4">Due Date</th>
+                    <th className="py-3 px-4 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {activeLoans.map((loan: any) => {
+                    const dl = daysLeft(loan.dueDate);
+                    return (
+                      <tr key={loan.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <p className="font-amiri text-lg font-bold text-black leading-snug">{loan.copy?.bibRecord?.titleLatin || 'Item'}</p>
+                          <span className="text-[11px] text-heritage-muted font-averia">Renewed {loan.renewalCount || 0} of 3 times</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-averia text-xs text-heritage-muted font-bold">{loan.copy?.bibRecord?.shelfmark}</td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-gray-600">{loan.copy?.barcode}</td>
+                        <td className="py-3.5 px-4 text-xs text-gray-500">{formatDate(loan.issuedAt)}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-black text-xs block">{formatDate(loan.dueDate)}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                              dl < 0 ? 'bg-red-100 text-red-800' : dl <= 3 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {dl < 0 ? `${Math.abs(dl)} days overdue` : `${dl} days remaining`}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            disabled={renewingId === loan.id || renewingId === 'all'}
+                            onClick={() => handleRenew(loan.id)}
+                            className="px-3.5 py-1.5 bg-black text-white rounded text-xs font-semibold hover:bg-heritage-red hover:text-white  transition-colors disabled:opacity-50 cursor-pointer"
+                          >
+                            {renewingId === loan.id ? 'Renewing...' : 'Renew'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="bg-[#F7F4EF] p-4 border border-[#D6CCBC] text-xs text-heritage-body space-y-1 rounded">
             <p className="font-bold text-black font-averia uppercase">Circulation Guidelines:</p>
             <p>• Volumes may be renewed up to 3 consecutive periods unless held by another scholar.</p>
             <p>• Overnight loan requests for non-digitized rare books must be signed by the Chief Curator.</p>
           </div>
+        </div>
+      ) : historyLoading ? (
+        <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading loan history…</div>
+      ) : historyError ? (
+        <div className="border border-heritage-red bg-red-50 rounded p-8 text-center text-heritage-red text-sm">
+          Could not load loan history. Please try again shortly.
+        </div>
+      ) : history.length === 0 ? (
+        <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+          No past loans on record yet.
         </div>
       ) : (
         <div className="overflow-x-auto border border-black bg-white rounded">
@@ -167,16 +231,14 @@ export default function MyLoansPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {pastLoans.map((p) => (
+              {history.map((p: any) => (
                 <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="py-3.5 px-4 font-amiri text-lg font-bold text-black">{p.title}</td>
-                  <td className="py-3.5 px-4 font-averia text-xs text-heritage-muted">{p.call}</td>
-                  <td className="py-3.5 px-4 font-mono text-xs text-gray-600">{p.barcode}</td>
-                  <td className="py-3.5 px-4 text-xs text-gray-600">{p.returnedOn}</td>
+                  <td className="py-3.5 px-4 font-amiri text-lg font-bold text-black">{p.copy?.bibRecord?.titleLatin || 'Item'}</td>
+                  <td className="py-3.5 px-4 font-averia text-xs text-heritage-muted">{p.copy?.bibRecord?.shelfmark}</td>
+                  <td className="py-3.5 px-4 font-mono text-xs text-gray-600">{p.copy?.barcode}</td>
+                  <td className="py-3.5 px-4 text-xs text-gray-600">{formatDate(p.returnedAt)}</td>
                   <td className="py-3.5 px-4 text-right">
-                    <span className="text-[11px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold">
-                      Returned to Stacks
-                    </span>
+                    <span className="text-[11px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold">Returned to Stacks</span>
                   </td>
                 </tr>
               ))}

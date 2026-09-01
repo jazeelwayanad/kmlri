@@ -609,6 +609,16 @@ export const api = {
     });
   },
 
+  async cancelHold(reservationId: string) {
+    return this.fetchWithAuth(`/circulation/hold/${reservationId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getLoanHistory() {
+    return this.fetchWithAuth('/circulation/loans/history');
+  },
+
   async settleFine(fineId: string) {
     return this.fetchWithAuth(`/circulation/fines/${fineId}/settle`, {
       method: 'POST',

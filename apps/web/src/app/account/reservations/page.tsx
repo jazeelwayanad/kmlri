@@ -3,28 +3,33 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { BookmarkCheck, CheckCircle2, MapPin, Calendar, Clock, AlertCircle, X } from 'lucide-react';
+import { api } from '@/lib/api';
+import { BookmarkCheck, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+
+function formatDate(d?: string) {
+  if (!d) return 'To be confirmed';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
 export default function MyReservationsPage() {
-  const { user } = useAuth();
-  const [reservations, setReservations] = useState([
-    {
-      id: 'resv-1',
-      title: 'Bayān al-Fawāʾid (Manuscript MS 0142)',
-      titleArabic: 'بيان الفوائد',
-      call: 'MS-ARA-0142',
-      pickup: 'Rare Reading Room — Desk #02',
-      queuePos: 'Ready for Collection',
-      expires: '05 Sep 2026',
-      status: 'READY'
-    }
-  ]);
-  const [cancelMsg, setCancelMsg] = useState('');
+  const { user, refreshUser } = useAuth();
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const handleCancelHold = (id: string) => {
-    setReservations(reservations.filter((r) => r.id !== id));
-    setCancelMsg('Hold reservation cancelled successfully.');
-    setTimeout(() => setCancelMsg(''), 3500);
+  const reservations = (user?.reservations || []) as any[];
+
+  const handleCancelHold = async (id: string) => {
+    setCancellingId(id);
+    setMessage(null);
+    try {
+      await api.cancelHold(id);
+      setMessage({ type: 'success', text: 'Hold reservation cancelled successfully.' });
+      await refreshUser();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Could not cancel this reservation.' });
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   if (!user) return null;
@@ -42,9 +47,14 @@ export default function MyReservationsPage() {
 
       <div className="double-rule"></div>
 
-      {cancelMsg && (
-        <div className="p-3 bg-red-50 text-heritage-red border border-heritage-red/30 text-xs font-semibold rounded">
-          {cancelMsg}
+      {message && (
+        <div
+          className={`p-3 text-xs font-semibold rounded border flex items-center gap-2 ${
+            message.type === 'success' ? 'bg-green-50 text-green-800 border-green-300' : 'bg-red-50 text-heritage-red border-heritage-red/30'
+          }`}
+        >
+          {message.type === 'success' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+          <span>{message.text}</span>
         </div>
       )}
 
@@ -57,26 +67,30 @@ export default function MyReservationsPage() {
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 border border-green-300 text-xs px-2.5 py-0.5 rounded font-bold">
+                  <span
+                    className={`inline-flex items-center gap-1.5 border text-xs px-2.5 py-0.5 rounded font-bold ${
+                      resv.status === 'READY_FOR_PICKUP'
+                        ? 'bg-green-100 text-green-800 border-green-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                    }`}
+                  >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{resv.queuePos}</span>
+                    <span>{resv.status === 'READY_FOR_PICKUP' ? 'Ready for Collection' : 'Pending — Awaiting Retrieval'}</span>
                   </span>
-                  <span className="text-xs font-mono text-heritage-muted font-bold">{resv.call}</span>
+                  <span className="text-xs font-mono text-heritage-muted font-bold">{resv.bibRecord?.shelfmark}</span>
                 </div>
 
                 <h3 className="font-amiri text-2xl font-bold text-black m-0">
-                  {resv.title}
+                  {resv.bibRecord?.titleLatin}
+                  {resv.bibRecord?.titleArabic && <span className="text-heritage-muted ml-2">({resv.bibRecord.titleArabic})</span>}
                 </h3>
 
                 <div className="flex items-center gap-4 text-xs text-heritage-body flex-wrap pt-1">
-                  <div className="flex items-center gap-1 text-black font-semibold">
-                    <MapPin className="w-3.5 h-3.5 text-heritage-red" />
-                    <span>{resv.pickup}</span>
-                  </div>
-                  <span>·</span>
                   <div className="flex items-center gap-1 text-heritage-muted">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Held until: <strong className="text-black">{resv.expires}</strong></span>
+                    <span>
+                      Held until: <strong className="text-black">{formatDate(resv.availableUntil)}</strong>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -90,10 +104,11 @@ export default function MyReservationsPage() {
                 </Link>
                 <button
                   type="button"
+                  disabled={cancellingId === resv.id}
                   onClick={() => handleCancelHold(resv.id)}
-                  className="px-3 py-2 border border-gray-400 text-xs font-semibold rounded hover:bg-red-50 hover:text-heritage-red hover:border-heritage-red transition-colors cursor-pointer"
+                  className="px-3 py-2 border border-gray-400 text-xs font-semibold rounded hover:bg-red-50 hover:text-heritage-red hover:border-heritage-red transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Cancel Hold
+                  {cancellingId === resv.id ? 'Cancelling…' : 'Cancel Hold'}
                 </button>
               </div>
             </div>
