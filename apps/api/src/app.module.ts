@@ -23,6 +23,7 @@ import { CollectionsModule } from './collections/collections.module';
 import { SerialsModule } from './serials/serials.module';
 import { ReproductionRequestsModule } from './reproduction-requests/reproduction-requests.module';
 import { RepositoryModule } from './repository/repository.module';
+import { RegistrationsModule } from './registrations/registrations.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { RepositoryModule } from './repository/repository.module';
     SerialsModule,
     ReproductionRequestsModule,
     RepositoryModule,
+    RegistrationsModule,
   ],
 })
 export class AppModule {}

@@ -48,6 +48,7 @@ model User {
   referenceQuestions ReferenceQuestion[]
   reproductionRequests ReproductionRequest[]
   repositorySubmissions RepositorySubmission[]
+  registrations     Registration[]
 }
 
 model BibliographicRecord {
@@ -278,8 +279,53 @@ model ContentItem {
   featured          Boolean   @default(false)
   status            String    @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
   tags              String    @default("[]")     // JSON array of strings
+  registrationEnabled Boolean @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+
+  registrationFields RegistrationField[]
+  registrations      Registration[]
+}
+
+model RegistrationField {
+  id                String    @id @default(uuid())
+  contentItemId     String
+  label             String
+  fieldType         String    // TEXT, EMAIL, PHONE, NUMBER, TEXTAREA, SELECT, CHECKBOX, FILE
+  required          Boolean   @default(false)
+  options           String?   // JSON array of strings, for SELECT fields
+  sortOrder         Int       @default(0)
+  createdAt         DateTime  @default(now())
+
+  contentItem       ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+model Registration {
+  id                String    @id @default(uuid())
+  contentItemId     String
+  userId            String?
+  submitterName     String
+  submitterEmail    String
+  data              String    @default("{}") // JSON object of { fieldLabel: value }
+  status            String    @default("SUBMITTED") // SUBMITTED, REVIEWED
+  createdAt         DateTime  @default(now())
+
+  contentItem       ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  files             RegistrationFile[]
+}
+
+model RegistrationFile {
+  id                String    @id @default(uuid())
+  registrationId    String
+  fieldLabel        String
+  originalName      String
+  storedName        String
+  mimeType          String
+  size              Int
+  createdAt         DateTime  @default(now())
+
+  registration      Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 }
 
 model Vendor {
