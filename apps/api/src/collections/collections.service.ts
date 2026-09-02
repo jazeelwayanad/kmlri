@@ -21,6 +21,38 @@ export class CollectionsService {
     });
   }
 
+  async findOne(id: string) {
+    const collection = await this.prisma.collection.findUnique({
+      where: { id },
+      include: {
+        records: {
+          select: { id: true, titleLatin: true, titleArabic: true, shelfmark: true, format: true, coverImageUrl: true },
+          orderBy: { titleLatin: 'asc' },
+        },
+      },
+    });
+    if (!collection) throw new NotFoundException('Collection not found.');
+    return collection;
+  }
+
+  async addRecord(collectionId: string, recordId: string) {
+    const collection = await this.prisma.collection.findUnique({ where: { id: collectionId } });
+    if (!collection) throw new NotFoundException('Collection not found.');
+    const record = await this.prisma.bibliographicRecord.findUnique({ where: { id: recordId } });
+    if (!record) throw new NotFoundException('Catalogue record not found.');
+    await this.prisma.bibliographicRecord.update({ where: { id: recordId }, data: { collectionId } });
+    return this.findOne(collectionId);
+  }
+
+  async removeRecord(collectionId: string, recordId: string) {
+    const record = await this.prisma.bibliographicRecord.findUnique({ where: { id: recordId } });
+    if (!record || record.collectionId !== collectionId) {
+      throw new NotFoundException('This record is not part of the collection.');
+    }
+    await this.prisma.bibliographicRecord.update({ where: { id: recordId }, data: { collectionId: null } });
+    return this.findOne(collectionId);
+  }
+
   async create(data: { name: string; description?: string }) {
     if (!data.name?.trim()) throw new BadRequestException('name is required.');
     const slug = this.slugify(data.name);
