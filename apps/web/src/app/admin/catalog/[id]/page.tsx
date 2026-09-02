@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/admin/ui';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
 
 type CopyStatus = 'AVAILABLE' | 'ON_LOAN' | 'RESERVED' | 'IN_CONSERVATION' | 'LOST' | 'WITHDRAWN';
 
@@ -27,6 +28,7 @@ interface ItemCopy {
   rfidTag?: string | null;
   location: string;
   status: CopyStatus;
+  imageUrl?: string | null;
   loans?: { dueDate: string; user: { fullName: string; membershipNumber: string } }[];
 }
 
@@ -48,6 +50,7 @@ export default function RecordDetailsPage() {
   const [newRfid, setNewRfid] = useState('');
   const [newLocation, setNewLocation] = useState('Main Reading Room - Shelf A1');
   const [newStatus, setNewStatus] = useState<CopyStatus>('AVAILABLE');
+  const [newImageUrl, setNewImageUrl] = useState<string | undefined>(undefined);
   const [savingItem, setSavingItem] = useState(false);
 
   // Edit Item Modal
@@ -56,6 +59,7 @@ export default function RecordDetailsPage() {
   const [editRfid, setEditRfid] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editStatus, setEditStatus] = useState<CopyStatus>('AVAILABLE');
+  const [editImageUrl, setEditImageUrl] = useState<string | undefined>(undefined);
 
   // Edit Record Modal
   const [showEditRecordModal, setShowEditRecordModal] = useState(false);
@@ -163,11 +167,12 @@ export default function RecordDetailsPage() {
     if (!newBarcode) return;
     setSavingItem(true);
     try {
-      await api.addCatalogCopy(record.id, { barcode: newBarcode, rfidTag: newRfid || undefined, location: newLocation, status: newStatus });
+      await api.addCatalogCopy(record.id, { barcode: newBarcode, rfidTag: newRfid || undefined, location: newLocation, status: newStatus, imageUrl: newImageUrl });
       setNotification({ type: 'success', text: `Item copy "${newBarcode}" added to record.` });
       setShowAddItemModal(false);
       setNewBarcode('');
       setNewRfid('');
+      setNewImageUrl(undefined);
       await loadRecord();
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message || 'Could not add item copy.' });
@@ -184,6 +189,7 @@ export default function RecordDetailsPage() {
     setEditRfid(item.rfidTag || '');
     setEditLocation(item.location);
     setEditStatus(item.status);
+    setEditImageUrl(item.imageUrl || undefined);
   };
 
   const handleSaveItemEdit = async (e: React.FormEvent) => {
@@ -195,6 +201,7 @@ export default function RecordDetailsPage() {
         rfidTag: editRfid || undefined,
         location: editLocation,
         status: editStatus,
+        imageUrl: editImageUrl,
       });
       setEditingItem(null);
       setNotification({ type: 'success', text: `Item copy "${editBarcode}" updated successfully.` });
@@ -441,6 +448,7 @@ export default function RecordDetailsPage() {
             <table className="w-full border-collapse text-left text-xs font-sans">
               <thead>
                 <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                  <th className="py-3 px-3">Photo</th>
                   <th className="py-3 px-3">Copy #</th>
                   <th className="py-3 px-3">Barcode</th>
                   <th className="py-3 px-3">RFID Tag</th>
@@ -452,6 +460,14 @@ export default function RecordDetailsPage() {
               <tbody className="divide-y divide-[#EEECE7]">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-[#FAF8F5]">
+                    <td className="py-3.5 px-3">
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.imageUrl} alt={`Copy ${item.copyNumber}`} className="w-10 h-10 rounded object-cover border border-gray-200" />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200" />
+                      )}
+                    </td>
                     <td className="py-3.5 px-3 font-mono font-bold text-gray-900">Copy #{item.copyNumber}</td>
                     <td className="py-3.5 px-3 font-mono font-bold text-gray-900">{item.barcode}</td>
                     <td className="py-3.5 px-3 font-mono text-gray-500 text-[11px]">{item.rfidTag || '—'}</td>
@@ -563,6 +579,8 @@ export default function RecordDetailsPage() {
                 </select>
               </div>
 
+              <ImageUploadField value={newImageUrl} onChange={setNewImageUrl} label="Item Photo (optional)" aspectClass="aspect-[4/3]" />
+
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                 <button type="button" onClick={() => setShowAddItemModal(false)} className="px-4 py-2 border border-gray-200 rounded text-xs font-semibold text-gray-700">
                   Cancel
@@ -634,6 +652,8 @@ export default function RecordDetailsPage() {
                   ))}
                 </select>
               </div>
+
+              <ImageUploadField value={editImageUrl} onChange={setEditImageUrl} label="Item Photo (optional)" aspectClass="aspect-[4/3]" />
 
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                 <button type="button" onClick={() => setEditingItem(null)} className="px-4 py-2 border border-gray-200 rounded text-xs font-semibold text-gray-700">
