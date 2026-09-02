@@ -22,6 +22,8 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
+import { RichTextEditor } from '@/components/content/RichTextEditor';
 
 export default function WebsiteNewsPage() {
   const [news, setNews] = useState<ContentItem[]>([]);
@@ -62,8 +64,8 @@ export default function WebsiteNewsPage() {
   const [author, setAuthor] = useState('Press & Media Desk');
   const [tags, setTags] = useState('');
   const [featured, setFeatured] = useState(false);
-  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT'>('ACTIVE');
-  const [imageUrl, setImageUrl] = useState('');
+  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
+  const [imageUrl, setImageUrl] = useState<string | undefined>('');
   const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
@@ -91,7 +93,7 @@ export default function WebsiteNewsPage() {
     setAuthor(item.author || '');
     setTags((item.tags || []).join(', '));
     setFeatured(!!item.featured);
-    setStatus(item.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE');
+    setStatus(item.status === 'DRAFT' ? 'DRAFT' : item.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE');
     setImageUrl(item.imageUrl || '');
     setShowModal(true);
   };
@@ -418,25 +420,12 @@ export default function WebsiteNewsPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-gray-800 block mb-1">Full Bulletin Content (Markdown)</label>
-                  <textarea
-                    rows={8}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Write the full press release or announcement in markdown..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
+                  <label className="font-bold text-gray-800 block mb-1">Full Bulletin Content</label>
+                  <RichTextEditor value={content} onChange={setContent} placeholder="Write the full press release or announcement..." />
                 </div>
 
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Featured Header Image URL</label>
-                  <input
-                    type="text"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
+                <div className="sm:col-span-2">
+                  <ImageUploadField value={imageUrl} onChange={setImageUrl} label="Featured Image" />
                 </div>
 
                 <div>
@@ -448,6 +437,43 @@ export default function WebsiteNewsPage() {
                     placeholder="IIIF, Digital Library, Manuscripts"
                     className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
+                  {tags.trim() && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {tags.split(',').map((t) => t.trim()).filter(Boolean).map((t, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 bg-[#FAF8F5] text-gray-700 border border-[#E2E0DB] px-2 py-0.5 rounded text-[10px]">
+                          #{t}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTags(
+                                tags
+                                  .split(',')
+                                  .map((x) => x.trim())
+                                  .filter((x) => x && x !== t)
+                                  .join(', '),
+                              )
+                            }
+                            className="text-gray-400 hover:text-red-600"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Publication Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'DRAFT' | 'ARCHIVED')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none bg-white"
+                  >
+                    <option value="ACTIVE">Active (Published)</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
                 </div>
               </div>
 

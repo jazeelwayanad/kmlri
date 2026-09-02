@@ -21,6 +21,19 @@ import {
   Send,
 } from 'lucide-react';
 
+// Minimal sanitization for admin-authored rich-text HTML: strips script tags,
+// inline event handlers, and javascript: URLs before rendering with
+// dangerouslySetInnerHTML. This is not a general-purpose sanitizer — content
+// is authored exclusively by trusted staff through the admin RichTextEditor.
+function sanitizeContentHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+}
+
 export default function NewsEventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [item, setItem] = useState<ContentItem | null>(null);
@@ -74,10 +87,13 @@ export default function NewsEventDetailPage() {
     };
   }, [id]);
 
+  const [regError, setRegError] = useState<string | null>(null);
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return;
     setRegistering(true);
+    setRegError(null);
     try {
       const res = await api.registerContentItem(item.id, {
         name: attendeeName,
@@ -87,11 +103,8 @@ export default function NewsEventDetailPage() {
       setAttendeeName('');
       setAttendeeEmail('');
       setAttendeePhone('');
-    } catch {
-      setRegSuccess(`Registration confirmed for ${item.title}! Reference ID: KMLRI-EVT-${Date.now().toString(36).toUpperCase()}`);
-      setAttendeeName('');
-      setAttendeeEmail('');
-      setAttendeePhone('');
+    } catch (err: any) {
+      setRegError(err.message || 'Could not complete your registration. Please try again.');
     } finally {
       setRegistering(false);
     }
@@ -256,12 +269,10 @@ export default function NewsEventDetailPage() {
             </div>
 
             {item.content ? (
-              <div className="space-y-4 pt-4 text-gray-900 leading-relaxed">
-                <p>{item.content}</p>
-                <p>
-                  Scholars, students, and institutional visitors are invited to participate and consult related reference works in the reading room. Registration and attendance are open to all active members of the institute and registered visiting researchers.
-                </p>
-              </div>
+              <div
+                className="space-y-4 pt-4 text-gray-900 leading-relaxed prose prose-lg max-w-none [&_h3]:font-bold [&_h3]:text-xl [&_h3]:mt-4 [&_h3]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-black/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-heritage-red [&_a]:underline [&_img]:max-w-full [&_img]:my-4"
+                dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(item.content) }}
+              />
             ) : (
               <div className="space-y-4 pt-4 text-gray-900 leading-relaxed">
                 <p>
@@ -437,6 +448,12 @@ export default function NewsEventDetailPage() {
                   <span><strong>Venue:</strong> {item.venue || 'KMLRI Auditorium, Calicut'}</span>
                   <span><strong>Availability:</strong> {seatsRemaining} seats left</span>
                 </div>
+
+                {regError && (
+                  <div className="text-xs bg-red-50 border border-red-300 text-red-800 p-3 font-semibold">
+                    {regError}
+                  </div>
+                )}
 
                 <form onSubmit={handleRegisterSubmit} className="space-y-4 pt-1">
                   <div>

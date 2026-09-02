@@ -26,6 +26,8 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
+import { RichTextEditor } from '@/components/content/RichTextEditor';
 
 export default function WebsiteEventsPage() {
   const [events, setEvents] = useState<ContentItem[]>([]);
@@ -69,7 +71,8 @@ export default function WebsiteEventsPage() {
   const [capacity, setCapacity] = useState(100);
   const [featured, setFeatured] = useState(false);
   const [tags, setTags] = useState('');
-  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT'>('ACTIVE');
+  const [status, setStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
+  const [imageUrl, setImageUrl] = useState<string | undefined>('');
   const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
@@ -86,6 +89,7 @@ export default function WebsiteEventsPage() {
     setFeatured(false);
     setTags('Manuscripts, History');
     setStatus('ACTIVE');
+    setImageUrl('');
     setShowModal(true);
   };
 
@@ -102,7 +106,8 @@ export default function WebsiteEventsPage() {
     setCapacity(event.capacity || 0);
     setFeatured(!!event.featured);
     setTags((event.tags || []).join(', '));
-    setStatus(event.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE');
+    setStatus(event.status === 'DRAFT' ? 'DRAFT' : event.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE');
+    setImageUrl(event.imageUrl || '');
     setShowModal(true);
   };
 
@@ -131,6 +136,7 @@ export default function WebsiteEventsPage() {
       featured,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       status,
+      imageUrl: imageUrl || undefined,
     };
 
     setSaving(true);
@@ -471,17 +477,15 @@ export default function WebsiteEventsPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-gray-800 block mb-1">Full Program Schedule &amp; Description (Markdown)</label>
-                  <textarea
-                    rows={6}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Write detailed session timings, keynote speaker names, and abstract submission deadlines..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
+                  <label className="font-bold text-gray-800 block mb-1">Full Program Schedule &amp; Description</label>
+                  <RichTextEditor value={description} onChange={setDescription} placeholder="Write detailed session timings, keynote speaker names, and abstract submission deadlines..." />
                 </div>
 
                 <div className="sm:col-span-2">
+                  <ImageUploadField value={imageUrl} onChange={setImageUrl} label="Featured Image" />
+                </div>
+
+                <div>
                   <label className="font-bold text-gray-800 block mb-1">Tags (Comma separated)</label>
                   <input
                     type="text"
@@ -490,6 +494,19 @@ export default function WebsiteEventsPage() {
                     placeholder="Symposium, Indian Ocean, Manuscripts"
                     className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-800 block mb-1">Publication Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'DRAFT' | 'ARCHIVED')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:border-[#A52307] outline-none bg-white"
+                  >
+                    <option value="ACTIVE">Active (Published)</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
                 </div>
               </div>
 

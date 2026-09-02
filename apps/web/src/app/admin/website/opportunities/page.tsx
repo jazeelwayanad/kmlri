@@ -23,6 +23,8 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
+import { RichTextEditor } from '@/components/content/RichTextEditor';
 
 export default function WebsiteOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<ContentItem[]>([]);
@@ -60,6 +62,7 @@ export default function WebsiteOpportunitiesPage() {
   const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [programDescription, setProgramDescription] = useState('');
+  const [eligibilityCriteria, setEligibilityCriteria] = useState('');
   const [deadline, setDeadline] = useState('');
   const [stipend, setStipend] = useState('');
   const [venue, setVenue] = useState('KMLRI Campus');
@@ -67,6 +70,8 @@ export default function WebsiteOpportunitiesPage() {
   const [featured, setFeatured] = useState(false);
   const [tags, setTags] = useState('');
   const [status, setStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
+  const [imageUrl, setImageUrl] = useState<string | undefined>('');
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const openCreateModal = () => {
@@ -76,6 +81,7 @@ export default function WebsiteOpportunitiesPage() {
     setKicker('Fellowship');
     setExcerpt('');
     setProgramDescription('');
+    setEligibilityCriteria('');
     setDeadline('30 Nov 2026');
     setStipend('₹35,000 / month');
     setVenue('KMLRI Research Wing');
@@ -83,6 +89,8 @@ export default function WebsiteOpportunitiesPage() {
     setFeatured(false);
     setTags('Fellowship, Research');
     setStatus('ACTIVE');
+    setImageUrl('');
+    setRegistrationEnabled(false);
     setShowModal(true);
   };
 
@@ -93,6 +101,7 @@ export default function WebsiteOpportunitiesPage() {
     setKicker(opp.kicker || 'Opportunity');
     setExcerpt(opp.summary);
     setProgramDescription(opp.content || '');
+    setEligibilityCriteria(opp.eligibilityCriteria || '');
     setDeadline(opp.deadline || '');
     setStipend(opp.stipend || '');
     setVenue(opp.venue || 'KMLRI Campus');
@@ -100,6 +109,8 @@ export default function WebsiteOpportunitiesPage() {
     setFeatured(!!opp.featured);
     setTags((opp.tags || []).join(', '));
     setStatus(opp.status === 'DRAFT' ? 'DRAFT' : opp.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE');
+    setImageUrl(opp.imageUrl || '');
+    setRegistrationEnabled(!!opp.registrationEnabled);
     setShowModal(true);
   };
 
@@ -121,6 +132,7 @@ export default function WebsiteOpportunitiesPage() {
       kicker,
       summary: excerpt,
       content: programDescription,
+      eligibilityCriteria,
       deadline,
       date: deadline ? `Deadline: ${deadline}` : undefined,
       stipend,
@@ -129,6 +141,8 @@ export default function WebsiteOpportunitiesPage() {
       featured,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       status,
+      imageUrl: imageUrl || undefined,
+      registrationEnabled,
     };
 
     setSaving(true);
@@ -456,14 +470,17 @@ export default function WebsiteOpportunitiesPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-gray-800 block mb-1">Program Scope &amp; Fellowship Details (Markdown)</label>
-                  <textarea
-                    rows={6}
-                    value={programDescription}
-                    onChange={(e) => setProgramDescription(e.target.value)}
-                    placeholder="Describe fellowship tenure, research obligations, archive access, and deliverables..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-xs text-gray-900 focus:border-[#A52307] outline-none"
-                  />
+                  <label className="font-bold text-gray-800 block mb-1">Program Scope &amp; Fellowship Details</label>
+                  <RichTextEditor value={programDescription} onChange={setProgramDescription} placeholder="Describe fellowship tenure, research obligations, archive access, and deliverables..." />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-gray-800 block mb-1">Eligibility &amp; Submission Criteria</label>
+                  <RichTextEditor value={eligibilityCriteria} onChange={setEligibilityCriteria} placeholder="Who can apply, required documents, submission format..." />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <ImageUploadField value={imageUrl} onChange={setImageUrl} label="Featured Image" />
                 </div>
 
                 <div className="sm:col-span-2">
@@ -478,8 +495,8 @@ export default function WebsiteOpportunitiesPage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#E2E0DB] flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="pt-3 border-t border-[#E2E0DB] flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-4 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -490,6 +507,15 @@ export default function WebsiteOpportunitiesPage() {
                     <span className="font-bold text-gray-800">Pin as Featured</span>
                   </label>
 
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={registrationEnabled}
+                      onChange={(e) => setRegistrationEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+                    />
+                    <span className="font-bold text-gray-800">Enable Online Registration</span>
+                  </label>
                 </div>
 
                 <div className="flex gap-2">

@@ -18,6 +18,19 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+// Minimal sanitization for admin-authored rich-text HTML: strips script tags,
+// inline event handlers, and javascript: URLs before rendering with
+// dangerouslySetInnerHTML. Content is authored exclusively by trusted staff
+// through the admin RichTextEditor, not by arbitrary site visitors.
+function sanitizeContentHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+}
+
 export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -176,15 +189,10 @@ export default function StoryDetailPage() {
           <article className="space-y-6 font-serif text-[17px] sm:text-[19px] leading-[1.8] text-gray-900">
             <div className="font-sans text-[16px] sm:text-[18px] text-heritage-body leading-relaxed space-y-4">
               {story.content ? (
-                <>
-                  <p>{story.content}</p>
-                  <p>
-                    Throughout the eighteenth and nineteenth centuries, scholars travelling along the Malabar littoral annotated their working copies with glosses, ownership seals, and astronomical dates. These marginalia constitute an irreplaceable record of intellectual debate, book trade networks, and indigenous commentary traditions.
-                  </p>
-                  <p>
-                    The physical examination of the laid paper reveals Dutch and Venetian watermarks alongside local carbon inks prepared with gum arabic. Conservators at the KMLRI Preservation Lab have mapped these ink formulations to establish regional codicological timelines.
-                  </p>
-                </>
+                <div
+                  className="prose prose-lg max-w-none [&_h3]:font-bold [&_h3]:text-xl [&_h3]:mt-4 [&_h3]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-black/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-heritage-red [&_a]:underline [&_img]:max-w-full [&_img]:my-4"
+                  dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(story.content) }}
+                />
               ) : (
                 <>
                   <p>

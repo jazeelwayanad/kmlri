@@ -6,15 +6,12 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
-import { Calendar, Clock, MapPin, Search, CheckCircle, ArrowRight, Sparkles, QrCode } from 'lucide-react';
+import { Clock, MapPin, Search } from 'lucide-react';
 
 export default function EventsPage() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
-  const [registering, setRegistering] = useState(false);
-  const [regSuccess, setRegSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,20 +33,6 @@ export default function EventsPage() {
       isMounted = false;
     };
   }, [search]);
-
-  const handleRegister = async (item: ContentItem) => {
-    setRegistering(true);
-    try {
-      const res = await api.registerContentItem(item.id);
-      setRegSuccess(res.message || 'Seat reserved successfully! Your digital gate pass has been registered.');
-      setTimeout(() => setRegSuccess(null), 5000);
-    } catch {
-      setRegSuccess('Registration confirmed! Your seat is reserved.');
-      setTimeout(() => setRegSuccess(null), 5000);
-    } finally {
-      setRegistering(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-paper text-black font-amiri">
@@ -113,9 +96,11 @@ export default function EventsPage() {
                     </span>
                   </div>
 
-                  <h2 className="font-amiri text-[22px] sm:text-[24px] font-bold leading-[1.25] mb-3 group-hover:text-heritage-red transition-colors">
-                    {event.title}
-                  </h2>
+                  <Link href={`/events/${event.slug || event.id}`}>
+                    <h2 className="font-amiri text-[22px] sm:text-[24px] font-bold leading-[1.25] mb-3 group-hover:text-heritage-red transition-colors">
+                      {event.title}
+                    </h2>
+                  </Link>
 
                   <p className="font-sans text-[14px] sm:text-[15px] leading-[1.5] text-heritage-body mb-4">
                     {event.summary}
@@ -136,85 +121,18 @@ export default function EventsPage() {
                 </div>
 
                 <div className="pt-2 flex items-center justify-between border-t border-gray-100 mt-auto">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedItem(event)}
+                  <Link
+                    href={`/events/${event.slug || event.id}`}
                     className="font-amiri text-[17px] font-bold text-heritage-red hover:underline flex items-center gap-1"
                   >
                     View details &amp; register →
-                  </button>
+                  </Link>
                 </div>
               </article>
             );
           })}
         </div>
       </section>
-
-      {/* Detail / Registration Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-paper border-2 border-black max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedItem(null);
-                setRegSuccess(null);
-              }}
-              className="absolute top-4 right-4 text-black text-2xl font-bold hover:text-heritage-red"
-            >
-              ✕
-            </button>
-
-            <span className="font-averia text-[12px] uppercase tracking-[0.06em] text-heritage-red font-bold block mb-1">
-              {selectedItem.kicker || 'Event'}
-            </span>
-
-            <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold leading-[1.15] mb-4">
-              {selectedItem.title}
-            </h2>
-
-            <div className="font-sans text-xs sm:text-sm bg-white/80 p-3.5 border border-black/20 space-y-1.5 mb-5">
-              <div className="flex items-center gap-2 font-bold text-black">
-                <Clock className="w-4 h-4 text-heritage-red" />
-                <span>{selectedItem.date} {selectedItem.time ? `· ${selectedItem.time}` : ''}</span>
-              </div>
-              {selectedItem.venue && (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span>{selectedItem.venue}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="font-sans text-sm sm:text-base leading-relaxed text-heritage-body space-y-3 mb-6">
-              <p className="font-semibold text-black">{selectedItem.summary}</p>
-              {selectedItem.content && <p>{selectedItem.content}</p>}
-            </div>
-
-            {regSuccess ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 text-sm font-sans font-semibold flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                <span>{regSuccess}</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-4 border-t border-black/20 pt-4 flex-wrap">
-                <span className="font-sans text-xs text-gray-600">
-                  {selectedItem.capacity ? `${selectedItem.capacity} seats quota` : 'Public admission'}
-                </span>
-
-                <button
-                  type="button"
-                  disabled={registering}
-                  onClick={() => handleRegister(selectedItem)}
-                  className="px-6 py-2.5 bg-black text-white text-sm font-sans font-bold hover:bg-heritage-red hover:text-white  transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {registering ? 'Reserving...' : 'Register for Event Pass'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <Footer />
     </div>

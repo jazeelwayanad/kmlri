@@ -22,12 +22,17 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
+import { RichTextEditor } from '@/components/content/RichTextEditor';
+import { RegistrationFieldsBuilder } from '@/components/content/RegistrationFieldsBuilder';
+import { RegistrationSubmissionsList } from '@/components/content/RegistrationSubmissionsList';
 
 export default function ManageOpportunityDetailPage() {
   const params = useParams();
   const oppSlugOrId = params?.id as string;
 
   const [activeTab, setActiveTab] = useState<'applications' | 'edit'>('applications');
+  const [regSubTab, setRegSubTab] = useState<'fields' | 'submissions'>('submissions');
   const [notification, setNotification] = useState<string | null>(null);
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
 
@@ -42,6 +47,7 @@ export default function ManageOpportunityDetailPage() {
   const [kicker, setKicker] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [programDescription, setProgramDescription] = useState('');
+  const [eligibilityCriteria, setEligibilityCriteria] = useState('');
   const [deadline, setDeadline] = useState('');
   const [stipend, setStipend] = useState('');
   const [venue, setVenue] = useState('');
@@ -49,6 +55,8 @@ export default function ManageOpportunityDetailPage() {
   const [featured, setFeatured] = useState(false);
   const [tags, setTags] = useState('');
   const [status, setStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
+  const [imageUrl, setImageUrl] = useState<string | undefined>('');
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
   const loadOpportunity = async () => {
     if (!oppSlugOrId) return;
@@ -72,6 +80,7 @@ export default function ManageOpportunityDetailPage() {
     setKicker(item.kicker || '');
     setExcerpt(item.summary);
     setProgramDescription(item.content || '');
+    setEligibilityCriteria(item.eligibilityCriteria || '');
     setDeadline(item.deadline || '');
     setStipend(item.stipend || '');
     setVenue(item.venue || '');
@@ -79,6 +88,8 @@ export default function ManageOpportunityDetailPage() {
     setFeatured(!!item.featured);
     setTags((item.tags || []).join(', '));
     setStatus(item.status === 'DRAFT' ? 'DRAFT' : item.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE');
+    setImageUrl(item.imageUrl || '');
+    setRegistrationEnabled(!!item.registrationEnabled);
   };
 
   useEffect(() => {
@@ -97,6 +108,7 @@ export default function ManageOpportunityDetailPage() {
       kicker,
       summary: excerpt,
       content: programDescription,
+      eligibilityCriteria,
       deadline,
       date: deadline ? `Deadline: ${deadline}` : undefined,
       stipend,
@@ -105,6 +117,8 @@ export default function ManageOpportunityDetailPage() {
       featured,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       status,
+      imageUrl: imageUrl || undefined,
+      registrationEnabled,
     };
 
     setSaving(true);
@@ -276,7 +290,7 @@ export default function ManageOpportunityDetailPage() {
       {/* Tabs */}
       <div className="border-b border-[#E2E0DB] flex gap-2 flex-wrap">
         {[
-          { key: 'applications', label: 'Applications Summary', icon: Users },
+          { key: 'applications', label: 'Applications & Registration', icon: Users },
           { key: 'edit', label: 'Edit Opportunity & Eligibility', icon: Edit3 },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -298,44 +312,93 @@ export default function ManageOpportunityDetailPage() {
         })}
       </div>
 
-      {/* TAB 1: Applications Summary */}
+      {/* TAB 1: Applications & Registration */}
       {activeTab === 'applications' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4 text-xs font-sans">
-          <div className="border-b border-[#E2E0DB] pb-3">
-            <h3 className="text-base font-bold text-gray-900">Applications Received</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              This reflects the live applications / capacity counters stored on the opportunity record. There is
-              no per-candidate review pipeline in the backend — applications are tracked as a simple running count.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => adjustRegistered(-1)}
-              disabled={registeredVal <= 0}
-              className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-40"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <div className="text-center">
-              <span className="text-3xl font-bold text-gray-900 font-mono block">{registeredVal}</span>
-              <span className="text-[11px] text-gray-500">of {capacityVal} seats applied for</span>
+        <div className="space-y-4">
+          <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4 text-xs font-sans">
+            <div className="border-b border-[#E2E0DB] pb-3">
+              <h3 className="text-base font-bold text-gray-900">Applications Received</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Quick manual adjustment of the applications / capacity counters shown on the public listing.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => adjustRegistered(1)}
-              className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => adjustRegistered(-1)}
+                disabled={registeredVal <= 0}
+                className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <div className="text-center">
+                <span className="text-3xl font-bold text-gray-900 font-mono block">{registeredVal}</span>
+                <span className="text-[11px] text-gray-500">of {capacityVal} seats applied for</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustRegistered(1)}
+                className="w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden max-w-sm">
+              <div
+                className={`h-full ${registeredVal >= capacityVal && capacityVal > 0 ? 'bg-[#A52307]' : 'bg-emerald-600'}`}
+                style={{ width: `${Math.min(100, fillRate)}%` }}
+              />
+            </div>
           </div>
 
-          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden max-w-sm">
-            <div
-              className={`h-full ${registeredVal >= capacityVal && capacityVal > 0 ? 'bg-[#A52307]' : 'bg-emerald-600'}`}
-              style={{ width: `${Math.min(100, fillRate)}%` }}
-            />
+          <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4 text-xs font-sans">
+            <div className="border-b border-[#E2E0DB] pb-3 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Online Registration Form</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Configure the public application form and review who has applied.</p>
+              </div>
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${oppData.registrationEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                {oppData.registrationEnabled ? 'Registration Enabled' : 'Registration Disabled'}
+              </span>
+            </div>
+
+            {!oppData.registrationEnabled ? (
+              <div className="p-6 text-center text-gray-400 text-xs border border-dashed border-gray-300 rounded-lg">
+                Online registration is turned off for this opportunity. Turn it on from the &quot;Edit Opportunity &amp; Eligibility&quot; tab to
+                configure an application form and start collecting submissions.
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 border-b border-[#E2E0DB] pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setRegSubTab('submissions')}
+                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${
+                      regSubTab === 'submissions' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Submissions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegSubTab('fields')}
+                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${
+                      regSubTab === 'fields' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Form Fields
+                  </button>
+                </div>
+
+                {regSubTab === 'submissions' ? (
+                  <RegistrationSubmissionsList contentItemId={oppData.id} />
+                ) : (
+                  <RegistrationFieldsBuilder contentItemId={oppData.id} />
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -445,13 +508,17 @@ export default function ManageOpportunityDetailPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-bold text-gray-800 block mb-1">Full Program Description &amp; Scope (Markdown)</label>
-              <textarea
-                rows={8}
-                value={programDescription}
-                onChange={(e) => setProgramDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-xs text-gray-900 focus:border-[#A52307] outline-none"
-              />
+              <label className="font-bold text-gray-800 block mb-1">Full Program Description &amp; Scope</label>
+              <RichTextEditor value={programDescription} onChange={setProgramDescription} placeholder="Describe fellowship tenure, research obligations, archive access, and deliverables..." />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="font-bold text-gray-800 block mb-1">Eligibility &amp; Submission Criteria</label>
+              <RichTextEditor value={eligibilityCriteria} onChange={setEligibilityCriteria} placeholder="Who can apply, required documents, submission format..." />
+            </div>
+
+            <div className="sm:col-span-2">
+              <ImageUploadField value={imageUrl} onChange={setImageUrl} label="Featured Image" />
             </div>
 
             <div className="sm:col-span-2">
@@ -465,7 +532,7 @@ export default function ManageOpportunityDetailPage() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#E2E0DB] flex items-center justify-between">
+          <div className="pt-3 border-t border-[#E2E0DB] flex items-center justify-between flex-wrap gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -474,6 +541,16 @@ export default function ManageOpportunityDetailPage() {
                 className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
               />
               <span className="font-bold text-gray-800">Pin as Featured</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={registrationEnabled}
+                onChange={(e) => setRegistrationEnabled(e.target.checked)}
+                className="rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
+              />
+              <span className="font-bold text-gray-800">Enable Online Registration</span>
             </label>
 
             <button
