@@ -5,3 +5,4 @@ dist/
 .env
 .env.local
 .claude/scheduled_tasks.lock
+dist-pages/
