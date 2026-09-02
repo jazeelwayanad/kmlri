@@ -9,4 +9,5 @@ dist-pages/
 .DS_Store
 *.db
 *.db-journal
+.open-next/
 

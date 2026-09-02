@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
-    "pages:build": "npx @cloudflare/next-on-pages",
+    "build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "deploy": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler deploy",
+    "preview": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler preview",
     "start": "next start -p 3000",
     "lint": "next lint"
   },
@@ -19,12 +20,14 @@
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.5",
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "wrangler": "^4.128.0"
   }
 }

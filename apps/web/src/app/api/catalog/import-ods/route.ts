@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
-
 async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const blob = new Blob([data as any]);
   const stream = new Response(blob).body!.pipeThrough(new DecompressionStream('deflate-raw'));
