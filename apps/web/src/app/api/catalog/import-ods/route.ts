@@ -214,6 +214,32 @@ export async function POST(req: NextRequest) {
 
     const parsedRecords = Array.from(recordsMap.values());
 
+    // Full row set, normalized to the accession-register column shape the Nest API's
+    // POST /catalog/import endpoint expects, so the modal can commit the entire file
+    // (not just the 50-row preview) as a real backend import.
+    const accessionRows = [];
+    for (let r = 1; r < rawRows.length; r++) {
+      const row = rawRows[r];
+      accessionRows.push({
+        biblionumber: idxBiblio !== -1 ? row[idxBiblio] : '',
+        Barcode: idxBarcode !== -1 ? row[idxBarcode] : '',
+        AccDate: idxAccDate !== -1 ? row[idxAccDate] : '',
+        CallNo: idxCallNo !== -1 ? row[idxCallNo] : '',
+        ISBN: idxIsbn !== -1 ? row[idxIsbn] : '',
+        Author: idxAuthor !== -1 ? row[idxAuthor] : '',
+        Title: idxTitle !== -1 ? row[idxTitle] : '',
+        Ed: idxEdition !== -1 ? row[idxEdition] : '',
+        Year: idxYear !== -1 ? row[idxYear] : '',
+        Place: idxPlace !== -1 ? row[idxPlace] : '',
+        Pub: idxPublisher !== -1 ? row[idxPublisher] : '',
+        Pages: idxPages !== -1 ? row[idxPages] : '',
+        Subject: idxSubject !== -1 ? row[idxSubject] : '',
+        Location: idxLocation !== -1 ? row[idxLocation] : '',
+        UniformTitle: idxUniformTitle !== -1 ? row[idxUniformTitle] : '',
+        Language: idxLanguage !== -1 ? row[idxLanguage] : '',
+      });
+    }
+
     return NextResponse.json({
       success: true,
       totalRowsParsed: rawRows.length - 1,
@@ -221,6 +247,7 @@ export async function POST(req: NextRequest) {
       totalItemsCount: totalItemsCount,
       headers: rawRows[0],
       samplePreview: parsedRecords.slice(0, 50),
+      accessionRows,
     });
   } catch (error: any) {
     console.error('Error importing Koha ODS:', error);

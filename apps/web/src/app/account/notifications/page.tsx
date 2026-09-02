@@ -1,38 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Bell, CheckCheck, BookmarkCheck, BookOpen, Sparkles, AlertCircle } from 'lucide-react';
+import { Bell, CheckCheck, BookmarkCheck, BookOpen, Sparkles, Inbox } from 'lucide-react';
+
+interface PatronNotification {
+  id: string;
+  category: 'CIRCULATION' | 'HOLDS' | 'ANNOUNCEMENTS';
+  title: string;
+  desc: string;
+  time: string;
+  read: boolean;
+}
+
+const STORAGE_KEY = 'kmlri_patron_notifications_v1';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'ALL' | 'CIRCULATION' | 'HOLDS' | 'ANNOUNCEMENTS'>('ALL');
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'notif-1',
-      category: 'HOLDS',
-      title: 'Hold Available for Collection',
-      desc: 'Your requested item "Fatḥ al-Muʿīn (RB 0908)" is held at the Rare Reading Room Reference Desk #02 until 05 Sep 2026.',
-      time: '2 hours ago',
-      read: false
-    },
-    {
-      id: 'notif-2',
-      category: 'CIRCULATION',
-      title: 'Loan Due in 13 Days',
-      desc: '"Al-Bayān monthly, vol. 3" is due on 21 September 2026. You can renew online anytime.',
-      time: '1 day ago',
-      read: false
-    },
-    {
-      id: 'notif-3',
-      category: 'ANNOUNCEMENTS',
-      title: 'New Digitized Palm-Leaf Folios Accessioned',
-      desc: '12 new Arabi-Malayalam codices have been accessioned into the digital reading room repository.',
-      time: '3 days ago',
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<PatronNotification[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setNotifications(JSON.parse(saved));
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+    } catch {}
+  }, [notifications, hydrated]);
 
   const handleMarkAllRead = () => {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
@@ -57,14 +61,16 @@ export default function NotificationsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleMarkAllRead}
-          className="text-xs font-bold text-heritage-red hover:underline flex items-center gap-1 cursor-pointer"
-        >
-          <CheckCheck className="w-4 h-4" />
-          <span>Mark all as read</span>
-        </button>
+        {notifications.length > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            className="text-xs font-bold text-heritage-red hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <CheckCheck className="w-4 h-4" />
+            <span>Mark all as read</span>
+          </button>
+        )}
       </div>
 
       <div className="double-rule"></div>
@@ -72,10 +78,10 @@ export default function NotificationsPage() {
       {/* Filter Tabs */}
       <div className="flex border-b border-gray-300 gap-2 flex-wrap text-xs">
         {[
-          { id: 'ALL', label: 'All Notices' },
+          { id: 'ALL', label: `All Notices (${notifications.length})` },
           { id: 'HOLDS', label: 'Hold Ready' },
           { id: 'CIRCULATION', label: 'Circulation' },
-          { id: 'ANNOUNCEMENTS', label: 'Archival Updates' }
+          { id: 'ANNOUNCEMENTS', label: 'Archival Updates' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -92,37 +98,47 @@ export default function NotificationsPage() {
 
       {/* Notices Feed */}
       <div className="space-y-3">
-        {filteredNotifs.map((n) => (
-          <div
-            key={n.id}
-            className={`p-4 sm:p-5 border-2 rounded transition-all flex items-start justify-between gap-4 ${
-              n.read ? 'bg-white border-gray-200' : 'bg-[#FAF8F5] border-black shadow-sm'
-            }`}
-          >
-            <div className="flex items-start gap-3.5">
-              <div className="mt-1">
-                {n.category === 'HOLDS' ? (
-                  <BookmarkCheck className="w-5 h-5 text-green-700" />
-                ) : n.category === 'CIRCULATION' ? (
-                  <BookOpen className="w-5 h-5 text-heritage-red" />
-                ) : (
-                  <Sparkles className="w-5 h-5 text-amber-600" />
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-amiri text-xl font-bold text-black m-0">{n.title}</h4>
-                  {!n.read && (
-                    <span className="w-2 h-2 rounded-full bg-heritage-red inline-block"></span>
+        {filteredNotifs.length === 0 ? (
+          <div className="py-16 text-center border border-dashed border-gray-300 rounded bg-[#FAF8F5] p-8">
+            <Inbox className="w-10 h-10 text-gray-400 mx-auto mb-3 stroke-[1.5]" />
+            <h3 className="text-base font-bold text-gray-800">Your notification inbox is clear</h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+              You will receive automatic alerts here when borrowed materials approach due dates, holds are ready at the circulation desk, or archival notices are published.
+            </p>
+          </div>
+        ) : (
+          filteredNotifs.map((n) => (
+            <div
+              key={n.id}
+              className={`p-4 sm:p-5 border-2 rounded transition-all flex items-start justify-between gap-4 ${
+                n.read ? 'bg-white border-gray-200' : 'bg-[#FAF8F5] border-black shadow-sm'
+              }`}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className="mt-1">
+                  {n.category === 'HOLDS' ? (
+                    <BookmarkCheck className="w-5 h-5 text-green-700" />
+                  ) : n.category === 'CIRCULATION' ? (
+                    <BookOpen className="w-5 h-5 text-heritage-red" />
+                  ) : (
+                    <Sparkles className="w-5 h-5 text-amber-600" />
                   )}
                 </div>
-                <p className="text-xs text-heritage-body mt-1 leading-relaxed">{n.desc}</p>
-                <p className="text-[11px] text-gray-400 font-mono mt-2">{n.time}</p>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-amiri text-xl font-bold text-black m-0">{n.title}</h4>
+                    {!n.read && (
+                      <span className="w-2 h-2 rounded-full bg-heritage-red inline-block"></span>
+                    )}
+                  </div>
+                  <p className="text-xs text-heritage-body mt-1 leading-relaxed">{n.desc}</p>
+                  <p className="text-[11px] text-gray-400 font-mono mt-2">{n.time}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

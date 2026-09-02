@@ -106,6 +106,7 @@ export function AdminSidebar({
         {
           items: [
             { label: 'Roles & Permissions', href: '/admin/roles' },
+            { label: 'Notifications Hub', href: '/admin/notifications' },
             { label: 'Settings', href: '/admin/system/settings' },
             { label: 'Audit Logs', href: '/admin/system/audit-logs' },
             { label: 'Security', href: '/admin/system/security' },

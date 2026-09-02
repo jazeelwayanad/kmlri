@@ -42,4 +42,21 @@ export class SearchQueryDto {
 
   @IsOptional()
   limit?: number;
+
+  // Filters against ItemCopy fields (via the copies relation)
+  @IsOptional()
+  @IsString()
+  itemTypeCode?: string;
+
+  @IsOptional()
+  @IsString()
+  libraryCode?: string; // matches ItemCopy.homeLibraryCode
+
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @IsOptional()
+  @IsString()
+  accessionNumber?: string;
 }

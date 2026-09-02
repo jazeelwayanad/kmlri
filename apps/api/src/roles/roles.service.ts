@@ -20,6 +20,12 @@ export const SYSTEM_PERMISSIONS = [
   { key: 'CATALOG_PRINT_BARCODES', label: 'Generate & Print Barcodes', category: 'Catalogue', desc: 'Create item copies and generate printable barcode labels' },
   { key: 'COLLECTIONS_MANAGE', label: 'Manage Curated Collections', category: 'Catalogue', desc: 'Create collections and assign catalogue records to them' },
   { key: 'SERIALS_MANAGE', label: 'Manage Serials & Periodicals', category: 'Catalogue', desc: 'Track serial subscriptions and issue check-in' },
+  { key: 'MARC_FRAMEWORKS_MANAGE', label: 'Manage MARC Frameworks', category: 'Catalogue', desc: 'Configure MARC frameworks and their field definitions' },
+  { key: 'AUTHORITIES_MANAGE', label: 'Manage Authority Records', category: 'Catalogue', desc: 'Maintain controlled headings and link them to bibliographic records' },
+  { key: 'LIBRARIES_MANAGE', label: 'Manage Libraries / Branches', category: 'Catalogue', desc: 'Maintain the library branch registry' },
+  { key: 'ITEM_TYPES_MANAGE', label: 'Manage Item Types', category: 'Catalogue', desc: 'Configure circulating item type definitions' },
+  { key: 'AUTHORISED_VALUES_MANAGE', label: 'Manage Authorised Values', category: 'Catalogue', desc: 'Maintain authorised value categories and codes' },
+  { key: 'CATALOG_IMPORT_EXPORT', label: 'Import & Export Catalogue Data', category: 'Catalogue', desc: 'Bulk import MARC/CSV/Koha datasets and export the catalogue as MARCXML or CSV' },
 
   // Digital Library
   { key: 'DIGITAL_VIEW', label: 'View Digital Library', category: 'Digital Library', desc: 'Browse and read digitised manuscripts and IIIF manifests' },

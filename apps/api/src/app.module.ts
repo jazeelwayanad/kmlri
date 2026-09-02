@@ -26,6 +26,11 @@ import { RepositoryModule } from './repository/repository.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MarcFrameworksModule } from './marc-frameworks/marc-frameworks.module';
+import { AuthoritiesModule } from './authorities/authorities.module';
+import { LibrariesModule } from './libraries/libraries.module';
+import { ItemTypesModule } from './item-types/item-types.module';
+import { AuthorisedValuesModule } from './authorised-values/authorised-values.module';
 
 @Module({
   imports: [
@@ -56,6 +61,11 @@ import { NotificationsModule } from './notifications/notifications.module';
     RegistrationsModule,
     UploadsModule,
     NotificationsModule,
+    MarcFrameworksModule,
+    AuthoritiesModule,
+    LibrariesModule,
+    ItemTypesModule,
+    AuthorisedValuesModule,
   ],
 })
 export class AppModule {}

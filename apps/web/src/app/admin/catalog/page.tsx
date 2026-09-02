@@ -55,25 +55,25 @@ export default function CatalogueRecordsPage() {
   const [uniformTitle, setUniformTitle] = useState(''); // 240$a (Arabic / Original)
   const [varyingTitle, setVaryingTitle] = useState(''); // 246$a
   const [addedPerson, setAddedPerson] = useState(''); // 700$a
-  const [relatorTerm, setRelatorTerm] = useState('scribe / commentator'); // 700$e
+  const [relatorTerm, setRelatorTerm] = useState(''); // 700$e
 
   // Section 2: Classification, Language & Identifiers
   const [itemType, setItemType] = useState('Book'); // 942$c [Required]
-  const [language, setLanguage] = useState('Malayalam'); // 041$a [Required]
-  const [ddcClass, setDdcClass] = useState('297.14'); // 082$a
-  const [ddcItem, setDdcItem] = useState('M14'); // 082$b
+  const [language, setLanguage] = useState('English'); // 041$a [Required]
+  const [ddcClass, setDdcClass] = useState(''); // 082$a
+  const [ddcItem, setDdcItem] = useState(''); // 082$b
   const [isbn, setIsbn] = useState(''); // 020$a
 
   // Section 3: Publication & Physical Extent
-  const [pubPlace, setPubPlace] = useState('Ponnani'); // 260$a
-  const [publisher, setPublisher] = useState('KMLRI Press'); // 260$b
-  const [pubYear, setPubYear] = useState('2026'); // 260$c
+  const [pubPlace, setPubPlace] = useState(''); // 260$a
+  const [publisher, setPublisher] = useState(''); // 260$b
+  const [pubYear, setPubYear] = useState(''); // 260$c
   const [edition, setEdition] = useState(''); // 250$a
   const [series, setSeries] = useState(''); // 490$a
-  const [extent, setExtent] = useState('184 pages'); // 300$a
+  const [extent, setExtent] = useState(''); // 300$a
 
   // Section 4: Notes, Subjects & Digital URI
-  const [subjects, setSubjects] = useState('Islamic Jurisprudence, Malabar Manuscripts'); // 650
+  const [subjects, setSubjects] = useState(''); // 650
   const [notes, setNotes] = useState(''); // 500$a
   const [uri, setUri] = useState(''); // 856$u
 
@@ -81,7 +81,7 @@ export default function CatalogueRecordsPage() {
   const [barcode, setBarcode] = useState('');
   const [rfidTag, setRfidTag] = useState('');
   const [itemImageUrl, setItemImageUrl] = useState<string | undefined>(undefined);
-  const [location, setLocation] = useState('Main Reading Stack Room A');
+  const [location, setLocation] = useState('Main Stack Room A');
   const [callNumber, setCallNumber] = useState('');
   const [itemStatus, setItemStatus] = useState('AVAILABLE');
   const [addedItems, setAddedItems] = useState<any[]>([]);
@@ -113,15 +113,15 @@ export default function CatalogueRecordsPage() {
     setStatementOfResp('');
     setUniformTitle('');
     setItemType('Book');
-    setLanguage('Malayalam');
-    setDdcClass('297.14');
-    setDdcItem('M14');
+    setLanguage('English');
+    setDdcClass('');
+    setDdcItem('');
     setIsbn('');
-    setPubPlace('Ponnani');
-    setPublisher('KMLRI Press');
-    setPubYear('2026');
-    setExtent('184 pages');
-    setSubjects('Islamic Jurisprudence, Malabar Manuscripts');
+    setPubPlace('');
+    setPublisher('');
+    setPubYear('');
+    setExtent('');
+    setSubjects('');
     setNotes('');
     setUri('');
     setAddedItems([]);
@@ -806,11 +806,11 @@ export default function CatalogueRecordsPage() {
       <KohaOdsImportModal
         isOpen={showOdsModal}
         onClose={() => setShowOdsModal(false)}
-        onImportComplete={(imported) => {
-          setRecords((prev) => [...imported, ...prev]);
+        onImportComplete={(summary) => {
+          loadRecords();
           setNotification({
             type: 'success',
-            text: `Successfully imported ${imported.length} Koha accession records and holding items into the catalogue.`,
+            text: `Imported: ${summary.created} created, ${summary.updated} updated${summary.skipped ? `, ${summary.skipped} skipped` : ''} into the catalogue.`,
           });
           setTimeout(() => setNotification(null), 5000);
         }}

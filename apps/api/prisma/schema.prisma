@@ -17,209 +17,339 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users       User[]
+  users User[]
 }
 
 model User {
-  id                String    @id @default(uuid())
-  membershipNumber  String    @unique
-  email             String    @unique
-  passwordHash      String
-  fullName          String
-  phone             String?
-  roleId            String?
-  roleRel           Role?     @relation(fields: [roleId], references: [id])
-  role              String    @default("STUDENT") // Role slug / identifier
-  status            String    @default("ACTIVE")  // ACTIVE, SUSPENDED, EXPIRED
-  permissions       String?   @default("[]")      // JSON string of custom override permissions
-  maxBorrowLimit    Int       @default(5)
-  expiryDate        DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  membershipNumber String    @unique
+  email            String    @unique
+  passwordHash     String
+  fullName         String
+  phone            String?
+  roleId           String?
+  roleRel          Role?     @relation(fields: [roleId], references: [id])
+  role             String    @default("STUDENT") // Role slug / identifier
+  status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, EXPIRED
+  permissions      String?   @default("[]") // JSON string of custom override permissions
+  maxBorrowLimit   Int       @default(5)
+  expiryDate       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  loans             CirculationLoan[]
-  reservations      Reservation[]
-  fines             Fine[]
-  bookings          Booking[]
-  acquisitionReqs   AcquisitionRequest[]
-  savedSearches     SavedSearch[]
-  readingLists      ReadingList[]
-  auditLogs         AuditLog[]
-  referenceQuestions ReferenceQuestion[]
-  reproductionRequests ReproductionRequest[]
+  loans                 CirculationLoan[]
+  reservations          Reservation[]
+  fines                 Fine[]
+  bookings              Booking[]
+  acquisitionReqs       AcquisitionRequest[]
+  savedSearches         SavedSearch[]
+  readingLists          ReadingList[]
+  auditLogs             AuditLog[]
+  referenceQuestions    ReferenceQuestion[]
+  reproductionRequests  ReproductionRequest[]
   repositorySubmissions RepositorySubmission[]
-  registrations     Registration[]
-  notifications     Notification[]
+  registrations         Registration[]
+  notifications         Notification[]
 }
 
 model BibliographicRecord {
-  id                String    @id @default(uuid())
-  titleArabic       String?
-  titleLatin        String
-  subtitle          String?
+  id                        String   @id @default(uuid())
+  titleArabic               String?
+  titleLatin                String
+  subtitle                  String?
   statementOfResponsibility String? // MARC 245$c
-  authors           String    // JSON array string of authors
-  scribe            String?
-  shelfmark         String    @unique
-  callNumber        String?
-  isbn              String?
-  issn              String?
-  doi               String?
-  format            String    @default("MANUSCRIPT") // MANUSCRIPT, ARABI_MALAYALAM_PRINT, RARE_BOOK, PERIODICAL, THESIS, AUDIO
-  language          String    @default("Arabic")
-  publicationYear   String?
-  publisher         String?
-  placeOfPublication String?  // MARC 260$a
-  edition           String?   // MARC 250$a
-  series            String?   // MARC 490$a
-  notes             String?   // MARC 500$a
-  extent            String?   // e.g. "84 folios, 21 x 15 cm"
-  material          String?   // e.g. "Laid paper, brown ink"
-  binding           String?   // e.g. "Limp leather over boards"
-  provenance        String?
-  summary           String?
-  subjects          String    // JSON array string of subject terms
-  accessLevel       String    @default("DIGITISED_FULL") // DIGITISED_FULL, READING_ROOM_ONLY, RESTRICTED
-  coverImageUrl     String?
-  collectionId      String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  authors                   String // JSON array string of authors
+  scribe                    String?
+  shelfmark                 String   @unique
+  callNumber                String?
+  isbn                      String?
+  issn                      String?
+  doi                       String?
+  format                    String   @default("MANUSCRIPT") // MANUSCRIPT, ARABI_MALAYALAM_PRINT, RARE_BOOK, PERIODICAL, THESIS, AUDIO, BOOK
+  language                  String   @default("Arabic")
+  publicationYear           String?
+  publisher                 String?
+  placeOfPublication        String? // MARC 260$a
+  edition                   String? // MARC 250$a
+  series                    String? // MARC 490$a
+  notes                     String? // MARC 500$a
+  extent                    String? // e.g. "84 folios, 21 x 15 cm"
+  material                  String? // e.g. "Laid paper, brown ink"
+  binding                   String? // e.g. "Limp leather over boards"
+  provenance                String?
+  summary                   String?
+  subjects                  String // JSON array string of subject terms
+  accessLevel               String   @default("DIGITISED_FULL") // DIGITISED_FULL, READING_ROOM_ONLY, RESTRICTED
+  coverImageUrl             String?
+  collectionId              String?
+  kohaBiblionumber          Int?     @unique // preserved Koha biblio.biblionumber, for traceability of migrated records
+  frameworkCode             String?  @default("DEFAULT") // MarcFramework.code applied to this record
+  marcXml                   String? // full MARCXML for the record, when catalogued/imported with MARC data
+  recordType                String   @default("BIBLIO") // BIBLIO, SERIAL_BIBLIO
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
-  collection        Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
-  copies            ItemCopy[]
-  reservations      Reservation[]
-  digitalFolios     DigitalFolio[]
+  collection    Collection?            @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  copies        ItemCopy[]
+  reservations  Reservation[]
+  digitalFolios DigitalFolio[]
+  serial        Serial?
+  headings      BibliographicHeading[]
 }
 
 model ItemCopy {
-  id                String    @id @default(uuid())
-  bibRecordId       String
-  barcode           String    @unique
-  rfidTag           String?   @unique
-  location          String    @default("Main Reading Room - Shelf A1")
-  status            String    @default("AVAILABLE") // AVAILABLE, ON_LOAN, RESERVED, IN_CONSERVATION, LOST, WITHDRAWN
-  copyNumber        Int       @default(1)
-  conditionNote     String?
-  imageUrl          String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  bibRecordId        String
+  barcode            String    @unique
+  rfidTag            String?   @unique
+  location           String    @default("Main Reading Room - Shelf A1")
+  status             String    @default("AVAILABLE") // AVAILABLE, ON_LOAN, RESERVED, IN_CONSERVATION, LOST, WITHDRAWN
+  copyNumber         Int       @default(1)
+  conditionNote      String?
+  imageUrl           String?
+  kohaItemnumber     Int?      @unique // preserved Koha items.itemnumber
+  accessionNumber    String? // Koha items.accessionnumber / accession register number
+  itemTypeCode       String? // ItemType.code
+  collectionCode     String? // AuthorisedValue code, category CCODE (Koha items.ccode)
+  homeLibraryCode    String? // Library.code (Koha items.homebranch)
+  currentLibraryCode String? // Library.code (Koha items.holdingbranch)
+  replacementCost    Float?
+  priceAcquired      Float?
+  dateAcquired       DateTime?
+  publicNote         String? // Koha items.itemnotes
+  nonPublicNote      String? // Koha items.itemnotes_nonpublic
+  damaged            Boolean   @default(false)
+  lost               Boolean   @default(false)
+  restricted         Boolean   @default(false) // circulation restriction flag
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  bibRecord         BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
-  loans             CirculationLoan[]
+  bibRecord BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
+  loans     CirculationLoan[]
+}
+
+model Library {
+  id        String   @id @default(uuid())
+  code      String   @unique // Koha branches.branchcode
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serials Serial[]
+}
+
+model ItemType {
+  id               String   @id @default(uuid())
+  code             String   @unique // Koha itemtypes.itemtype
+  description      String
+  isSerial         Boolean  @default(false)
+  loanDurationDays Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model AuthorisedValueCategory {
+  id          String   @id @default(uuid())
+  category    String   @unique // e.g. CCODE, LOC, LANG
+  description String?
+  createdAt   DateTime @default(now())
+
+  values AuthorisedValue[]
+}
+
+model AuthorisedValue {
+  id          String   @id @default(uuid())
+  categoryId  String
+  code        String
+  description String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category AuthorisedValueCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, code])
+}
+
+model MarcFramework {
+  id           String   @id @default(uuid())
+  code         String   @unique // e.g. DEFAULT, SERIAL, THESIS, MANUSCRIPT
+  description  String
+  materialType String? // matches BibliographicRecord.format value(s) this framework applies to
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fields MarcFrameworkField[]
+}
+
+model MarcFrameworkField {
+  id                      String   @id @default(uuid())
+  frameworkId             String
+  tag                     String // MARC tag, e.g. "245", "100", "008"
+  subfield                String? // MARC subfield code, e.g. "a", "c"; null for control fields
+  label                   String
+  mappedField             String? // corresponding BibliographicRecord/ItemCopy column, if any
+  mandatory               Boolean  @default(false)
+  repeatable              Boolean  @default(false)
+  hidden                  Boolean  @default(false)
+  defaultValue            String?
+  authorisedValueCategory String? // AuthorisedValueCategory.category to constrain values to
+  sortOrder               Int      @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  framework MarcFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@unique([frameworkId, tag, subfield])
+}
+
+model AuthorityRecord {
+  id          String   @id @default(uuid())
+  headingType String // PERSONAL_NAME, CORPORATE_NAME, SUBJECT, SERIES, UNIFORM_TITLE
+  heading     String // authorized/preferred form of the heading
+  seeAlso     String   @default("[]") // JSON array of variant/see-from forms
+  notes       String?
+  marcXml     String?
+  kohaAuthId  Int?     @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  headings BibliographicHeading[]
+
+  @@unique([headingType, heading])
+}
+
+model BibliographicHeading {
+  id          String   @id @default(uuid())
+  bibRecordId String
+  authorityId String
+  tag         String // MARC tag on the bib record this heading was applied to, e.g. "100", "600", "700"
+  subfield    String?  @default("a")
+  createdAt   DateTime @default(now())
+
+  bibRecord BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
+  authority AuthorityRecord     @relation(fields: [authorityId], references: [id], onDelete: Cascade)
+
+  @@unique([bibRecordId, authorityId, tag])
 }
 
 model CirculationLoan {
-  id                String    @id @default(uuid())
-  copyId            String
-  userId            String
-  issuedAt          DateTime  @default(now())
-  dueDate           DateTime
-  returnedAt        DateTime?
-  renewalCount      Int       @default(0)
-  issuedByStaffId   String?
-  status            String    @default("ACTIVE") // ACTIVE, RETURNED, OVERDUE
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  copyId          String
+  userId          String
+  issuedAt        DateTime  @default(now())
+  dueDate         DateTime
+  returnedAt      DateTime?
+  renewalCount    Int       @default(0)
+  issuedByStaffId String?
+  status          String    @default("ACTIVE") // ACTIVE, RETURNED, OVERDUE
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  copy              ItemCopy  @relation(fields: [copyId], references: [id], onDelete: Cascade)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fines             Fine[]
+  copy  ItemCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
+  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fines Fine[]
 }
 
 model Reservation {
-  id                String    @id @default(uuid())
-  bibRecordId       String
-  userId            String
-  requestedAt       DateTime  @default(now())
-  availableUntil    DateTime?
-  status            String    @default("PENDING") // PENDING, READY_FOR_PICKUP, FULFILLED, CANCELLED, EXPIRED
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  bibRecordId    String
+  userId         String
+  requestedAt    DateTime  @default(now())
+  availableUntil DateTime?
+  status         String    @default("PENDING") // PENDING, READY_FOR_PICKUP, FULFILLED, CANCELLED, EXPIRED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  bibRecord         BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bibRecord BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Fine {
-  id                String    @id @default(uuid())
-  loanId            String?
-  userId            String
-  amount            Float
-  reason            String    @default("OVERDUE") // OVERDUE, DAMAGE, LOST
-  status            String    @default("UNPAID")  // UNPAID, PAID, WAIVED
-  paidAt            DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id        String    @id @default(uuid())
+  loanId    String?
+  userId    String
+  amount    Float
+  reason    String    @default("OVERDUE") // OVERDUE, DAMAGE, LOST
+  status    String    @default("UNPAID") // UNPAID, PAID, WAIVED
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  loan              CirculationLoan? @relation(fields: [loanId], references: [id], onDelete: SetNull)
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loan CirculationLoan? @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DigitalFolio {
-  id                String    @id @default(uuid())
-  bibRecordId       String
-  folioNumber       Int
-  label             String    // e.g. "Folio 1r"
-  imageUrl          String
-  thumbnailUrl      String?
-  ocrTextArabic     String?
-  ocrTextLatin      String?
-  fileSize          Int?
-  mimeType          String?   @default("image/jpeg")
-  createdAt         DateTime  @default(now())
+  id            String   @id @default(uuid())
+  bibRecordId   String
+  folioNumber   Int
+  label         String // e.g. "Folio 1r"
+  imageUrl      String
+  thumbnailUrl  String?
+  ocrTextArabic String?
+  ocrTextLatin  String?
+  fileSize      Int?
+  mimeType      String?  @default("image/jpeg")
+  createdAt     DateTime @default(now())
 
-  bibRecord         BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
+  bibRecord BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
-  id                String    @id @default(uuid())
-  userId            String
-  type              String    // READING_DESK, STUDY_ROOM, LIBRARIAN_CONSULTATION
-  resourceName      String    // e.g. "Desk #04", "Manuscript Research Lab", "Reference Consultation"
-  date              DateTime
-  timeSlot          String    // e.g. "09:00 - 13:00"
-  status            String    @default("CONFIRMED") // CONFIRMED, CANCELLED
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id           String   @id @default(uuid())
+  userId       String
+  type         String // READING_DESK, STUDY_ROOM, LIBRARIAN_CONSULTATION
+  resourceName String // e.g. "Desk #04", "Manuscript Research Lab", "Reference Consultation"
+  date         DateTime
+  timeSlot     String // e.g. "09:00 - 13:00"
+  status       String   @default("CONFIRMED") // CONFIRMED, CANCELLED
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AcquisitionRequest {
-  id                String    @id @default(uuid())
-  userId            String
-  title             String
-  author            String?
-  publisher         String?
-  estimatedPrice    Float?
-  reason            String?
-  status            String    @default("SUBMITTED") // SUBMITTED, APPROVED, ORDERED, REJECTED
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String   @id @default(uuid())
+  userId         String
+  title          String
+  author         String?
+  publisher      String?
+  estimatedPrice Float?
+  reason         String?
+  status         String   @default("SUBMITTED") // SUBMITTED, APPROVED, ORDERED, REJECTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SavedSearch {
-  id                String    @id @default(uuid())
-  userId            String
-  query             String
-  filters           String?   // JSON representation of active facets
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  query     String
+  filters   String? // JSON representation of active facets
+  createdAt DateTime @default(now())
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ReadingList {
-  id                String    @id @default(uuid())
-  userId            String
-  name              String
-  itemIds           String    // JSON array of bibRecordIds
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  itemIds   String // JSON array of bibRecordIds
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ReferenceQuestion {
@@ -236,259 +366,300 @@ model ReferenceQuestion {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model AuditLog {
-  id                String    @id @default(uuid())
-  userId            String?
-  action            String    // ISSUE, RETURN, RENEW, CATALOG_CREATE, MEMBER_UPDATE, SETTING_CHANGE
-  entity            String    // LOAN, RECORD, USER, FINE
-  entityId          String?
-  details           String?
-  ipAddress         String?
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String // ISSUE, RETURN, RENEW, CATALOG_CREATE, MEMBER_UPDATE, SETTING_CHANGE
+  entity    String // LOAN, RECORD, USER, FINE
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
 
-  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model SystemSetting {
-  id                String    @id @default(uuid())
-  key               String    @unique
-  value             String
-  description       String?
-  updatedAt         DateTime  @updatedAt
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
 }
 
 model NewsletterSubscriber {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
 }
 
 model ContentItem {
-  id                String    @id @default(uuid())
-  slug              String    @unique
-  category          String    // EVENT, NEWS, STORY, OPPORTUNITY
-  title             String
-  kicker            String?
-  summary           String
-  content           String?
+  id                  String   @id @default(uuid())
+  slug                String   @unique
+  category            String // EVENT, NEWS, STORY, OPPORTUNITY
+  title               String
+  kicker              String?
+  summary             String
+  content             String?
   eligibilityCriteria String? // Opportunities: eligibility & submission criteria
-  date              String?
-  time              String?
-  venue             String?
-  capacity          Int?      @default(100)
-  registered        Int?      @default(0)
-  deadline          String?
-  stipend           String?
-  author            String?
-  imageUrl          String?
-  featured          Boolean   @default(false)
-  status            String    @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
-  tags              String    @default("[]")     // JSON array of strings
-  registrationEnabled Boolean @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  date                String?
+  time                String?
+  venue               String?
+  capacity            Int?     @default(100)
+  registered          Int?     @default(0)
+  deadline            String?
+  stipend             String?
+  author              String?
+  imageUrl            String?
+  featured            Boolean  @default(false)
+  status              String   @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
+  tags                String   @default("[]") // JSON array of strings
+  registrationEnabled Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   registrationFields RegistrationField[]
   registrations      Registration[]
 }
 
 model RegistrationField {
-  id                String    @id @default(uuid())
-  contentItemId     String
-  label             String
-  fieldType         String    // TEXT, EMAIL, PHONE, NUMBER, TEXTAREA, SELECT, CHECKBOX, FILE
-  required          Boolean   @default(false)
-  options           String?   // JSON array of strings, for SELECT fields
-  sortOrder         Int       @default(0)
-  createdAt         DateTime  @default(now())
+  id            String   @id @default(uuid())
+  contentItemId String
+  label         String
+  fieldType     String // TEXT, EMAIL, PHONE, NUMBER, TEXTAREA, SELECT, CHECKBOX, FILE
+  required      Boolean  @default(false)
+  options       String? // JSON array of strings, for SELECT fields
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
-  contentItem       ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
 }
 
 model Registration {
-  id                String    @id @default(uuid())
-  contentItemId     String
-  userId            String?
-  submitterName     String
-  submitterEmail    String
-  data              String    @default("{}") // JSON object of { fieldLabel: value }
-  status            String    @default("SUBMITTED") // SUBMITTED, REVIEWED
-  createdAt         DateTime  @default(now())
+  id             String   @id @default(uuid())
+  contentItemId  String
+  userId         String?
+  submitterName  String
+  submitterEmail String
+  data           String   @default("{}") // JSON object of { fieldLabel: value }
+  status         String   @default("SUBMITTED") // SUBMITTED, REVIEWED
+  createdAt      DateTime @default(now())
 
-  contentItem       ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
-  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  files             RegistrationFile[]
+  contentItem ContentItem        @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  user        User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  files       RegistrationFile[]
 }
 
 model RegistrationFile {
-  id                String    @id @default(uuid())
-  registrationId    String
-  fieldLabel        String
-  originalName      String
-  storedName        String
-  mimeType          String
-  size              Int
-  createdAt         DateTime  @default(now())
+  id             String   @id @default(uuid())
+  registrationId String
+  fieldLabel     String
+  originalName   String
+  storedName     String
+  mimeType       String
+  size           Int
+  createdAt      DateTime @default(now())
 
-  registration      Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 }
 
 model Vendor {
-  id                String    @id @default(uuid())
-  name              String
-  type              String?   // e.g. Publisher, Bindery, Subscription Agent
-  contactPerson     String?
-  email             String?
-  phone             String?
-  notes             String?
-  status            String    @default("ACTIVE") // ACTIVE, INACTIVE
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  type          String? // e.g. Publisher, Bindery, Subscription Agent
+  contactPerson String?
+  email         String?
+  phone         String?
+  notes         String?
+  status        String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  serials Serial[]
 }
 
 model Department {
-  id                String    @id @default(uuid())
-  name              String    @unique
-  headOfDepartment  String?
-  budget            Float?
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String   @id @default(uuid())
+  name             String   @unique
+  headOfDepartment String?
+  budget           Float?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  assets            Asset[]
+  assets Asset[]
 }
 
 model MembershipType {
-  id                String    @id @default(uuid())
-  name              String    @unique
-  maxBorrowLimit    Int       @default(5)
-  loanDurationDays  Int       @default(14)
-  description       String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String   @id @default(uuid())
+  name             String   @unique
+  maxBorrowLimit   Int      @default(5)
+  loanDurationDays Int      @default(14)
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Asset {
-  id                String    @id @default(uuid())
-  name              String
-  category          String?   // e.g. Furniture, Equipment, Conservation Tool
-  serialNumber      String?
-  location          String?
-  status            String    @default("ACTIVE") // ACTIVE, IN_MAINTENANCE, RETIRED, LOST
-  purchaseDate      DateTime?
-  purchaseCost      Float?
-  notes             String?
-  departmentId      String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  name         String
+  category     String? // e.g. Furniture, Equipment, Conservation Tool
+  serialNumber String?
+  location     String?
+  status       String    @default("ACTIVE") // ACTIVE, IN_MAINTENANCE, RETIRED, LOST
+  purchaseDate DateTime?
+  purchaseCost Float?
+  notes        String?
+  departmentId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  maintenanceLogs   AssetMaintenance[]
-  audits            AssetAudit[]
+  department      Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  maintenanceLogs AssetMaintenance[]
+  audits          AssetAudit[]
 }
 
 model AssetMaintenance {
-  id                String    @id @default(uuid())
-  assetId           String
-  description       String
-  cost              Float?
-  performedBy       String?
-  performedAt       DateTime  @default(now())
-  createdAt         DateTime  @default(now())
+  id          String   @id @default(uuid())
+  assetId     String
+  description String
+  cost        Float?
+  performedBy String?
+  performedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  asset             Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
 model AssetAudit {
-  id                String    @id @default(uuid())
-  assetId           String
-  condition         String    // GOOD, FAIR, DAMAGED, MISSING
-  notes             String?
-  auditedBy         String?
-  auditedAt         DateTime  @default(now())
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(uuid())
+  assetId   String
+  condition String // GOOD, FAIR, DAMAGED, MISSING
+  notes     String?
+  auditedBy String?
+  auditedAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  asset             Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
 model Collection {
-  id                String    @id @default(uuid())
-  name              String    @unique
-  slug              String    @unique
-  description       String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  records           BibliographicRecord[]
+  records BibliographicRecord[]
 }
 
+// Koha-style subscription: a serial title with a bib record, a supplier, and a
+// receiving/prediction pattern that generates SerialIssue rows.
 model Serial {
-  id                String    @id @default(uuid())
-  title             String
-  shelfmark         String?
-  frequency         String?   // e.g. Monthly, Quarterly, Annual
-  publisher         String?
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  title              String
+  shelfmark          String?
+  frequency          String? // free-text label, e.g. "Weekly", "Monthly", "Quarterly", "Annual", "Irregular"
+  periodicityCode    String? // machine-readable code driving prediction: DAILY, WEEKLY, BIWEEKLY, MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL, IRREGULAR
+  numberingPattern   String? // JSON: { unit: "issue"|"volume", format: "Vol. {vol} No. {no}", startVolume, startNumber }
+  publisher          String?
+  notes              String?
+  bibRecordId        String?   @unique // linked BibliographicRecord (recordType SERIAL_BIBLIO)
+  vendorId           String?
+  libraryId          String?
+  locationCode       String? // AuthorisedValue code, category CCODE/LOC
+  startDate          DateTime?
+  endDate            DateTime?
+  status             String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  cost               Float?
+  currency           String?   @default("INR")
+  renewalNote        String?
+  kohaSubscriptionId Int?      @unique
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  issues            SerialIssue[]
+  bibRecord BibliographicRecord? @relation(fields: [bibRecordId], references: [id], onDelete: SetNull)
+  vendor    Vendor?              @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  library   Library?             @relation(fields: [libraryId], references: [id], onDelete: SetNull)
+  issues    SerialIssue[]
 }
 
 model SerialIssue {
-  id                String    @id @default(uuid())
-  serialId          String
-  issueLabel        String
-  expectedDate      DateTime?
-  receivedDate      DateTime?
-  status            String    @default("EXPECTED") // EXPECTED, RECEIVED, MISSING, CLAIMED
-  createdAt         DateTime  @default(now())
+  id              String    @id @default(uuid())
+  serialId        String
+  issueLabel      String
+  volume          String?
+  number          String?
+  publicationDate DateTime?
+  expectedDate    DateTime?
+  receivedDate    DateTime?
+  status          String    @default("EXPECTED") // EXPECTED, RECEIVED, LATE, MISSING, CLAIMED, SUPPLEMENT, INDEX
+  isSupplement    Boolean   @default(false)
+  isIndex         Boolean   @default(false)
+  bindingNote     String?
+  kohaSerialId    Int?      @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  serial            Serial    @relation(fields: [serialId], references: [id], onDelete: Cascade)
+  serial Serial        @relation(fields: [serialId], references: [id], onDelete: Cascade)
+  claims SerialClaim[]
+}
+
+model SerialClaim {
+  id               String    @id @default(uuid())
+  issueId          String
+  claimedAt        DateTime  @default(now())
+  claimedByStaffId String?
+  status           String    @default("SENT") // SENT, RESPONDED, RESOLVED
+  notes            String?
+  resolvedAt       DateTime?
+
+  issue SerialIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model ReproductionRequest {
-  id                String    @id @default(uuid())
-  userId            String
-  itemDescription   String
-  format            String?   // e.g. PDF/300 DPI, TIFF/600 DPI
-  purpose           String?
-  status            String    @default("SUBMITTED") // SUBMITTED, IN_PROGRESS, READY, DELIVERED, REJECTED
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id              String   @id @default(uuid())
+  userId          String
+  itemDescription String
+  format          String? // e.g. PDF/300 DPI, TIFF/600 DPI
+  purpose         String?
+  status          String   @default("SUBMITTED") // SUBMITTED, IN_PROGRESS, READY, DELIVERED, REJECTED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RepositorySubmission {
-  id                String    @id @default(uuid())
-  title             String
-  type              String    // THESIS, DISSERTATION, FACULTY_PAPER, WORKING_PAPER
-  authorName        String
-  advisorName       String?
-  departmentName    String?
-  stage             String    @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
-  doi               String?
-  notes             String?
-  submittedById     String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String   @id @default(uuid())
+  title          String
+  type           String // THESIS, DISSERTATION, FACULTY_PAPER, WORKING_PAPER
+  authorName     String
+  advisorName    String?
+  departmentName String?
+  stage          String   @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
+  doi            String?
+  notes          String?
+  submittedById  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  submittedBy       User?     @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+  submittedBy User? @relation(fields: [submittedById], references: [id], onDelete: SetNull)
 }
 
 model Notification {
-  id                String    @id @default(uuid())
-  userId            String
-  type              String    // HOLD_READY, FINE_ASSESSED, LOAN_ISSUED, RETURN_CONFIRMED, REFERENCE_ANSWERED, REGISTRATION_RECEIVED, ACQUISITION_UPDATE, GENERAL
-  title             String
-  message           String
-  link              String?
-  read              Boolean   @default(false)
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  type      String // HOLD_READY, FINE_ASSESSED, LOAN_ISSUED, RETURN_CONFIRMED, REFERENCE_ANSWERED, REGISTRATION_RECEIVED, ACQUISITION_UPDATE, GENERAL
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

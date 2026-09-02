@@ -119,4 +119,9 @@ export class CreateRecordDto {
   @IsOptional()
   @IsString()
   initialLocation?: string;
+
+  // When true, create() will not run automatic duplicate detection.
+  // Defaults to false (i.e. duplicate detection runs) for backward compatibility.
+  @IsOptional()
+  skipDuplicateCheck?: boolean;
 }

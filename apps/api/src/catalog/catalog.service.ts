@@ -13,18 +13,10 @@ export class CatalogService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    const andConditions: any[] = [];
 
     if (queryDto.q) {
-      const searchTerms = queryDto.q.trim();
-      where.OR = [
-        { titleLatin: { contains: searchTerms } },
-        { titleArabic: { contains: searchTerms } },
-        { authors: { contains: searchTerms } },
-        { shelfmark: { contains: searchTerms } },
-        { subjects: { contains: searchTerms } },
-        { summary: { contains: searchTerms } },
-        { scribe: { contains: searchTerms } },
-      ];
+      andConditions.push(this.buildBooleanSearchClause(queryDto.q));
     }
 
     if (queryDto.format) {
@@ -65,10 +57,28 @@ export class CatalogService {
     }
 
     if (queryDto.author) {
-      where.OR = [
-        { authors: { contains: queryDto.author } },
-        { scribe: { contains: queryDto.author } },
-      ];
+      andConditions.push({
+        OR: [{ authors: { contains: queryDto.author } }, { scribe: { contains: queryDto.author } }],
+      });
+    }
+
+    if (queryDto.itemTypeCode || queryDto.libraryCode || queryDto.barcode || queryDto.accessionNumber) {
+      andConditions.push({
+        copies: {
+          some: {
+            ...(queryDto.itemTypeCode && { itemTypeCode: queryDto.itemTypeCode }),
+            ...(queryDto.libraryCode && { homeLibraryCode: queryDto.libraryCode }),
+            ...(queryDto.barcode && { barcode: { contains: queryDto.barcode } }),
+            ...(queryDto.accessionNumber && { accessionNumber: queryDto.accessionNumber }),
+          },
+        },
+      });
+    }
+
+    if (andConditions.length === 1) {
+      Object.assign(where, andConditions[0]);
+    } else if (andConditions.length > 1) {
+      where.AND = andConditions;
     }
 
     const orderBy: any =
@@ -327,7 +337,21 @@ export class CatalogService {
       });
     }
 
-    return this.findOne(record.id);
+    const result = await this.findOne(record.id);
+    if (!dto.skipDuplicateCheck) {
+      const possibleDuplicates = (
+        await this.findDuplicates({
+          title: dto.titleLatin,
+          author: (dto.authors && dto.authors[0]) || undefined,
+          isbn: dto.isbn,
+          issn: dto.issn,
+        })
+      ).filter((d) => d.id !== record.id);
+      if (possibleDuplicates.length) {
+        return { ...result, possibleDuplicates };
+      }
+    }
+    return result;
   }
 
   async addCopy(
@@ -411,6 +435,307 @@ export class CatalogService {
       chicago: `${authorStr}. ${title}. Malabar: KMLRI Archives (${shelf}), ${year}.`,
       bibtex: `@misc{kmlri_${record.id},\n  author = {${authorStr}},\n  title = {${title}},\n  year = {${year}},\n  note = {Shelfmark: ${shelf}, KMLRI}\n}`,
     };
+  }
+
+  private readonly SEARCHABLE_FIELDS = [
+    'titleLatin',
+    'titleArabic',
+    'authors',
+    'shelfmark',
+    'subjects',
+    'summary',
+    'scribe',
+  ] as const;
+
+  /**
+   * Parses a query string for AND/OR/NOT boolean operators (case-insensitive, space
+   * separated, e.g. "history AND arabic NOT manuscript") and builds a Prisma where-clause
+   * across the searchable text fields. Falls back to a single substring OR-match across
+   * those fields when no boolean operators are present (previous default behaviour).
+   */
+  private buildBooleanSearchClause(q: string): any {
+    const tokens = q.trim().split(/\s+/).filter(Boolean);
+    const hasBoolean = tokens.some((t) => ['AND', 'OR', 'NOT'].includes(t.toUpperCase()));
+
+    const termClause = (term: string) => ({
+      OR: this.SEARCHABLE_FIELDS.map((field) => ({ [field]: { contains: term } })),
+    });
+
+    if (!hasBoolean) {
+      return termClause(q.trim());
+    }
+
+    // Simple left-to-right evaluation: term (AND|OR|NOT) term (AND|OR|NOT) term ...
+    // NOT binds to the following term as an AND NOT.
+    const and: any[] = [];
+    let pendingOp: 'AND' | 'OR' | 'NOT' = 'AND';
+    let orGroup: any[] = [];
+
+    const flushOrGroup = () => {
+      if (orGroup.length === 1) and.push(orGroup[0]);
+      else if (orGroup.length > 1) and.push({ OR: orGroup });
+      orGroup = [];
+    };
+
+    for (const token of tokens) {
+      const upper = token.toUpperCase();
+      if (upper === 'AND' || upper === 'OR' || upper === 'NOT') {
+        if (upper !== 'OR') flushOrGroup();
+        pendingOp = upper as 'AND' | 'OR' | 'NOT';
+        continue;
+      }
+      const clause = termClause(token);
+      if (pendingOp === 'OR') {
+        orGroup.push(clause);
+      } else if (pendingOp === 'NOT') {
+        flushOrGroup();
+        and.push({ NOT: clause });
+      } else {
+        flushOrGroup();
+        orGroup.push(clause);
+      }
+    }
+    flushOrGroup();
+
+    return and.length === 1 ? and[0] : { AND: and };
+  }
+
+  /**
+   * Duplicate detection: ranks candidates by match strength -- exact ISBN/ISSN match
+   * (strongest), then case-insensitive exact title+author match, then fuzzy substring
+   * title match combined with the same first-author token.
+   */
+  async findDuplicates(query: { title?: string; author?: string; isbn?: string; issn?: string }) {
+    const results: any[] = [];
+    const seen = new Set<string>();
+    const select = {
+      id: true,
+      titleLatin: true,
+      authors: true,
+      isbn: true,
+      issn: true,
+      publicationYear: true,
+      shelfmark: true,
+    };
+
+    const push = (records: any[], strength: 'EXACT_IDENTIFIER' | 'EXACT_TITLE_AUTHOR' | 'FUZZY') => {
+      for (const r of records) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        results.push({ ...r, authors: this.safeJsonParse(r.authors, []), matchStrength: strength });
+      }
+    };
+
+    if (query.isbn) {
+      push(await this.prisma.bibliographicRecord.findMany({ where: { isbn: query.isbn }, select }), 'EXACT_IDENTIFIER');
+    }
+    if (query.issn) {
+      push(await this.prisma.bibliographicRecord.findMany({ where: { issn: query.issn }, select }), 'EXACT_IDENTIFIER');
+    }
+
+    if (query.title && query.author) {
+      const exact = await this.prisma.bibliographicRecord.findMany({
+        where: {
+          titleLatin: { equals: query.title, mode: 'insensitive' },
+          authors: { contains: query.author },
+        },
+        select,
+      });
+      push(exact, 'EXACT_TITLE_AUTHOR');
+    }
+
+    if (query.title) {
+      const firstAuthorToken = query.author?.split(/\s+/)[0];
+      const fuzzy = await this.prisma.bibliographicRecord.findMany({
+        where: {
+          titleLatin: { contains: query.title },
+          ...(firstAuthorToken && { authors: { contains: firstAuthorToken } }),
+        },
+        select,
+        take: 25,
+      });
+      push(fuzzy, 'FUZZY');
+    }
+
+    return results;
+  }
+
+  /** Exports bibliographic records as MARCXML or a flat CSV. */
+  async exportRecords(format: 'marcxml' | 'csv', ids?: string[]) {
+    const EXPORT_SAFETY_CAP = 5000;
+    const records = await this.prisma.bibliographicRecord.findMany({
+      where: ids && ids.length ? { id: { in: ids } } : undefined,
+      take: EXPORT_SAFETY_CAP,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (format === 'csv') {
+      return this.toCsv(records);
+    }
+    return this.toMarcXml(records);
+  }
+
+  private toCsv(records: any[]): string {
+    const columns = [
+      'id', 'kohaBiblionumber', 'titleLatin', 'titleArabic', 'authors', 'shelfmark', 'callNumber',
+      'isbn', 'issn', 'format', 'language', 'publicationYear', 'publisher', 'placeOfPublication',
+      'edition', 'series', 'notes', 'subjects', 'accessLevel',
+    ];
+    const escape = (v: any) => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [columns.join(',')];
+    for (const r of records) {
+      const row = { ...r, authors: this.safeJsonParse(r.authors, []).join('; '), subjects: this.safeJsonParse(r.subjects, []).join('; ') };
+      lines.push(columns.map((c) => escape((row as any)[c])).join(','));
+    }
+    return lines.join('\n');
+  }
+
+  private toMarcXml(records: any[]): string {
+    const esc = (v: any) =>
+      String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const df = (tag: string, subfields: Array<[string, any]>) => {
+      const present = subfields.filter(([, v]) => v !== undefined && v !== null && v !== '');
+      if (!present.length) return '';
+      const subs = present.map(([code, v]) => `<subfield code="${code}">${esc(v)}</subfield>`).join('');
+      return `<datafield tag="${tag}" ind1=" " ind2=" ">${subs}</datafield>`;
+    };
+
+    const recordsXml = records
+      .map((r) => {
+        const authors = this.safeJsonParse(r.authors, []) as string[];
+        const subjects = this.safeJsonParse(r.subjects, []) as string[];
+        const controlNumber = r.kohaBiblionumber ?? r.id;
+        const fields = [
+          `<controlfield tag="001">${esc(controlNumber)}</controlfield>`,
+          df('020', [['a', r.isbn]]),
+          df('022', [['a', r.issn]]),
+          df('041', [['a', r.language]]),
+          authors[0] ? df('100', [['a', authors[0]]]) : '',
+          df('245', [['a', r.titleLatin], ['c', r.statementOfResponsibility]]),
+          df('250', [['a', r.edition]]),
+          df('260', [['a', r.placeOfPublication], ['b', r.publisher], ['c', r.publicationYear]]),
+          df('300', [['a', r.extent]]),
+          df('490', [['a', r.series]]),
+          df('500', [['a', r.notes]]),
+          df('520', [['a', r.summary]]),
+          ...subjects.map((s) => df('650', [['a', s]])),
+          ...authors.slice(1).map((a) => df('700', [['a', a]])),
+        ]
+          .filter(Boolean)
+          .join('');
+        return `<record><leader>00000nam a2200000 a 4500</leader>${fields}</record>`;
+      })
+      .join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?><collection xmlns="http://www.loc.gov/MARC21/slim">${recordsXml}</collection>`;
+  }
+
+  /**
+   * Imports accession-register-style rows (same shape as the standalone Koha migration
+   * script at apps/api/prisma/migrate-koha-accession.ts): biblionumber, Barcode, AccDate,
+   * CallNo, ISBN, Author, Title, Ed, Year, Place, Pub, Pages, Subject, Location,
+   * UniformTitle, Language. Upserts BibliographicRecord + ItemCopy per row, grouped by
+   * biblionumber, using the same mapping rules as that script.
+   */
+  async importRecords(rows: Record<string, string>[]) {
+    const clean = (v: string | undefined) => {
+      const t = (v ?? '').trim();
+      return t.length ? t : undefined;
+    };
+    const parseDate = (v: string | undefined) => {
+      const t = clean(v);
+      if (!t) return undefined;
+      const d = new Date(t);
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    const byBiblio = new Map<string, Record<string, string>[]>();
+    const errors: Array<{ row: number; reason: string }> = [];
+    rows.forEach((row, idx) => {
+      const biblio = clean(row.biblionumber) ?? clean(row.Barcode) ?? String(idx);
+      const title = clean(row.Title);
+      if (!title) {
+        errors.push({ row: idx, reason: 'missing Title' });
+        return;
+      }
+      if (!byBiblio.has(biblio)) byBiblio.set(biblio, []);
+      byBiblio.get(biblio)!.push(row);
+    });
+
+    let created = 0;
+    let updated = 0;
+    const usedShelfmarks = new Set<string>();
+    const usedBarcodes = new Set<string>();
+
+    for (const [biblioKey, group] of byBiblio.entries()) {
+      const r0 = group[0];
+      const isSerial = group.length > 1;
+      const kohaBiblionumber = /^\d+$/.test(biblioKey) ? parseInt(biblioKey, 10) : undefined;
+
+      let shelfmark = clean(r0.CallNo) ?? `IMPORT-${biblioKey}`;
+      if (usedShelfmarks.has(shelfmark)) shelfmark = `IMPORT-${biblioKey}`;
+      usedShelfmarks.add(shelfmark);
+
+      const existing = kohaBiblionumber
+        ? await this.prisma.bibliographicRecord.findUnique({ where: { kohaBiblionumber } })
+        : await this.prisma.bibliographicRecord.findUnique({ where: { shelfmark } }).catch(() => null);
+
+      const author = clean(r0.Author);
+      const subject = clean(r0.Subject);
+      const data = {
+        titleLatin: clean(r0.Title) ?? `Untitled (${biblioKey})`,
+        titleArabic: clean(r0.UniformTitle),
+        authors: JSON.stringify(author ? [author] : []),
+        subjects: JSON.stringify(subject ? [subject] : []),
+        shelfmark,
+        callNumber: clean(r0.CallNo),
+        isbn: clean(r0.ISBN),
+        format: isSerial ? 'PERIODICAL' : 'BOOK',
+        recordType: isSerial ? 'SERIAL_BIBLIO' : 'BIBLIO',
+        frameworkCode: isSerial ? 'SERIAL' : 'DEFAULT',
+        language: clean(r0.Language) ?? 'Unspecified',
+        publicationYear: clean(r0.Year),
+        publisher: clean(r0.Pub),
+        placeOfPublication: clean(r0.Place),
+        edition: clean(r0.Ed),
+        extent: clean(r0.Pages),
+        ...(kohaBiblionumber !== undefined && { kohaBiblionumber }),
+      };
+
+      const bib = existing
+        ? await this.prisma.bibliographicRecord.update({ where: { id: existing.id }, data })
+        : await this.prisma.bibliographicRecord.create({ data: { ...data, accessLevel: 'READING_ROOM_ONLY' } });
+      existing ? updated++ : created++;
+
+      for (let i = 0; i < group.length; i++) {
+        const row = group[i];
+        let barcode = clean(row.Barcode) ?? `IMPORT-${biblioKey}-${i + 1}`;
+        if (usedBarcodes.has(barcode)) barcode = `${barcode}-${Math.random().toString(36).slice(2, 6)}`;
+        usedBarcodes.add(barcode);
+        const already = await this.prisma.itemCopy.findUnique({ where: { barcode } });
+        if (already) continue;
+        await this.prisma.itemCopy.create({
+          data: {
+            bibRecordId: bib.id,
+            barcode,
+            location: clean(row.Location) ?? 'Unspecified',
+            copyNumber: i + 1,
+            accessionNumber: biblioKey,
+            itemTypeCode: isSerial ? 'PERIODICAL' : 'BOOK',
+            collectionCode: clean(row.Location),
+            dateAcquired: parseDate(row.AccDate),
+          },
+        });
+      }
+    }
+
+    return { created, updated, skipped: errors.length, errors };
   }
 
   private slugify(text?: string | null): string {

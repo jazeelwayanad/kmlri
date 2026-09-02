@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { NotificationProvider } from '@/lib/notification-store';
 import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -166,12 +167,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F3F1] flex font-sans text-[rgb(20,20,20)]">
-      <AdminSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="p-6 sm:p-10 flex-1 overflow-y-auto">{children}</main>
+    <NotificationProvider>
+      <div className="min-h-screen bg-[#F3F3F1] flex font-sans text-[rgb(20,20,20)]">
+        <AdminSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminHeader onMenuClick={() => setMobileNavOpen(true)} />
+          <main className="p-6 sm:p-10 flex-1 overflow-y-auto">{children}</main>
+        </div>
       </div>
-    </div>
+    </NotificationProvider>
   );
 }

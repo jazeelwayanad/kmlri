@@ -157,9 +157,23 @@ export default function CatalogueConfigurationPage() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleExport = (fmt: string) => {
-    setNotification({ type: 'error', text: `Export to ${fmt} is not yet connected — no export pipeline is wired up on the backend.` });
-    setTimeout(() => setNotification(null), 4000);
+  const handleExport = async (format: 'marcxml' | 'csv') => {
+    try {
+      const { blob, filename } = await api.exportCatalog(format);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setNotification({ type: 'success', text: `Catalogue exported as ${filename}.` });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Export failed.' });
+    } finally {
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
   return (
@@ -495,23 +509,15 @@ export default function CatalogueConfigurationPage() {
                 <div className="space-y-2">
                   <button
                     type="button"
-                    onClick={() => handleExport('MARC21 Raw Binary (.mrc)')}
+                    onClick={() => handleExport('marcxml')}
                     className="w-full p-3 border border-gray-200 hover:border-black rounded flex justify-between items-center bg-[#FAF8F5] transition-colors"
                   >
-                    <span className="font-bold text-gray-900">MARC21 Raw Binary (.mrc)</span>
+                    <span className="font-bold text-gray-900">MARC21 XML (.xml)</span>
                     <Download className="w-4 h-4 text-gray-500" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleExport('Dublin Core XML / OAI-PMH')}
-                    className="w-full p-3 border border-gray-200 hover:border-black rounded flex justify-between items-center bg-[#FAF8F5] transition-colors"
-                  >
-                    <span className="font-bold text-gray-900">Dublin Core XML (.xml)</span>
-                    <Download className="w-4 h-4 text-gray-500" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleExport('CSV Spreadsheet Dataset')}
+                    onClick={() => handleExport('csv')}
                     className="w-full p-3 border border-gray-200 hover:border-black rounded flex justify-between items-center bg-[#FAF8F5] transition-colors"
                   >
                     <span className="font-bold text-gray-900">Catalogue CSV Spreadsheet (.csv)</span>
@@ -526,10 +532,10 @@ export default function CatalogueConfigurationPage() {
           <KohaOdsImportModal
             isOpen={showOdsModal}
             onClose={() => setShowOdsModal(false)}
-            onImportComplete={(imported) => {
+            onImportComplete={(summary) => {
               setNotification({
                 type: 'success',
-                text: `Successfully imported ${imported.length} Koha bibliographic records and copy holdings into the catalogue.`,
+                text: `Imported: ${summary.created} created, ${summary.updated} updated${summary.skipped ? `, ${summary.skipped} skipped` : ''} into the catalogue backend.`,
               });
               setTimeout(() => setNotification(null), 5000);
             }}

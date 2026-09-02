@@ -129,274 +129,10 @@ export interface ContentItem {
 }
 
 export const FALLBACK_CONTENT: Record<string, ContentItem[]> = {
-  Events: [
-    {
-      id: 'EVT-01',
-      slug: 'national-seminar-arabi-malayalam-manuscripts',
-      category: 'EVENT',
-      title: 'National Seminar on Arabi-Malayalam Manuscripts and Islamic Littoral Trade',
-      kicker: 'Academic Seminar',
-      summary: 'Scholars from across South and Southeast Asia gather to present findings on Arabi-Malayalam maritime trade logs and scholarly networks.',
-      content: 'This two-day international seminar brings together paleographers, maritime historians, and manuscript conservators to analyze historical commerce, littoral fatwa networks, and scholarly transmission between Malabar, Hadramaut, and the Malay Archipelago from the 16th to early 20th centuries.',
-      date: '18 September 2026',
-      time: '09:30 AM - 04:30 PM',
-      venue: 'Main Auditorium, KMLRI Campus',
-      capacity: 150,
-      registered: 142,
-      author: 'Prof. K. M. Bahauddin & Dr. Zayd Al-Hadhrami',
-      featured: true,
-      status: 'ACTIVE',
-      tags: ['Seminar', 'Arabi-Malayalam', 'Trade Networks'],
-    },
-    {
-      id: 'EVT-02',
-      slug: 'workshop-palm-leaf-deacidification-scribe-inks',
-      category: 'EVENT',
-      title: 'Hands-on Workshop: Palm-leaf De-acidification and Scribe Inks Conservation',
-      kicker: 'Conservation Lab Workshop',
-      summary: 'Practical session in the conservation lab on handling, surface-cleaning, and stabilizing tannin-iron and lampblack inks.',
-      content: 'A hands-on laboratory intensive limited to twelve conservators and advanced students. Participants will work under master conservators learning non-aqueous de-acidification, humidification, and mending of brittle leaves with Japanese tissue and wheat starch paste.',
-      date: '24 September 2026',
-      time: '10:00 AM - 01:00 PM',
-      venue: 'Conservation Lab (Restricted Entry)',
-      capacity: 25,
-      registered: 25,
-      author: 'Senior Conservator Aisha Rahmani',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Workshop', 'Conservation', 'Palm-Leaf'],
-    },
-    {
-      id: 'EVT-03',
-      slug: 'exhibition-100-rare-inscriptions-malabar',
-      category: 'EVENT',
-      title: 'Exhibition: 100 Rare Inscriptions and Folios of Malabar & Coromandel Coast',
-      kicker: 'Public Exhibition',
-      summary: 'Curated public showcase displaying unique illuminated Quranic folios, royal decrees, and merchant seals dating back four centuries.',
-      content: 'Featuring 100 curated artifacts selected from private collections and institute vaults, with high-resolution digital magnification stations and audio guides in Malayalam, Arabic, and English.',
-      date: '01 Oct - 15 Oct 2026',
-      time: '10:00 AM - 07:00 PM Daily',
-      venue: 'Gallery Hall A & B',
-      capacity: 500,
-      registered: 320,
-      author: 'KMLRI Curatorial Team',
-      featured: true,
-      status: 'ACTIVE',
-      tags: ['Exhibition', 'Inscriptions', 'Rare Folios'],
-    },
-    {
-      id: 'EVT-04',
-      slug: 'evening-lecture-malabar-manuscript-networks',
-      category: 'EVENT',
-      title: 'Evening Lecture on Malabar’s Historical Manuscript Networks',
-      kicker: 'Public Lecture',
-      summary: 'How codices, scribes, and Madrasa students moved between coastal trading towns.',
-      content: 'An illustrated evening lecture mapping the geographic flow of legal commentaries and mystical poetry across coastal ports including Calicut, Ponnani, Cannanore, and Mahe.',
-      date: '27 September 2026',
-      time: '05:30 PM - 07:00 PM',
-      venue: 'Reference Library Seminar Room',
-      capacity: 80,
-      registered: 64,
-      author: 'Dr. Tariq Al-Malabari',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Lecture', 'Codicology', 'History'],
-    },
-  ],
-  News: [
-    {
-      id: 'NWS-01',
-      slug: 'nine-hundred-folios-added-to-digital-reading-room',
-      category: 'NEWS',
-      title: 'Nine hundred folios added to the digital reading room',
-      kicker: 'Digitisation Update',
-      summary: 'The largest single batch since digitisation began, featuring high-resolution multi-spectral scans.',
-      content: 'The digitization lab has uploaded 900 new folios encompassing 18th-century medical treatises and astronomy codices, complete with deep zoom IIIF manifests and full-text Arabic transcriptions.',
-      date: '2 October 2026',
-      author: 'Digital Repository Division',
-      featured: true,
-      status: 'ACTIVE',
-      tags: ['Digitisation', 'IIIF', 'Open Access'],
-    },
-    {
-      id: 'NWS-02',
-      slug: 'conservation-lab-completes-first-full-year-survey',
-      category: 'NEWS',
-      title: 'Conservation lab completes its first full-year condition survey',
-      kicker: 'Conservation Milestone',
-      summary: 'Comprehensive condition reports and micro-climate assessments now exist for every manuscript on the shelves.',
-      content: 'Over 1,200 codices and loose-leaf bundles were surveyed, cleaned, and rehoused in custom archival clamshell boxes with phase-box enclosures for vulnerable bindings.',
-      date: '14 October 2026',
-      author: 'Preservation Team',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Survey', 'Preservation', 'Archives'],
-    },
-    {
-      id: 'NWS-03',
-      slug: 'reading-room-open-house-for-research-scholars',
-      category: 'NEWS',
-      title: 'Reading room open house for research scholars and university faculty',
-      kicker: 'Community',
-      summary: 'An afternoon of short presentations, catalogue walk-throughs, and rare book handling orientations.',
-      content: 'New readers received personalized orientations on using the OPAC search, requesting restricted manuscripts, and applying for digitization scan vouchers.',
-      date: '12 September 2026',
-      author: 'Reader Services Desk',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Open House', 'Scholars', 'Orientation'],
-    },
-    {
-      id: 'NWS-04',
-      slug: 'kmlri-acquires-17th-century-navigational-charts',
-      category: 'NEWS',
-      title: 'KMLRI acquires 17th-century Arabian Sea navigational charts',
-      kicker: 'Acquisitions',
-      summary: 'Rare manuscript charts detailing stellar coordinates, port anchorages, and monsoon wind vectors.',
-      content: 'The Institute has formally accessioned a set of five illustrated navigational portolan charts drawn in Calicut in 1684, now available for scholarly reservation.',
-      date: '5 September 2026',
-      author: 'Acquisitions Committee',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Acquisitions', 'Navigation', 'Maritime'],
-    },
-  ],
-  Stories: [
-    {
-      id: 'STY-01',
-      slug: 'what-a-margin-note-reveals-about-a-19th-century-reader',
-      category: 'STORY',
-      title: 'What a margin note reveals about a nineteenth-century reader',
-      kicker: 'Featured Story',
-      summary: 'A single line in the margin of a jurisprudence manuscript tells us who read the book, where they sat, and what they disagreed with.',
-      content: 'When examining MS-1049, a leather-bound commentary on Fatḥ al-Muʿīn copied in 1842, archivist Dr. Mariam discovered layered glosses in purple ink. The scribbled notes critique an earlier ruling on riverine water rights in Tanur, providing rare social-historical evidence of how regional scholars interpreted classic Shafi‘i texts in light of local Kerala agrarian practices.',
-      date: 'Autumn 2026',
-      author: 'Dr. Mariam Farooqi',
-      featured: true,
-      status: 'ACTIVE',
-      tags: ['Marginalia', 'Jurisprudence', 'Social History'],
-    },
-    {
-      id: 'STY-02',
-      slug: 'tracing-one-poem-across-four-handwritten-copies',
-      category: 'STORY',
-      title: 'Tracing one poem across four handwritten copies',
-      kicker: 'Research notes',
-      summary: 'How slight variations in rhyme schemes reveal the movement of Sufi poetry along the Arabian Sea.',
-      content: 'Comparing four distinct scribal copies of a 17th-century devotional qasida held across Ponnani, Calicut, and Zanzibar demonstrates how oral performance shaped textual transmission.',
-      date: 'September 2026',
-      author: 'Research Fellow H. Navas',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Research Notes', 'Poetry', 'Transmission'],
-    },
-    {
-      id: 'STY-03',
-      slug: 'the-paper-the-ink-and-the-hands-that-made-a-book',
-      category: 'STORY',
-      title: 'The paper, the ink and the hands that made a book',
-      kicker: 'Materials',
-      summary: 'Microscopic examination of Venetian watermarks and local soot inks in 18th-century Malabar manuscripts.',
-      content: 'Paper analysis reveals that coastal scholars imported Tre Lune rag paper from Venice while synthesizing carbon inks from charred coconut shells and gum arabic locally.',
-      date: 'August 2026',
-      author: 'Conservation Scientist P. V. Salim',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Materials', 'Watermarks', 'Ink Analysis'],
-    },
-    {
-      id: 'STY-04',
-      slug: 'how-a-family-collection-came-to-the-reading-room',
-      category: 'STORY',
-      title: 'How a family collection came to the reading room',
-      kicker: 'Donors',
-      summary: 'Three generations of ancestral legal deeds and astronomical tables safeguarded from monsoon moisture.',
-      content: 'The Vattoli family preserved more than eighty fragile manuscripts in wooden dowry chests for over 150 years before entrusting them to KMLRI for permanent climate-controlled conservation.',
-      date: 'July 2026',
-      author: 'Archivist K. Zainaba',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Donors', 'Family Archives', 'Preservation'],
-    },
-  ],
-  Opportunities: [
-    {
-      id: 'OPP-01',
-      slug: 'short-term-research-fellowships-2026',
-      category: 'OPPORTUNITY',
-      title: 'Short-term Research Fellowships in Manuscript Studies 2026–2027',
-      kicker: 'Research Fellowships',
-      summary: 'Four fully-funded residential fellowships for scholars working on Arabic and Arabi-Malayalam primary codices.',
-      content: 'KMLRI invites applications for 3-month and 6-month visiting fellowships. Fellows receive unrestricted reading room access, a dedicated study desk, archival scan credits, accommodation on campus, and a monthly research stipend.',
-      date: 'Deadline: 30 October 2026',
-      deadline: '30 October 2026',
-      stipend: '₹45,000 / month + On-campus Housing',
-      venue: 'KMLRI Research Wing, Calicut',
-      capacity: 4,
-      registered: 18,
-      author: 'Academic Advisory Board',
-      featured: true,
-      status: 'ACTIVE',
-      tags: ['Fellowship', 'Fully Funded', 'Research', 'Stipend'],
-    },
-    {
-      id: 'OPP-02',
-      slug: 'resident-internship-manuscript-conservation',
-      category: 'OPPORTUNITY',
-      title: 'Graduate Resident Internship in Book & Paper Conservation',
-      kicker: 'Internship',
-      summary: 'A 6-month intensive training placement in paper deacidification, Japanese tissue repair, and leather tooling.',
-      content: 'Designed for recent graduates of conservation, museum studies, or chemistry. Interns work alongside senior conservators treating 17th-19th century items.',
-      date: 'Deadline: 15 November 2026',
-      deadline: '15 November 2026',
-      stipend: '₹22,000 / month',
-      venue: 'Conservation & Digitization Lab',
-      capacity: 3,
-      registered: 9,
-      author: 'Conservation Department',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Internship', 'Conservation', 'Paid'],
-    },
-    {
-      id: 'OPP-03',
-      slug: 'call-for-papers-indian-ocean-codicology-symposium',
-      category: 'OPPORTUNITY',
-      title: 'Call for Papers: 3rd International Indian Ocean Codicology Symposium',
-      kicker: 'Call for Papers',
-      summary: 'Submissions invited on scribal traditions, watermark chronologies, and littoral text transmission.',
-      content: 'Selected peer-reviewed papers will be published in the KMLRI Journal of Manuscript Studies. Travel grants available for selected early-career scholars.',
-      date: 'Deadline: 10 December 2026',
-      deadline: '10 December 2026',
-      stipend: 'Travel Grants & Publication',
-      venue: 'Hybrid / KMLRI Auditorium',
-      capacity: 30,
-      registered: 12,
-      author: 'Editorial Committee',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Call for Papers', 'Symposium', 'Publication'],
-    },
-    {
-      id: 'OPP-04',
-      slug: 'graduate-assistantship-arabic-paleography-cataloguing',
-      category: 'OPPORTUNITY',
-      title: 'Graduate Assistantship in Arabic & Persian Paleography Cataloguing',
-      kicker: 'Assistantship',
-      summary: 'Part-time position for postgraduate scholars to assist in Dublin Core metadata encoding and incipit transcription.',
-      content: 'Flexible 15-20 hours per week role assisting senior cataloguers in deciphering colophons, identifying watermarks, and inputting Dublin Core/MARC21 metadata.',
-      date: 'Deadline: 25 October 2026',
-      deadline: '25 October 2026',
-      stipend: '₹18,000 / month',
-      venue: 'Cataloguing Department',
-      capacity: 2,
-      registered: 7,
-      author: 'Cataloguing Team',
-      featured: false,
-      status: 'ACTIVE',
-      tags: ['Assistantship', 'Cataloguing', 'Paleography'],
-    },
-  ],
+  Events: [],
+  News: [],
+  Stories: [],
+  Opportunities: [],
 };
 
 export const api = {
@@ -588,6 +324,42 @@ export const api = {
     return this.fetchWithAuth(`/catalog/${id}/copies`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  async findCatalogDuplicates(params: { title?: string; author?: string; isbn?: string; issn?: string }) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v && query.append(k, v));
+    return this.fetchWithAuth(`/catalog/duplicates?${query.toString()}`);
+  },
+
+  // Downloads a catalog export (MARCXML or CSV) and returns { blob, filename } for the
+  // caller to trigger a browser save via a temporary object URL.
+  async exportCatalog(format: 'marcxml' | 'csv', ids?: string[]): Promise<{ blob: Blob; filename: string }> {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    }
+    const query = new URLSearchParams({ format });
+    if (ids && ids.length) query.append('ids', ids.join(','));
+    const response = await fetch(`${API_URL}/catalog/export?${query.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || 'Export failed');
+    }
+    const blob = await response.blob();
+    const ext = format === 'csv' ? 'csv' : 'xml';
+    return { blob, filename: `catalog-export.${ext}` };
+  },
+
+  // Imports accession-register-style rows (biblionumber/Barcode/AccDate/CallNo/ISBN/Author/
+  // Title/Ed/Year/Place/Pub/Pages/Subject/Location/UniformTitle/Language) as JSON.
+  async importCatalogRows(rows: Record<string, string>[]) {
+    return this.fetchWithAuth('/catalog/import', {
+      method: 'POST',
+      body: JSON.stringify({ rows: JSON.stringify(rows) }),
     });
   },
 
@@ -989,12 +761,37 @@ export const api = {
     return this.fetchWithAuth(`/collections/${collectionId}/records/${recordId}`, { method: 'DELETE' });
   },
 
-  // Serials
-  async getSerials(q?: string) {
-    const query = q ? `?q=${encodeURIComponent(q)}` : '';
-    return this.fetchWithAuth(`/serials${query}`);
+  // Serials / Subscriptions (Koha-style)
+  async getSerials(params?: { q?: string; status?: string; vendorId?: string }) {
+    const query = new URLSearchParams();
+    if (params?.q) query.append('q', params.q);
+    if (params?.status) query.append('status', params.status);
+    if (params?.vendorId) query.append('vendorId', params.vendorId);
+    const qs = query.toString();
+    return this.fetchWithAuth(`/serials${qs ? `?${qs}` : ''}`);
   },
-  async createSerial(data: { title: string; shelfmark?: string; frequency?: string; publisher?: string; notes?: string }) {
+  async getSerial(id: string) {
+    return this.fetchWithAuth(`/serials/${id}`);
+  },
+  async createSerial(data: {
+    title: string;
+    shelfmark?: string;
+    frequency?: string;
+    periodicityCode?: string;
+    numberingPattern?: string;
+    publisher?: string;
+    notes?: string;
+    bibRecordId?: string;
+    vendorId?: string;
+    libraryId?: string;
+    locationCode?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    cost?: number;
+    currency?: string;
+    renewalNote?: string;
+  }) {
     return this.fetchWithAuth('/serials', { method: 'POST', body: JSON.stringify(data) });
   },
   async updateSerial(id: string, data: any) {
@@ -1003,14 +800,42 @@ export const api = {
   async deleteSerial(id: string) {
     return this.fetchWithAuth(`/serials/${id}`, { method: 'DELETE' });
   },
-  async addSerialIssue(id: string, data: { issueLabel: string; expectedDate?: string }) {
+  async getSerialHistory(id: string) {
+    return this.fetchWithAuth(`/serials/${id}/history`);
+  },
+  async addSerialIssue(
+    id: string,
+    data: { issueLabel: string; volume?: string; number?: string; publicationDate?: string; expectedDate?: string; isSupplement?: boolean; isIndex?: boolean; bindingNote?: string },
+  ) {
     return this.fetchWithAuth(`/serials/${id}/issues`, { method: 'POST', body: JSON.stringify(data) });
   },
-  async checkInSerialIssue(issueId: string) {
-    return this.fetchWithAuth(`/serials/issues/${issueId}/check-in`, { method: 'PATCH' });
+  async updateSerialIssue(issueId: string, data: any) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async predictSerialIssues(id: string, count?: number) {
+    return this.fetchWithAuth(`/serials/${id}/predict`, { method: 'POST', body: JSON.stringify(count ? { count } : {}) });
+  },
+  async checkInSerialIssue(issueId: string, data?: { receivedDate?: string; volume?: string; number?: string; bindingNote?: string }) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/check-in`, { method: 'PATCH', body: JSON.stringify(data || {}) });
   },
   async markSerialIssueMissing(issueId: string) {
     return this.fetchWithAuth(`/serials/issues/${issueId}/missing`, { method: 'PATCH' });
+  },
+  async setSerialIssueStatus(issueId: string, status: 'MISSING' | 'LATE') {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  },
+  async getSerialClaimCandidates(daysOverdue?: number) {
+    const query = daysOverdue !== undefined ? `?daysOverdue=${daysOverdue}` : '';
+    return this.fetchWithAuth(`/serials/claims/candidates${query}`);
+  },
+  async createSerialClaim(issueId: string, notes?: string) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/claim`, { method: 'POST', body: JSON.stringify({ notes }) });
+  },
+  async updateSerialClaim(claimId: string, data: { status: 'RESPONDED' | 'RESOLVED'; notes?: string }) {
+    return this.fetchWithAuth(`/serials/claims/${claimId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async getSerialIssueClaims(issueId: string) {
+    return this.fetchWithAuth(`/serials/issues/${issueId}/claims`);
   },
 
   // Reproduction requests
@@ -1116,5 +941,155 @@ export const api = {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  // MARC Frameworks
+  async getMarcFrameworks() {
+    return this.fetchWithAuth('/marc-frameworks');
+  },
+  async getMarcFramework(code: string) {
+    return this.fetchWithAuth(`/marc-frameworks/${encodeURIComponent(code)}`);
+  },
+  async createMarcFramework(data: { code: string; description: string; materialType?: string; isDefault?: boolean }) {
+    return this.fetchWithAuth('/marc-frameworks', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateMarcFramework(code: string, data: any) {
+    return this.fetchWithAuth(`/marc-frameworks/${encodeURIComponent(code)}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteMarcFramework(code: string) {
+    return this.fetchWithAuth(`/marc-frameworks/${encodeURIComponent(code)}`, { method: 'DELETE' });
+  },
+  async addMarcFrameworkField(code: string, data: any) {
+    return this.fetchWithAuth(`/marc-frameworks/${encodeURIComponent(code)}/fields`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateMarcFrameworkField(fieldId: string, data: any) {
+    return this.fetchWithAuth(`/marc-frameworks/fields/${fieldId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async removeMarcFrameworkField(fieldId: string) {
+    return this.fetchWithAuth(`/marc-frameworks/fields/${fieldId}`, { method: 'DELETE' });
+  },
+  async reorderMarcFrameworkFields(code: string, order: { id: string; sortOrder: number }[]) {
+    return this.fetchWithAuth(`/marc-frameworks/${encodeURIComponent(code)}/fields/reorder`, {
+      method: 'PATCH',
+      body: JSON.stringify({ order }),
+    });
+  },
+  async validateMarcFields(frameworkCode: string, entries: { tag: string; subfield?: string; value?: string }[]) {
+    return this.fetchWithAuth('/marc-frameworks/validate', {
+      method: 'POST',
+      body: JSON.stringify({ frameworkCode, entries }),
+    });
+  },
+
+  // Authorities
+  async searchAuthorities(q?: string, headingType?: string) {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (headingType) params.set('headingType', headingType);
+    const qs = params.toString();
+    return this.fetchWithAuth(`/authorities/search${qs ? `?${qs}` : ''}`);
+  },
+  async getAuthority(id: string) {
+    return this.fetchWithAuth(`/authorities/${id}`);
+  },
+  async getAuthorityUsage(id: string) {
+    return this.fetchWithAuth(`/authorities/${id}/usage`);
+  },
+  // Returns { duplicate: true, existing } on a 409 possible-duplicate response
+  // instead of throwing, so the caller can surface the duplicate-warning flow.
+  async createAuthority(data: {
+    headingType: string;
+    heading: string;
+    seeAlso?: string[];
+    notes?: string;
+    marcXml?: string;
+    force?: boolean;
+  }): Promise<{ duplicate: false; record: any } | { duplicate: true; existing: any }> {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_URL}/authorities`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+    const body = await response.json();
+    if (response.status === 409 && body.possibleDuplicate) {
+      return { duplicate: true, existing: body.possibleDuplicate };
+    }
+    if (!response.ok) {
+      throw new Error(body.message || 'Could not create the authority record.');
+    }
+    return { duplicate: false, record: body };
+  },
+  async updateAuthority(id: string, data: any) {
+    return this.fetchWithAuth(`/authorities/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteAuthority(id: string) {
+    return this.fetchWithAuth(`/authorities/${id}`, { method: 'DELETE' });
+  },
+  async linkAuthorityHeading(data: { bibRecordId: string; authorityId: string; tag: string; subfield?: string }) {
+    return this.fetchWithAuth('/authorities/link', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async unlinkAuthorityHeading(id: string) {
+    return this.fetchWithAuth(`/authorities/link/${id}`, { method: 'DELETE' });
+  },
+
+  // Libraries (branches)
+  async getLibraries() {
+    return this.fetchWithAuth('/libraries');
+  },
+  async createLibrary(data: { code: string; name: string; address?: string; phone?: string; email?: string; isActive?: boolean }) {
+    return this.fetchWithAuth('/libraries', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateLibrary(id: string, data: any) {
+    return this.fetchWithAuth(`/libraries/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteLibrary(id: string) {
+    return this.fetchWithAuth(`/libraries/${id}`, { method: 'DELETE' });
+  },
+
+  // Item Types
+  async getItemTypes() {
+    return this.fetchWithAuth('/item-types');
+  },
+  async createItemType(data: { code: string; description: string; isSerial?: boolean; loanDurationDays?: number }) {
+    return this.fetchWithAuth('/item-types', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateItemType(id: string, data: any) {
+    return this.fetchWithAuth(`/item-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteItemType(id: string) {
+    return this.fetchWithAuth(`/item-types/${id}`, { method: 'DELETE' });
+  },
+
+  // Authorised Values
+  async getAuthorisedValueCategories() {
+    return this.fetchWithAuth('/authorised-values/categories');
+  },
+  async createAuthorisedValueCategory(data: { category: string; description?: string }) {
+    return this.fetchWithAuth('/authorised-values/categories', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateAuthorisedValueCategory(id: string, data: any) {
+    return this.fetchWithAuth(`/authorised-values/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteAuthorisedValueCategory(id: string) {
+    return this.fetchWithAuth(`/authorised-values/categories/${id}`, { method: 'DELETE' });
+  },
+  async getAuthorisedValues(category: string) {
+    return this.fetchWithAuth(`/authorised-values/${encodeURIComponent(category)}`);
+  },
+  async createAuthorisedValue(categoryId: string, data: { code: string; description: string; sortOrder?: number }) {
+    return this.fetchWithAuth(`/authorised-values/categories/${categoryId}/values`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateAuthorisedValue(id: string, data: any) {
+    return this.fetchWithAuth(`/authorised-values/values/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+  async deleteAuthorisedValue(id: string) {
+    return this.fetchWithAuth(`/authorised-values/values/${id}`, { method: 'DELETE' });
   },
 };

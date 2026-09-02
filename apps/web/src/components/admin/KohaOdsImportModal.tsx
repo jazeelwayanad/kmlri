@@ -16,11 +16,12 @@ import {
   FileCheck,
   RotateCw
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface KohaOdsImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImportComplete: (importedRecords: any[]) => void;
+  onImportComplete: (summary: { created: number; updated: number; skipped: number }) => void;
 }
 
 export default function KohaOdsImportModal({ isOpen, onClose, onImportComplete }: KohaOdsImportModalProps) {
@@ -33,12 +34,14 @@ export default function KohaOdsImportModal({ isOpen, onClose, onImportComplete }
     totalItemsCount: number;
     samplePreview: any[];
     headers: string[];
+    accessionRows: Record<string, string>[];
   } | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [defaultAccessLevel, setDefaultAccessLevel] = useState('OPEN_ACCESS');
   const [defaultFormat, setDefaultFormat] = useState('AUTO_DETECT');
   const [committing, setCommitting] = useState(false);
   const [committedCount, setCommittedCount] = useState<number | null>(null);
+  const [commitSummary, setCommitSummary] = useState<{ created: number; updated: number; skipped: number } | null>(null);
 
   if (!isOpen) return null;
 
@@ -78,22 +81,21 @@ export default function KohaOdsImportModal({ isOpen, onClose, onImportComplete }
     }
   };
 
-  const handleCommitImport = () => {
+  const handleCommitImport = async () => {
     if (!importResult) return;
     setCommitting(true);
+    setError(null);
 
-    // Apply default overrides
-    const recordsToCommit = importResult.samplePreview.map((rec) => ({
-      ...rec,
-      accessLevel: defaultAccessLevel,
-      format: defaultFormat === 'AUTO_DETECT' ? rec.format : defaultFormat,
-    }));
-
-    setTimeout(() => {
-      onImportComplete(recordsToCommit);
+    try {
+      const summary = await api.importCatalogRows(importResult.accessionRows);
+      setCommitSummary({ created: summary.created, updated: summary.updated, skipped: summary.skipped });
+      setCommittedCount(summary.created + summary.updated);
+      onImportComplete({ created: summary.created, updated: summary.updated, skipped: summary.skipped });
+    } catch (err: any) {
+      setError(err.message || 'Failed to commit the import to the catalogue backend.');
+    } finally {
       setCommitting(false);
-      setCommittedCount(importResult.totalRecordsCount);
-    }, 600);
+    }
   };
 
   const filteredPreview = (importResult?.samplePreview || []).filter((r) => {
@@ -147,7 +149,8 @@ export default function KohaOdsImportModal({ isOpen, onClose, onImportComplete }
               <div>
                 <h4 className="text-lg font-bold text-emerald-900">Koha Dataset Imported Successfully!</h4>
                 <p className="text-xs text-emerald-800 mt-1">
-                  <strong>{committedCount}</strong> bibliographic records and holding items from the Koha Accession Register have been merged into the KMLRI Catalogue.
+                  <strong>{commitSummary?.created ?? 0} created</strong>, <strong>{commitSummary?.updated ?? 0} updated</strong>
+                  {commitSummary && commitSummary.skipped > 0 ? <>, <strong>{commitSummary.skipped} skipped</strong></> : null} in the KMLRI Catalogue backend.
                 </p>
               </div>
               <button
