@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getRecordSlug } from '@/lib/slugs';
+import { ImageUploadField } from '@/components/content/ImageUploadField';
 
 export default function CatalogueRecordsPage() {
   const [records, setRecords] = useState<BibliographicRecord[]>([]);
@@ -75,6 +76,7 @@ export default function CatalogueRecordsPage() {
   // Step 2: Add Item(s) Fields (Holding Copies)
   const [barcode, setBarcode] = useState('');
   const [rfidTag, setRfidTag] = useState('');
+  const [itemImageUrl, setItemImageUrl] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState('Main Reading Stack Room A');
   const [callNumber, setCallNumber] = useState('');
   const [itemStatus, setItemStatus] = useState('AVAILABLE');
@@ -127,23 +129,25 @@ export default function CatalogueRecordsPage() {
     setEditingRecordId(rec.id);
     setStep(1);
     setTitle(rec.titleLatin);
-    setSubtitle('');
+    setSubtitle(rec.subtitle || '');
     setAuthor(Array.isArray(rec.authors) ? rec.authors.join(', ') : (rec.authors || ''));
-    setStatementOfResp('');
+    setStatementOfResp(rec.statementOfResponsibility || '');
     setUniformTitle(rec.titleArabic || '');
-    setItemType(rec.format === 'MANUSCRIPT' ? 'Manuscripts' : rec.format === 'RARE_BOOK' ? 'Reference' : 'Book');
+    setItemType(rec.format === 'MANUSCRIPT' ? 'Manuscripts' : rec.format === 'RARE_BOOK' ? 'Reference' : rec.format === 'ARABI_MALAYALAM_PRINT' ? 'Lithographs' : 'Book');
     setLanguage(rec.language || 'Malayalam');
     const shelfParts = (rec.shelfmark || '297.14 M14').split(' ');
     setDdcClass(shelfParts[0] || '297.14');
     setDdcItem(shelfParts[1] || 'M14');
-    const rAny = rec as any;
-    setIsbn(rAny.isbn || '');
-    setPublisher(rAny.publisher || 'KMLRI Press');
-    setPubYear(rAny.publicationYear || '2026');
-    setExtent(rAny.extent || '184 pages');
+    setIsbn(rec.isbn || '');
+    setPubPlace(rec.placeOfPublication || '');
+    setPublisher(rec.publisher || '');
+    setPubYear(rec.publicationYear || '');
+    setEdition(rec.edition || '');
+    setSeries(rec.series || '');
+    setExtent(rec.extent || '');
     setSubjects((rec.subjects || []).join(', '));
-    setNotes(rAny.summary || '');
-    setUri(rAny.coverImageUrl || '');
+    setNotes(rec.notes || '');
+    setUri(rec.coverImageUrl || '');
     setAddedItems([]);
     setShowAddModal(true);
   };
@@ -210,10 +214,11 @@ export default function CatalogueRecordsPage() {
     if (!barcode.trim() || !createdRecordId) return;
 
     try {
-      const copy = await api.addCatalogCopy(createdRecordId, { barcode: barcode.trim(), location });
+      const copy = await api.addCatalogCopy(createdRecordId, { barcode: barcode.trim(), location, rfidTag: rfidTag || undefined, imageUrl: itemImageUrl });
       setAddedItems([...addedItems, copy]);
       setBarcode(`KMLRI-${Date.now().toString().slice(-6)}`);
       setRfidTag('');
+      setItemImageUrl(undefined);
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message || 'Could not attach item copy.' });
       setTimeout(() => setNotification(null), 4000);
@@ -603,6 +608,31 @@ export default function CatalogueRecordsPage() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">
+                        Edition <span className="text-gray-500 font-mono text-[10px]">(250$a)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={edition}
+                        onChange={(e) => setEdition(e.target.value)}
+                        placeholder="e.g. 2nd revised edition"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">
+                        Series <span className="text-gray-500 font-mono text-[10px]">(490$a)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={series}
+                        onChange={(e) => setSeries(e.target.value)}
+                        placeholder="e.g. Malabar Manuscript Series, vol. 4"
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
+                      />
+                    </div>
+
                     <div className="sm:col-span-3">
                       <label className="block font-bold text-gray-700 uppercase mb-1">Subjects (Comma separated)</label>
                       <input
@@ -611,6 +641,19 @@ export default function CatalogueRecordsPage() {
                         onChange={(e) => setSubjects(e.target.value)}
                         placeholder="Islamic Jurisprudence, Malabar Manuscripts, Codicology"
                         className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 bg-white outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block font-bold text-gray-700 uppercase mb-1">
+                        Notes <span className="text-gray-500 font-mono text-[10px]">(500$a)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="General cataloguing notes"
+                        className="w-full border border-gray-300 p-3 rounded text-xs text-gray-900 bg-white outline-none resize-y"
                       />
                     </div>
                   </div>
@@ -691,6 +734,10 @@ export default function CatalogueRecordsPage() {
                         className="w-full border border-gray-300 h-9 px-3 rounded text-xs text-gray-900 bg-white outline-none"
                       />
                     </div>
+                  </div>
+
+                  <div className="max-w-xs">
+                    <ImageUploadField value={itemImageUrl} onChange={setItemImageUrl} label="Item Photo (optional)" aspectClass="aspect-[4/3]" />
                   </div>
 
                   <div className="flex justify-end pt-2">

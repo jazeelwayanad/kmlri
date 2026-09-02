@@ -71,6 +71,8 @@ export interface BibliographicRecord {
   doi?: string;
   format: string;
   language: string;
+  publicationYear?: string;
+  publisher?: string;
   extent?: string;
   material?: string;
   dimensions?: string;
@@ -85,6 +87,8 @@ export interface BibliographicRecord {
   summary?: string;
   subjects: string[];
   accessLevel: string;
+  coverImageUrl?: string;
+  collectionId?: string;
   totalCopiesCount?: number;
   availableCopiesCount?: number;
   iiifManifestUrl?: string;
@@ -588,14 +592,14 @@ export const api = {
     });
   },
 
-  async addCatalogCopy(id: string, data: { location?: string; barcode?: string; rfidTag?: string; status?: string }) {
+  async addCatalogCopy(id: string, data: { location?: string; barcode?: string; rfidTag?: string; status?: string; imageUrl?: string }) {
     return this.fetchWithAuth(`/catalog/${id}/copies`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async updateCatalogCopy(id: string, copyId: string, data: { barcode?: string; rfidTag?: string; location?: string; status?: string }) {
+  async updateCatalogCopy(id: string, copyId: string, data: { barcode?: string; rfidTag?: string; location?: string; status?: string; imageUrl?: string }) {
     return this.fetchWithAuth(`/catalog/${id}/copies/${copyId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
