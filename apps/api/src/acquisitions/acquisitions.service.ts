@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AcquisitionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async findAll(userId?: string) {
     return this.prisma.acquisitionRequest.findMany({
@@ -39,6 +43,16 @@ export class AcquisitionsService {
     if (!['SUBMITTED', 'APPROVED', 'ORDERED', 'REJECTED'].includes(status)) {
       throw new BadRequestException('Invalid status.');
     }
-    return this.prisma.acquisitionRequest.update({ where: { id }, data: { status } });
+    const updated = await this.prisma.acquisitionRequest.update({ where: { id }, data: { status } });
+
+    await this.notifications.create(
+      existing.userId,
+      'ACQUISITION_UPDATE',
+      'Acquisition recommendation updated',
+      `Your recommendation "${existing.title}" is now ${status}.`,
+      '/account/requests',
+    );
+
+    return updated;
   }
 }

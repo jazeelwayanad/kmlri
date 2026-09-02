@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReferenceQuestionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async submit(data: { name: string; email: string; subject?: string; question: string }, userId?: string) {
     if (!data.name?.trim() || !data.email?.trim() || !data.question?.trim()) {
@@ -32,7 +36,7 @@ export class ReferenceQuestionsService {
     const existing = await this.prisma.referenceQuestion.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Question not found.');
     if (!answer?.trim()) throw new BadRequestException('answer is required.');
-    return this.prisma.referenceQuestion.update({
+    const updated = await this.prisma.referenceQuestion.update({
       where: { id },
       data: {
         answer: answer.trim(),
@@ -41,6 +45,18 @@ export class ReferenceQuestionsService {
         answeredAt: new Date(),
       },
     });
+
+    if (existing.userId) {
+      await this.notifications.create(
+        existing.userId,
+        'REFERENCE_ANSWERED',
+        'Your reference question was answered',
+        `The reference desk replied to your question${existing.subject ? ` about "${existing.subject}"` : ''}.`,
+        '/ask',
+      );
+    }
+
+    return updated;
   }
 
   async close(id: string) {

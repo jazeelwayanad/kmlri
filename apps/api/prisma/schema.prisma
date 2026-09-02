@@ -49,6 +49,7 @@ model User {
   reproductionRequests ReproductionRequest[]
   repositorySubmissions RepositorySubmission[]
   registrations     Registration[]
+  notifications     Notification[]
 }
 
 model BibliographicRecord {
@@ -56,6 +57,7 @@ model BibliographicRecord {
   titleArabic       String?
   titleLatin        String
   subtitle          String?
+  statementOfResponsibility String? // MARC 245$c
   authors           String    // JSON array string of authors
   scribe            String?
   shelfmark         String    @unique
@@ -67,6 +69,10 @@ model BibliographicRecord {
   language          String    @default("Arabic")
   publicationYear   String?
   publisher         String?
+  placeOfPublication String?  // MARC 260$a
+  edition           String?   // MARC 250$a
+  series            String?   // MARC 490$a
+  notes             String?   // MARC 500$a
   extent            String?   // e.g. "84 folios, 21 x 15 cm"
   material          String?   // e.g. "Laid paper, brown ink"
   binding           String?   // e.g. "Limp leather over boards"
@@ -94,6 +100,7 @@ model ItemCopy {
   status            String    @default("AVAILABLE") // AVAILABLE, ON_LOAN, RESERVED, IN_CONSERVATION, LOST, WITHDRAWN
   copyNumber        Int       @default(1)
   conditionNote     String?
+  imageUrl          String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -267,6 +274,7 @@ model ContentItem {
   kicker            String?
   summary           String
   content           String?
+  eligibilityCriteria String? // Opportunities: eligibility & submission criteria
   date              String?
   time              String?
   venue             String?
@@ -470,4 +478,17 @@ model RepositorySubmission {
   updatedAt         DateTime  @updatedAt
 
   submittedBy       User?     @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id                String    @id @default(uuid())
+  userId            String
+  type              String    // HOLD_READY, FINE_ASSESSED, LOAN_ISSUED, RETURN_CONFIRMED, REFERENCE_ANSWERED, REGISTRATION_RECEIVED, ACQUISITION_UPDATE, GENERAL
+  title             String
+  message           String
+  link              String?
+  read              Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

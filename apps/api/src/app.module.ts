@@ -24,6 +24,8 @@ import { SerialsModule } from './serials/serials.module';
 import { ReproductionRequestsModule } from './reproduction-requests/reproduction-requests.module';
 import { RepositoryModule } from './repository/repository.module';
 import { RegistrationsModule } from './registrations/registrations.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { RegistrationsModule } from './registrations/registrations.module';
     ReproductionRequestsModule,
     RepositoryModule,
     RegistrationsModule,
+    UploadsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

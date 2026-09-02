@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { IssueBookDto } from './dto/issue-book.dto';
 import { ReturnBookDto } from './dto/return-book.dto';
 
 @Injectable()
 export class CirculationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async issueBook(dto: IssueBookDto, librarianStaffId?: string) {
     const copy = await this.prisma.itemCopy.findFirst({
@@ -166,6 +170,24 @@ export class CirculationService {
       });
     });
 
+    if (fineAmount > 0) {
+      await this.notifications.create(
+        activeLoan.userId,
+        'FINE_ASSESSED',
+        'Overdue fine assessed',
+        `A fine of ₹${fineAmount} was assessed for the late return of "${copy.bibRecord.titleLatin}".`,
+        '/account/fines',
+      );
+    } else {
+      await this.notifications.create(
+        activeLoan.userId,
+        'RETURN_CONFIRMED',
+        'Item returned',
+        `"${copy.bibRecord.titleLatin}" was returned on time. No fine was assessed.`,
+        '/account/loans',
+      );
+    }
+
     return {
       message: 'Item returned successfully',
       title: copy.bibRecord.titleLatin,
@@ -289,14 +311,27 @@ export class CirculationService {
   }
 
   async markHoldReady(reservationId: string) {
-    const reservation = await this.prisma.reservation.findUnique({ where: { id: reservationId } });
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { bibRecord: { select: { titleLatin: true } } },
+    });
     if (!reservation) throw new NotFoundException('Reservation not found.');
     const availableUntil = new Date();
     availableUntil.setDate(availableUntil.getDate() + 5);
-    return this.prisma.reservation.update({
+    const updated = await this.prisma.reservation.update({
       where: { id: reservationId },
       data: { status: 'READY_FOR_PICKUP', availableUntil },
     });
+
+    await this.notifications.create(
+      reservation.userId,
+      'HOLD_READY',
+      'Hold ready for pickup',
+      `"${reservation.bibRecord.titleLatin}" is ready for pickup. Held until ${availableUntil.toLocaleDateString('en-GB')}.`,
+      '/account/reservations',
+    );
+
+    return updated;
   }
 
   async cancelHold(reservationId: string, currentUserId?: string) {
