@@ -63,6 +63,8 @@ export default function CatalogueRecordsPage() {
   const [pubPlace, setPubPlace] = useState('Ponnani'); // 260$a
   const [publisher, setPublisher] = useState('KMLRI Press'); // 260$b
   const [pubYear, setPubYear] = useState('2026'); // 260$c
+  const [edition, setEdition] = useState(''); // 250$a
+  const [series, setSeries] = useState(''); // 490$a
   const [extent, setExtent] = useState('184 pages'); // 300$a
 
   // Section 4: Notes, Subjects & Digital URI
@@ -160,6 +162,8 @@ export default function CatalogueRecordsPage() {
     const payload = {
       titleLatin: title + (subtitle ? `: ${subtitle}` : ''),
       titleArabic: uniformTitle || undefined,
+      subtitle: subtitle || undefined,
+      statementOfResponsibility: statementOfResp || undefined,
       authors: author.split(',').map((a) => a.trim()).filter(Boolean),
       shelfmark: `${ddcClass} ${ddcItem}`.trim(),
       isbn: isbn || undefined,
@@ -167,9 +171,12 @@ export default function CatalogueRecordsPage() {
       language,
       publicationYear: pubYear || undefined,
       publisher: publisher || undefined,
+      placeOfPublication: pubPlace || undefined,
+      edition: edition || undefined,
+      series: series || undefined,
       extent: extent || undefined,
       subjects: subjects.split(',').map((s) => s.trim()).filter(Boolean),
-      summary: notes || undefined,
+      notes: notes || undefined,
       coverImageUrl: uri || undefined,
       initialCopiesCount: 0,
     };

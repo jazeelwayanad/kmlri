@@ -32,9 +32,9 @@ export class CatalogController {
   @Post(':id/copies')
   addCopy(
     @Param('id') id: string,
-    @Body() body: { location?: string; barcode?: string; rfidTag?: string; status?: string },
+    @Body() body: { location?: string; barcode?: string; rfidTag?: string; status?: string; imageUrl?: string },
   ) {
-    return this.catalogService.addCopy(id, body.location, body.barcode, body.rfidTag, body.status);
+    return this.catalogService.addCopy(id, body.location, body.barcode, body.rfidTag, body.status, body.imageUrl);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,7 +42,7 @@ export class CatalogController {
   @Patch(':id/copies/:copyId')
   updateCopy(
     @Param('copyId') copyId: string,
-    @Body() body: { barcode?: string; rfidTag?: string; location?: string; status?: string },
+    @Body() body: { barcode?: string; rfidTag?: string; location?: string; status?: string; imageUrl?: string },
   ) {
     return this.catalogService.updateCopy(copyId, body);
   }

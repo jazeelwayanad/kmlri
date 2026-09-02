@@ -168,6 +168,7 @@ export class CatalogService {
         ...(dto.titleArabic !== undefined && { titleArabic: dto.titleArabic }),
         ...(dto.titleLatin !== undefined && { titleLatin: dto.titleLatin }),
         ...(dto.subtitle !== undefined && { subtitle: dto.subtitle }),
+        ...(dto.statementOfResponsibility !== undefined && { statementOfResponsibility: dto.statementOfResponsibility }),
         ...(dto.authors !== undefined && { authors: JSON.stringify(dto.authors) }),
         ...(dto.scribe !== undefined && { scribe: dto.scribe }),
         ...(dto.shelfmark !== undefined && { shelfmark: dto.shelfmark }),
@@ -179,14 +180,19 @@ export class CatalogService {
         ...(dto.language !== undefined && { language: dto.language }),
         ...(dto.publicationYear !== undefined && { publicationYear: dto.publicationYear }),
         ...(dto.publisher !== undefined && { publisher: dto.publisher }),
+        ...(dto.placeOfPublication !== undefined && { placeOfPublication: dto.placeOfPublication }),
+        ...(dto.edition !== undefined && { edition: dto.edition }),
+        ...(dto.series !== undefined && { series: dto.series }),
         ...(dto.extent !== undefined && { extent: dto.extent }),
         ...(dto.material !== undefined && { material: dto.material }),
         ...(dto.binding !== undefined && { binding: dto.binding }),
         ...(dto.provenance !== undefined && { provenance: dto.provenance }),
         ...(dto.summary !== undefined && { summary: dto.summary }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
         ...(dto.subjects !== undefined && { subjects: JSON.stringify(dto.subjects) }),
         ...(dto.accessLevel !== undefined && { accessLevel: dto.accessLevel }),
         ...(dto.coverImageUrl !== undefined && { coverImageUrl: dto.coverImageUrl }),
+        ...(dto.collectionId !== undefined && { collectionId: dto.collectionId || null }),
       },
     });
 
@@ -279,6 +285,7 @@ export class CatalogService {
         titleArabic: dto.titleArabic,
         titleLatin: dto.titleLatin,
         subtitle: dto.subtitle,
+        statementOfResponsibility: dto.statementOfResponsibility,
         authors: JSON.stringify(dto.authors || []),
         scribe: dto.scribe,
         shelfmark: dto.shelfmark,
@@ -290,14 +297,19 @@ export class CatalogService {
         language: dto.language || 'Arabic',
         publicationYear: dto.publicationYear,
         publisher: dto.publisher,
+        placeOfPublication: dto.placeOfPublication,
+        edition: dto.edition,
+        series: dto.series,
         extent: dto.extent,
         material: dto.material,
         binding: dto.binding,
         provenance: dto.provenance,
         summary: dto.summary,
+        notes: dto.notes,
         subjects: JSON.stringify(dto.subjects || []),
         accessLevel: dto.accessLevel || 'DIGITISED_FULL',
         coverImageUrl: dto.coverImageUrl,
+        collectionId: dto.collectionId || undefined,
       },
     });
 
@@ -324,6 +336,7 @@ export class CatalogService {
     barcodeCustom?: string,
     rfidTag?: string,
     status?: string,
+    imageUrl?: string,
   ) {
     const record = await this.prisma.bibliographicRecord.findUnique({
       where: { id: bibRecordId },
@@ -345,13 +358,14 @@ export class CatalogService {
         copyNumber: nextCopyNumber,
         location: location || 'Main Reading Room',
         status: status || 'AVAILABLE',
+        imageUrl: imageUrl || undefined,
       },
     });
   }
 
   async updateCopy(
     copyId: string,
-    data: { barcode?: string; rfidTag?: string; location?: string; status?: string },
+    data: { barcode?: string; rfidTag?: string; location?: string; status?: string; imageUrl?: string },
   ) {
     const existing = await this.prisma.itemCopy.findUnique({ where: { id: copyId } });
     if (!existing) {
@@ -364,6 +378,7 @@ export class CatalogService {
         ...(data.rfidTag !== undefined && { rfidTag: data.rfidTag || null }),
         ...(data.location !== undefined && { location: data.location }),
         ...(data.status !== undefined && { status: data.status }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl || null }),
       },
     });
   }

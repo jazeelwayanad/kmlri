@@ -13,6 +13,10 @@ export class CreateRecordDto {
   @IsString()
   subtitle?: string;
 
+  @IsOptional()
+  @IsString()
+  statementOfResponsibility?: string;
+
   @IsNotEmpty()
   @IsArray()
   authors: string[];
@@ -59,6 +63,18 @@ export class CreateRecordDto {
 
   @IsOptional()
   @IsString()
+  placeOfPublication?: string;
+
+  @IsOptional()
+  @IsString()
+  edition?: string;
+
+  @IsOptional()
+  @IsString()
+  series?: string;
+
+  @IsOptional()
+  @IsString()
   extent?: string;
 
   @IsOptional()
@@ -78,6 +94,10 @@ export class CreateRecordDto {
   summary?: string;
 
   @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
   @IsArray()
   subjects?: string[];
 
@@ -88,6 +108,10 @@ export class CreateRecordDto {
   @IsOptional()
   @IsString()
   coverImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  collectionId?: string;
 
   @IsOptional()
   initialCopiesCount?: number;
