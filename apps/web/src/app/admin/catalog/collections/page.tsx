@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import {
   FolderPlus,
   Search,
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { CollectionRecordPicker } from '@/components/content/CollectionRecordPicker';
 
 interface Collection {
   id: string;
@@ -41,6 +41,7 @@ export default function CatalogueCollectionsPage() {
   const [newDescription, setNewDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [managingCollection, setManagingCollection] = useState<Collection | null>(null);
 
   const loadCollections = () => {
     setLoading(true);
@@ -184,12 +185,13 @@ export default function CatalogueCollectionsPage() {
                     {c._count?.records ?? 0} Titles
                   </span>
                   <div className="flex gap-2">
-                    <Link
-                      href="/admin/catalog"
+                    <button
+                      type="button"
+                      onClick={() => setManagingCollection(c)}
                       className="px-2.5 py-1 border border-gray-300 rounded font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
                     >
                       Manage Titles
-                    </Link>
+                    </button>
                     <button
                       type="button"
                       onClick={() => openEditModal(c)}
@@ -270,6 +272,25 @@ export default function CatalogueCollectionsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Titles Modal */}
+      {managingCollection && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full border border-gray-200 shadow-2xl p-6 font-sans text-xs max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Collection Contents</p>
+                <h3 className="text-base font-bold text-gray-900">{managingCollection.name}</h3>
+              </div>
+              <button onClick={() => setManagingCollection(null)} className="text-gray-400 hover:text-gray-900">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <CollectionRecordPicker collectionId={managingCollection.id} onChanged={loadCollections} />
           </div>
         </div>
       )}

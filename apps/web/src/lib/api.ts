@@ -522,18 +522,10 @@ export const api = {
   },
 
   async registerContentItem(id: string, attendeeData?: { name?: string; email?: string }) {
-    try {
-      return await this.fetchWithAuth(`/content/${id}/register`, {
-        method: 'POST',
-        body: JSON.stringify(attendeeData || {}),
-      });
-    } catch {
-      return {
-        success: true,
-        message: 'Successfully registered!',
-        registrationId: `REG-${Date.now().toString(36).toUpperCase()}`,
-      };
-    }
+    return this.fetchWithAuth(`/content/${id}/register`, {
+      method: 'POST',
+      body: JSON.stringify(attendeeData || {}),
+    });
   },
 
   // Catalog
@@ -986,6 +978,15 @@ export const api = {
   },
   async deleteCollection(id: string) {
     return this.fetchWithAuth(`/collections/${id}`, { method: 'DELETE' });
+  },
+  async getCollection(id: string) {
+    return this.fetchWithAuth(`/collections/${id}`);
+  },
+  async addRecordToCollection(collectionId: string, recordId: string) {
+    return this.fetchWithAuth(`/collections/${collectionId}/records/${recordId}`, { method: 'POST' });
+  },
+  async removeRecordFromCollection(collectionId: string, recordId: string) {
+    return this.fetchWithAuth(`/collections/${collectionId}/records/${recordId}`, { method: 'DELETE' });
   },
 
   // Serials
