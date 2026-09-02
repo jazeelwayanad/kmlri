@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import zlib from 'zlib';
 
-function readZipEntries(buffer: Buffer): Record<string, Buffer> {
+export const runtime = 'edge';
+
+async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
+  const blob = new Blob([data as any]);
+  const stream = new Response(blob).body!.pipeThrough(new DecompressionStream('deflate-raw'));
+  const buffer = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buffer);
+}
+
+async function readZipEntries(buffer: Uint8Array): Promise<Record<string, Uint8Array>> {
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const textDecoder = new TextDecoder();
   let offset = 0;
-  const files: Record<string, Buffer> = {};
+  const files: Record<string, Uint8Array> = {};
   
   while (offset < buffer.length - 4) {
-    const sig = buffer.readUInt32LE(offset);
+    const sig = view.getUint32(offset, true);
     if (sig !== 0x04034b50) break; // Local file header signature
     
-    const method = buffer.readUInt16LE(offset + 8);
-    const compSize = buffer.readUInt32LE(offset + 18);
-    const nameLen = buffer.readUInt16LE(offset + 26);
-    const extraLen = buffer.readUInt16LE(offset + 28);
+    const method = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const nameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
     
-    const fileName = buffer.toString('utf8', offset + 30, offset + 30 + nameLen);
+    const fileName = textDecoder.decode(buffer.subarray(offset + 30, offset + 30 + nameLen));
     const fileDataOffset = offset + 30 + nameLen + extraLen;
     const fileData = buffer.subarray(fileDataOffset, fileDataOffset + compSize);
     
@@ -22,7 +32,7 @@ function readZipEntries(buffer: Buffer): Record<string, Buffer> {
       if (method === 0) {
         files[fileName] = fileData;
       } else if (method === 8) {
-        files[fileName] = zlib.inflateRawSync(fileData);
+        files[fileName] = await inflateRaw(fileData);
       }
     } catch (e) {
       console.warn(`Error unpacking zip entry ${fileName}:`, e);
@@ -38,14 +48,13 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     
-    let buffer: Buffer;
+    let buffer: Uint8Array;
     if (file) {
       const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
+      buffer = new Uint8Array(arrayBuffer);
     } else {
-      // check if binary body was sent
       const arrayBuffer = await req.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
+      buffer = new Uint8Array(arrayBuffer);
     }
 
     if (!buffer || buffer.length === 0) {
@@ -53,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Extract content.xml from ODS
-    const zipEntries = readZipEntries(buffer);
+    const zipEntries = await readZipEntries(buffer);
     const contentXmlBuffer = zipEntries['content.xml'];
 
     if (!contentXmlBuffer) {
@@ -63,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const xml = contentXmlBuffer.toString('utf8');
+    const xml = new TextDecoder().decode(contentXmlBuffer);
 
     // Parse ODS Table Rows
     const rowRegex = /<table:table-row[^>]*>([\s\S]*?)<\/table:table-row>/g;
