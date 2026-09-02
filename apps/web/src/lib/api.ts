@@ -53,6 +53,7 @@ export interface ItemCopy {
   location: string;
   status: string;
   copyNumber: number;
+  imageUrl?: string;
 }
 
 export interface BibliographicRecord {
@@ -60,6 +61,7 @@ export interface BibliographicRecord {
   titleArabic?: string;
   titleLatin: string;
   subtitle?: string;
+  statementOfResponsibility?: string;
   authors: string[];
   scribe?: string;
   shelfmark: string;
@@ -75,6 +77,10 @@ export interface BibliographicRecord {
   binding?: string;
   originDate?: string;
   originPlace?: string;
+  placeOfPublication?: string;
+  edition?: string;
+  series?: string;
+  notes?: string;
   provenance?: string;
   summary?: string;
   subjects: string[];
@@ -100,6 +106,7 @@ export interface ContentItem {
   kicker?: string;
   summary: string;
   content?: string;
+  eligibilityCriteria?: string;
   date?: string;
   time?: string;
   venue?: string;
@@ -112,6 +119,7 @@ export interface ContentItem {
   featured?: boolean;
   status: string;
   tags?: string[];
+  registrationEnabled?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -413,6 +421,24 @@ export const api = {
       throw new Error(data.message || 'API request failed');
     }
 
+    return data;
+  },
+
+  // Like fetchWithAuth but for multipart/form-data bodies (file uploads) — the
+  // browser must set its own Content-Type with the multipart boundary.
+  async fetchFormData(url: string, formData: FormData, method: string = 'POST') {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    }
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_URL}${url}`, { method, headers, body: formData });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'API request failed');
+    }
     return data;
   },
 
@@ -1011,5 +1037,79 @@ export const api = {
   },
   async deleteRepositorySubmission(id: string) {
     return this.fetchWithAuth(`/repository/${id}`, { method: 'DELETE' });
+  },
+
+  // Image upload (generic — items, records, content featured images, rich-text inline images)
+  async uploadImage(file: File): Promise<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.fetchFormData('/uploads/image', formData);
+  },
+
+  // Notifications
+  async getNotifications() {
+    return this.fetchWithAuth('/notifications');
+  },
+  async getUnreadNotificationCount(): Promise<{ count: number }> {
+    return this.fetchWithAuth('/notifications/unread-count');
+  },
+  async markNotificationRead(id: string) {
+    return this.fetchWithAuth(`/notifications/${id}/read`, { method: 'PATCH' });
+  },
+  async markAllNotificationsRead() {
+    return this.fetchWithAuth('/notifications/read-all', { method: 'PATCH' });
+  },
+
+  // Dynamic registration forms (Events & Opportunities)
+  async getRegistrationFields(contentItemId: string) {
+    return this.fetchWithAuth(`/content/${contentItemId}/registration-fields`);
+  },
+  async setRegistrationFields(
+    contentItemId: string,
+    fields: { label: string; fieldType: string; required?: boolean; options?: string[] }[],
+  ) {
+    return this.fetchWithAuth(`/content/${contentItemId}/registration-fields`, {
+      method: 'PUT',
+      body: JSON.stringify({ fields }),
+    });
+  },
+  async submitRegistration(
+    contentItemId: string,
+    submitterName: string,
+    submitterEmail: string,
+    values: Record<string, string>,
+    files: Record<string, File>,
+  ) {
+    const formData = new FormData();
+    formData.append('submitterName', submitterName);
+    formData.append('submitterEmail', submitterEmail);
+    for (const [key, value] of Object.entries(values)) formData.append(key, value);
+    for (const [fieldLabel, file] of Object.entries(files)) formData.append(fieldLabel, file);
+    return this.fetchFormData(`/content/${contentItemId}/registrations`, formData);
+  },
+  async getRegistrations(contentItemId: string) {
+    return this.fetchWithAuth(`/content/${contentItemId}/registrations`);
+  },
+
+  // Downloads the attachment with the staff auth token attached, then hands the
+  // browser a local blob to save — a plain <a href> can't carry the Bearer token.
+  async downloadRegistrationFile(fileId: string, filename: string) {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    }
+    const response = await fetch(`${API_URL}/registrations/files/${fileId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!response.ok) {
+      throw new Error('Could not download this file.');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };
