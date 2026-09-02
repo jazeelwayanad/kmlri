@@ -12,16 +12,13 @@ import {
   Save, 
   CheckCircle2, 
   RotateCw,
-  Users,
   Info,
   Plus,
   Trash2,
   Edit3,
   X,
-  Shield
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
-import { DynamicRole, getDynamicRoles, saveDynamicRoles } from '@/lib/dynamic-roles';
 import { api } from '@/lib/api';
 
 const PREFIX = 'circulation.';
@@ -52,13 +49,12 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   sendSmsAlerts: false,
 };
 
-interface CirculationRule {
-  roleSlug: string;
-  roleName: string;
-  defaultDays: number;
-  maxQuota: number;
-  gracePeriodDays: number;
-  isSystem?: boolean;
+interface MembershipType {
+  id: string;
+  name: string;
+  maxBorrowLimit: number;
+  loanDurationDays: number;
+  description?: string;
 }
 
 export default function CirculationConfigurationPage() {
@@ -68,16 +64,15 @@ export default function CirculationConfigurationPage() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Dynamic Loan rules per member type
-  const [loanRules, setLoanRules] = useState<CirculationRule[]>([]);
+  // Membership type loan durations & quotas
+  const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
 
-  // Add Dynamic Rule Modal State
+  // Add Membership Type Modal State
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
   const [newRuleName, setNewRuleName] = useState('');
-  const [newRuleSlug, setNewRuleSlug] = useState('');
   const [newRuleDays, setNewRuleDays] = useState(14);
   const [newRuleQuota, setNewRuleQuota] = useState(5);
-  const [newRuleGrace, setNewRuleGrace] = useState(1);
 
   // Renewal settings
   const [renewalSettings, setRenewalSettings] = useState(DEFAULT_RENEWAL_SETTINGS);
@@ -110,87 +105,48 @@ export default function CirculationConfigurationPage() {
     };
   }, []);
 
-  // Load dynamic roles from storage / registry
+  // Load real membership types from backend
+  const loadMembershipTypes = async () => {
+    setLoadingTypes(true);
+    try {
+      const data = await api.getMembershipTypes();
+      setMembershipTypes(data || []);
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to load membership types.' });
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
   useEffect(() => {
-    const roles = getDynamicRoles();
-    const dynamicRules: CirculationRule[] = roles.map((r) => ({
-      roleSlug: r.slug,
-      roleName: r.name,
-      defaultDays: r.defaultDays || 14,
-      maxQuota: r.maxQuota || 5,
-      gracePeriodDays: r.gracePeriodDays ?? 1,
-      isSystem: r.isSystem,
-    }));
-    setLoanRules(dynamicRules);
-
-    const handleRolesUpdate = () => {
-      const updated = getDynamicRoles();
-      setLoanRules(
-        updated.map((r) => ({
-          roleSlug: r.slug,
-          roleName: r.name,
-          defaultDays: r.defaultDays || 14,
-          maxQuota: r.maxQuota || 5,
-          gracePeriodDays: r.gracePeriodDays ?? 1,
-          isSystem: r.isSystem,
-        }))
-      );
-    };
-
-    window.addEventListener('kmlri_roles_updated', handleRolesUpdate);
-    return () => window.removeEventListener('kmlri_roles_updated', handleRolesUpdate);
+    loadMembershipTypes();
   }, []);
 
-  const handleRuleChange = (index: number, field: keyof CirculationRule, value: any) => {
-    const updated = [...loanRules];
-    (updated[index] as any)[field] = field === 'roleName' || field === 'roleSlug' ? value : Number(value);
-    setLoanRules(updated);
+  const handleRuleChange = (index: number, field: 'maxBorrowLimit' | 'loanDurationDays', value: any) => {
+    const updated = [...membershipTypes];
+    (updated[index] as any)[field] = Number(value);
+    setMembershipTypes(updated);
   };
 
   const handleSave = async () => {
-    // Sync back to dynamic roles storage
-    const currentRoles = getDynamicRoles();
-    const updatedRoles = currentRoles.map((r) => {
-      const matched = loanRules.find((lr) => lr.roleSlug === r.slug);
-      if (matched) {
-        return {
-          ...r,
-          defaultDays: matched.defaultDays,
-          maxQuota: matched.maxQuota,
-          gracePeriodDays: matched.gracePeriodDays,
-        };
-      }
-      return r;
-    });
-
-    // Also include any new rules created in this page
-    loanRules.forEach((lr) => {
-      if (!updatedRoles.some((r) => r.slug === lr.roleSlug)) {
-        updatedRoles.push({
-          id: `role-${Date.now()}-${lr.roleSlug}`,
-          name: lr.roleName,
-          slug: lr.roleSlug,
-          description: `Dynamic role configured in circulation rules.`,
-          isSystem: lr.roleSlug === 'super-admin',
-          permissions: ['CATALOG_READ', 'CIRCULATION_CHECKOUT', 'HOLD_PLACE'],
-          defaultDays: lr.defaultDays,
-          maxQuota: lr.maxQuota,
-          gracePeriodDays: lr.gracePeriodDays,
-          memberCount: 0,
-        });
-      }
-    });
-
     setSaving(true);
     try {
-      saveDynamicRoles(updatedRoles);
+      await Promise.all(
+        membershipTypes.map((mt) =>
+          api.updateMembershipType(mt.id, {
+            maxBorrowLimit: mt.maxBorrowLimit,
+            loanDurationDays: mt.loanDurationDays,
+          })
+        )
+      );
       await api.setSettings([
         { key: `${PREFIX}renewalSettings`, value: renewalSettings },
         { key: `${PREFIX}fineSettings`, value: fineSettings },
         { key: `${PREFIX}notificationSettings`, value: notificationSettings },
       ]);
       setSaved(true);
-      setNotification({ type: 'success', text: 'Circulation configuration & dynamic role loan limits saved successfully.' });
+      setNotification({ type: 'success', text: 'Circulation configuration & membership loan limits saved successfully.' });
+      await loadMembershipTypes();
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message || 'Failed to save circulation configuration.' });
     } finally {
@@ -202,39 +158,37 @@ export default function CirculationConfigurationPage() {
     }
   };
 
-  const handleAddCustomRule = (e: React.FormEvent) => {
+  const handleAddCustomRule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRuleName.trim()) return;
-
-    const slug = newRuleSlug
-      ? newRuleSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-      : newRuleName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-    const newRule: CirculationRule = {
-      roleSlug: slug,
-      roleName: newRuleName,
-      defaultDays: Number(newRuleDays),
-      maxQuota: Number(newRuleQuota),
-      gracePeriodDays: Number(newRuleGrace),
-      isSystem: false,
-    };
-
-    setLoanRules([...loanRules, newRule]);
-    setShowAddRuleModal(false);
-    setNewRuleName('');
-    setNewRuleSlug('');
-    setNotification({ type: 'success', text: `Dynamic circulation rule added for role "${newRule.roleName}". Click Save to commit.` });
-    setTimeout(() => setNotification(null), 4000);
+    try {
+      await api.createMembershipType({
+        name: newRuleName,
+        maxBorrowLimit: Number(newRuleQuota),
+        loanDurationDays: Number(newRuleDays),
+      });
+      setShowAddRuleModal(false);
+      setNewRuleName('');
+      setNewRuleDays(14);
+      setNewRuleQuota(5);
+      setNotification({ type: 'success', text: `Membership type "${newRuleName}" created successfully.` });
+      await loadMembershipTypes();
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not create membership type.' });
+    } finally {
+      setTimeout(() => setNotification(null), 4000);
+    }
   };
 
-  const handleDeleteRule = (roleSlug: string, roleName: string) => {
-    if (roleSlug === 'super-admin') {
-      alert('Super Administrator is the system protected role and cannot be removed.');
-      return;
-    }
-    if (confirm(`Remove circulation loan rule for "${roleName}"?`)) {
-      setLoanRules(loanRules.filter((r) => r.roleSlug !== roleSlug));
-      setNotification({ type: 'success', text: `Rule for "${roleName}" removed. Click Save Changes to commit.` });
+  const handleDeleteRule = async (id: string, name: string) => {
+    if (!confirm(`Remove membership type "${name}"?`)) return;
+    try {
+      await api.deleteMembershipType(id);
+      setNotification({ type: 'success', text: `Membership type "${name}" removed.` });
+      await loadMembershipTypes();
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not delete membership type.' });
+    } finally {
       setTimeout(() => setNotification(null), 4000);
     }
   };
@@ -276,7 +230,7 @@ export default function CirculationConfigurationPage() {
       {/* Tabs */}
       <div className="border-b border-[#E2E0DB] flex gap-2 flex-wrap">
         {[
-          { key: 'loan_rules', label: `Dynamic Role Loan Periods (${loanRules.length})`, icon: Clock },
+          { key: 'loan_rules', label: `Membership Loan Periods (${membershipTypes.length})`, icon: Clock },
           { key: 'renewals', label: 'Renewal Policies', icon: RotateCcw },
           { key: 'fines', label: 'Fines & Penalties', icon: CreditCard },
           { key: 'notifications', label: 'Overdue & Reminder Triggers', icon: Bell },
@@ -300,133 +254,100 @@ export default function CirculationConfigurationPage() {
         })}
       </div>
 
-      {/* TAB 1: Loan Periods & Quotas (Dynamic Roles) */}
+      {/* TAB 1: Loan Periods & Quotas (Membership Types) */}
       {activeTab === 'loan_rules' && (
         <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
           <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-gray-900">Dynamic Member Role Loan Durations &amp; Quotas</h3>
-                <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                  Fully Dynamic
-                </span>
-              </div>
+              <h3 className="text-base font-bold text-gray-900">Membership Type Loan Durations &amp; Quotas</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Automatically synced with the <Link href="/admin/members/roles" className="text-[#A52307] underline font-semibold">Roles &amp; Permissions Matrix</Link>. Super Admin is the single default system role; all other role rules can be created, customized, or removed.
+                Every patron is assigned a Membership Type; these values govern their borrow quota and loan duration. Manage the full type registry on the{' '}
+                <Link href="/admin/administration/membership-types" className="text-[#A52307] underline font-semibold">Membership Types</Link> page.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/admin/members/roles"
-                className="px-3 py-1.5 border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>Manage Roles Registry</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowAddRuleModal(true)}
-                className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors flex items-center gap-1.5 shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Role Rule</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddRuleModal(true)}
+              className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Membership Type</span>
+            </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-xs font-sans">
-              <thead>
-                <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                  <th className="py-3 px-4">Membership Role</th>
-                  <th className="py-3 px-4">Role Key / Type</th>
-                  <th className="py-3 px-4">Default Loan Period (Days)</th>
-                  <th className="py-3 px-4">Max Borrow Quota (Books)</th>
-                  <th className="py-3 px-4">Grace Period (Days)</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EEECE7]">
-                {loanRules.map((rule, idx) => (
-                  <tr key={rule.roleSlug} className="hover:bg-[#FAF8F5]">
-                    <td className="py-3.5 px-4">
-                      <strong className="text-gray-900 block text-sm">{rule.roleName}</strong>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono text-gray-500 text-[11px] bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
-                        {rule.roleSlug}
-                      </span>
-                      {rule.roleSlug === 'super-admin' && (
-                        <span className="ml-1.5 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                          System
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          max={180}
-                          value={rule.defaultDays}
-                          onChange={(e) => handleRuleChange(idx, 'defaultDays', e.target.value)}
-                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
-                        />
-                        <span className="text-gray-500 text-[11px]">days</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          max={50}
-                          value={rule.maxQuota}
-                          onChange={(e) => handleRuleChange(idx, 'maxQuota', e.target.value)}
-                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
-                        />
-                        <span className="text-gray-500 text-[11px]">books</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          max={30}
-                          value={rule.gracePeriodDays}
-                          onChange={(e) => handleRuleChange(idx, 'gracePeriodDays', e.target.value)}
-                          className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
-                        />
-                        <span className="text-gray-500 text-[11px]">days grace</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {rule.roleSlug !== 'super-admin' ? (
+          {loadingTypes ? (
+            <div className="p-6 text-center text-gray-400 text-xs">Loading membership types…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-xs font-sans">
+                <thead>
+                  <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
+                    <th className="py-3 px-4">Membership Type</th>
+                    <th className="py-3 px-4">Loan Period (Days)</th>
+                    <th className="py-3 px-4">Max Borrow Quota (Books)</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EEECE7]">
+                  {membershipTypes.map((mt, idx) => (
+                    <tr key={mt.id} className="hover:bg-[#FAF8F5]">
+                      <td className="py-3.5 px-4">
+                        <strong className="text-gray-900 block text-sm">{mt.name}</strong>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            max={180}
+                            value={mt.loanDurationDays}
+                            onChange={(e) => handleRuleChange(idx, 'loanDurationDays', e.target.value)}
+                            className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
+                          />
+                          <span className="text-gray-500 text-[11px]">days</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={mt.maxBorrowLimit}
+                            onChange={(e) => handleRuleChange(idx, 'maxBorrowLimit', e.target.value)}
+                            className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
+                          />
+                          <span className="text-gray-500 text-[11px]">books</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
                         <button
                           type="button"
-                          onClick={() => handleDeleteRule(rule.roleSlug, rule.roleName)}
+                          onClick={() => handleDeleteRule(mt.id, mt.name)}
                           className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                          title="Delete Rule"
+                          title="Delete Membership Type"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      ) : (
-                        <span className="text-[10px] text-gray-400 font-mono italic">Protected</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {membershipTypes.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-gray-400">No membership types defined yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900 flex items-start gap-3">
             <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
             <div>
-              <strong className="block font-bold">Automatic Synchronization with Member Quotas</strong>
+              <strong className="block font-bold">Applied at Check-out</strong>
               <p className="mt-0.5 text-[11px]">
-                When a new patron is registered or updated under a dynamic role, their default checkout quotas and due date calculations will automatically utilize the day limits defined above.
+                A patron's membership type determines their default due date and how many items they may borrow at once.
               </p>
             </div>
           </div>
@@ -673,33 +594,18 @@ export default function CirculationConfigurationPage() {
 
             <form onSubmit={handleAddCustomRule} className="p-6 space-y-4 text-xs font-sans">
               <div>
-                <label className="font-bold text-gray-800 block mb-1">Role Name *</label>
+                <label className="font-bold text-gray-800 block mb-1">Membership Type Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Visiting Scholar / PhD Fellow"
                   value={newRuleName}
-                  onChange={(e) => {
-                    setNewRuleName(e.target.value);
-                    setNewRuleSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-                  }}
+                  onChange={(e) => setNewRuleName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Role Key / Slug</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. visiting-scholar"
-                  value={newRuleSlug}
-                  onChange={(e) => setNewRuleSlug(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-gray-800 block mb-1">Loan Days</label>
                   <input
@@ -720,16 +626,6 @@ export default function CirculationConfigurationPage() {
                     className="w-full px-2 py-1.5 border border-gray-300 rounded font-mono text-xs text-gray-900 outline-none"
                   />
                 </div>
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Grace Days</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={newRuleGrace}
-                    onChange={(e) => setNewRuleGrace(Number(e.target.value))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded font-mono text-xs text-gray-900 outline-none"
-                  />
-                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
@@ -744,7 +640,7 @@ export default function CirculationConfigurationPage() {
                   type="submit"
                   className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800"
                 >
-                  Add Rule
+                  Add Membership Type
                 </button>
               </div>
             </form>
