@@ -198,7 +198,7 @@ export default function CirculationConfigurationPage() {
       <PageHeader
         eyebrow="Library Operations · Circulation"
         title="Circulation Configuration"
-        description="Configure default loan periods, renewal rules, borrow quotas by dynamic member role, daily fine calculations, and automated return notice triggers."
+        description="Configure default loan periods, renewal rules, borrow quotas by membership type, daily fine calculations, and automated return notice triggers."
         actions={
           <Button variant="primary" icon={Save} onClick={handleSave} disabled={saving || loadingSettings}>
             {saving ? 'Saving…' : 'Save Changes'}

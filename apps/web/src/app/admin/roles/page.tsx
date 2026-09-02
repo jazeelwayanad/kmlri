@@ -396,9 +396,9 @@ export default function RolesManagementPage() {
               <div className="space-y-3 pt-3 border-t border-gray-200">
                 <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Granular Capabilities Matrix</h4>
 
-                {editingRole?.isSystem && (
+                {editingRole?.slug === 'super-admin' && (
                   <p className="text-[11px] text-gray-500 italic">
-                    This is the system Super Administrator role and always holds unrestricted access. Its permission list cannot be edited.
+                    Members with the SUPER_ADMIN role always have unrestricted access regardless of this list. System-protected roles other than Super Administrator can still have their permissions edited freely.
                   </p>
                 )}
 
@@ -412,8 +412,8 @@ export default function RolesManagementPage() {
                           <label key={p.key} className="flex items-start gap-2 cursor-pointer text-[11px] text-gray-800">
                             <input
                               type="checkbox"
-                              checked={selectedPerms.includes(p.key) || !!editingRole?.isSystem}
-                              disabled={!!editingRole?.isSystem}
+                              checked={selectedPerms.includes(p.key) || editingRole?.slug === 'super-admin'}
+                              disabled={editingRole?.slug === 'super-admin'}
                               onChange={() => togglePermission(p.key)}
                               className="mt-0.5 rounded border-gray-300 text-[#A52307] focus:ring-[#A52307]"
                             />
