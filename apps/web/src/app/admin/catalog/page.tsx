@@ -24,11 +24,14 @@ import {
   FileText, 
   Bookmark,
   Edit3,
-  Trash2
+  Trash2,
+  FileSpreadsheet,
+  Upload
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getRecordSlug } from '@/lib/slugs';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
+import KohaOdsImportModal from '@/components/admin/KohaOdsImportModal';
 
 export default function CatalogueRecordsPage() {
   const [records, setRecords] = useState<BibliographicRecord[]>([]);
@@ -36,6 +39,7 @@ export default function CatalogueRecordsPage() {
   const [formatFilter, setFormatFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showOdsModal, setShowOdsModal] = useState(false);
 
   // 2-Step Record Creation / Edit Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -260,9 +264,14 @@ export default function CatalogueRecordsPage() {
         title="Catelogues"
         description="Create bibliographic records, manage physical holdings &amp; item copies, track live availability statistics, and configure field requirements."
         actions={
-          <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
-            Add New Record
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" icon={FileSpreadsheet} onClick={() => setShowOdsModal(true)}>
+              Import Koha ODS
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
+              Add New Record
+            </Button>
+          </div>
         }
       />
 
@@ -792,6 +801,20 @@ export default function CatalogueRecordsPage() {
           </div>
         </div>
       )}
+
+      {/* Koha Accession Register ODS Import Modal */}
+      <KohaOdsImportModal
+        isOpen={showOdsModal}
+        onClose={() => setShowOdsModal(false)}
+        onImportComplete={(imported) => {
+          setRecords((prev) => [...imported, ...prev]);
+          setNotification({
+            type: 'success',
+            text: `Successfully imported ${imported.length} Koha accession records and holding items into the catalogue.`,
+          });
+          setTimeout(() => setNotification(null), 5000);
+        }}
+      />
     </div>
   );
 }
