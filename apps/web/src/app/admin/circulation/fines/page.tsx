@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, Search, CheckCircle2, AlertCircle, ShieldOff } from 'lucide-react';
 import { PageHeader } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 interface Fine {
   id: string;
@@ -57,7 +58,7 @@ export default function CirculationFinesPage() {
   };
 
   const handleWaive = async (fine: Fine) => {
-    if (!confirm(`Waive the ₹${fine.amount} fine for ${fine.user.fullName}?`)) return;
+    if (!(await confirmDialog({ message: `Waive the ₹${fine.amount} fine for ${fine.user.fullName}?`, variant: 'danger' }))) return;
     setActingId(fine.id);
     try {
       await api.waiveFine(fine.id);

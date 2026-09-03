@@ -1,15 +1,43 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SettingsService } from '../settings/settings.service';
 import { IssueBookDto } from './dto/issue-book.dto';
 import { ReturnBookDto } from './dto/return-book.dto';
+
+const DEFAULT_RENEWAL_SETTINGS = {
+  defaultRenewalDays: 14,
+  maxRenewalsAllowed: 2,
+  allowOnlineRenewal: true,
+  blockRenewalIfOverdue: true,
+  blockRenewalIfHoldPlaced: true,
+};
+
+const DEFAULT_FINE_SETTINGS = {
+  dailyFineRate: 10,
+  rareMaterialDailyFine: 25,
+  maxFineCapPerItem: 500,
+  fineThresholdBlockCirculation: 100,
+  enableAutoFines: true,
+};
 
 @Injectable()
 export class CirculationService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private settings: SettingsService,
   ) {}
+
+  private async getRenewalSettings() {
+    const setting = await this.settings.get('circulation.renewalSettings');
+    return { ...DEFAULT_RENEWAL_SETTINGS, ...(setting?.value || {}) };
+  }
+
+  private async getFineSettings() {
+    const setting = await this.settings.get('circulation.fineSettings');
+    return { ...DEFAULT_FINE_SETTINGS, ...(setting?.value || {}) };
+  }
 
   async issueBook(dto: IssueBookDto, librarianStaffId?: string) {
     const copy = await this.prisma.itemCopy.findFirst({
@@ -55,8 +83,9 @@ export class CirculationService {
       throw new BadRequestException(`Member has reached max borrow limit of ${user.maxBorrowLimit} items.`);
     }
 
+    const fineSettings = await this.getFineSettings();
     const unpaidFinesTotal = user.fines.reduce((acc, f) => acc + f.amount, 0);
-    if (unpaidFinesTotal > 200) {
+    if (unpaidFinesTotal > fineSettings.fineThresholdBlockCirculation) {
       throw new BadRequestException(`Member has outstanding unpaid fines of ₹${unpaidFinesTotal}. Please settle fines before borrowing.`);
     }
 
@@ -123,12 +152,13 @@ export class CirculationService {
       throw new BadRequestException(`Copy ${copy.barcode} is not currently checked out on an active loan.`);
     }
 
+    const fineSettings = await this.getFineSettings();
     const now = new Date();
     let fineAmount = 0;
-    if (now > activeLoan.dueDate) {
+    if (fineSettings.enableAutoFines && now > activeLoan.dueDate) {
       const diffTime = Math.abs(now.getTime() - activeLoan.dueDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      fineAmount = diffDays * 5; // ₹5 per day
+      fineAmount = Math.min(diffDays * fineSettings.dailyFineRate, fineSettings.maxFineCapPerItem);
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -215,24 +245,35 @@ export class CirculationService {
       throw new BadRequestException('You are not authorized to renew this loan.');
     }
 
-    if (loan.renewalCount >= 3) {
-      throw new BadRequestException('Maximum renewal limit (3 times) reached. Please bring the item to the library desk.');
+    const renewalSettings = await this.getRenewalSettings();
+
+    if (currentUserId && !renewalSettings.allowOnlineRenewal) {
+      throw new BadRequestException('Online self-renewal is currently disabled. Please visit the library desk.');
     }
 
-    // Check if there are active holds for this bibliographic record
-    const pendingHold = await this.prisma.reservation.findFirst({
-      where: {
-        bibRecordId: loan.copy.bibRecordId,
-        status: 'PENDING',
-      },
-    });
+    if (loan.renewalCount >= renewalSettings.maxRenewalsAllowed) {
+      throw new BadRequestException(`Maximum renewal limit (${renewalSettings.maxRenewalsAllowed} times) reached. Please bring the item to the library desk.`);
+    }
 
-    if (pendingHold) {
-      throw new ConflictException('Item has a pending reservation by another researcher and cannot be renewed.');
+    if (renewalSettings.blockRenewalIfOverdue && new Date() > loan.dueDate) {
+      throw new BadRequestException('This loan is overdue and cannot be renewed online. Please bring the item to the library desk.');
+    }
+
+    if (renewalSettings.blockRenewalIfHoldPlaced) {
+      const pendingHold = await this.prisma.reservation.findFirst({
+        where: {
+          bibRecordId: loan.copy.bibRecordId,
+          status: 'PENDING',
+        },
+      });
+
+      if (pendingHold) {
+        throw new ConflictException('Item has a pending reservation by another researcher and cannot be renewed.');
+      }
     }
 
     const newDueDate = new Date(loan.dueDate);
-    newDueDate.setDate(newDueDate.getDate() + 14);
+    newDueDate.setDate(newDueDate.getDate() + renewalSettings.defaultRenewalDays);
 
     const updated = await this.prisma.circulationLoan.update({
       where: { id: loan.id },
@@ -244,7 +285,7 @@ export class CirculationService {
     });
 
     return {
-      message: 'Loan successfully renewed for 14 days.',
+      message: `Loan successfully renewed for ${renewalSettings.defaultRenewalDays} days.`,
       loanId: updated.id,
       title: updated.copy.bibRecord.titleLatin,
       newDueDate: updated.dueDate,

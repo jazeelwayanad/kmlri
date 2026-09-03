@@ -27,13 +27,18 @@ model User {
   passwordHash     String
   fullName         String
   phone            String?
+  designation      String?
+  department       String?
+  bio              String?
+  orcid            String?
+  researchLanguages String?
+  avatarUrl        String?
   roleId           String?
-  roleRel          Role?     @relation(fields: [roleId], references: [id])
+  roleRel          Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
   role             String    @default("STUDENT") // Role slug / identifier
   status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, EXPIRED
   permissions      String?   @default("[]") // JSON string of custom override permissions
   maxBorrowLimit   Int       @default(5)
-  expiryDate       DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -95,6 +100,8 @@ model BibliographicRecord {
   digitalFolios DigitalFolio[]
   serial        Serial?
   headings      BibliographicHeading[]
+
+  @@index([frameworkCode])
 }
 
 model ItemCopy {
@@ -107,25 +114,25 @@ model ItemCopy {
   copyNumber         Int       @default(1)
   conditionNote      String?
   imageUrl           String?
-  kohaItemnumber     Int?      @unique // preserved Koha items.itemnumber
   accessionNumber    String? // Koha items.accessionnumber / accession register number
   itemTypeCode       String? // ItemType.code
   collectionCode     String? // AuthorisedValue code, category CCODE (Koha items.ccode)
   homeLibraryCode    String? // Library.code (Koha items.homebranch)
   currentLibraryCode String? // Library.code (Koha items.holdingbranch)
   replacementCost    Float?
-  priceAcquired      Float?
   dateAcquired       DateTime?
-  publicNote         String? // Koha items.itemnotes
-  nonPublicNote      String? // Koha items.itemnotes_nonpublic
   damaged            Boolean   @default(false)
   lost               Boolean   @default(false)
-  restricted         Boolean   @default(false) // circulation restriction flag
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   bibRecord BibliographicRecord @relation(fields: [bibRecordId], references: [id], onDelete: Cascade)
   loans     CirculationLoan[]
+
+  @@index([itemTypeCode])
+  @@index([collectionCode])
+  @@index([homeLibraryCode])
+  @@index([currentLibraryCode])
 }
 
 model Library {
@@ -215,7 +222,6 @@ model AuthorityRecord {
   seeAlso     String   @default("[]") // JSON array of variant/see-from forms
   notes       String?
   marcXml     String?
-  kohaAuthId  Int?     @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -578,7 +584,6 @@ model Serial {
   cost               Float?
   currency           String?   @default("INR")
   renewalNote        String?
-  kohaSubscriptionId Int?      @unique
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -586,6 +591,8 @@ model Serial {
   vendor    Vendor?              @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   library   Library?             @relation(fields: [libraryId], references: [id], onDelete: SetNull)
   issues    SerialIssue[]
+
+  @@index([locationCode])
 }
 
 model SerialIssue {
@@ -601,7 +608,6 @@ model SerialIssue {
   isSupplement    Boolean   @default(false)
   isIndex         Boolean   @default(false)
   bindingNote     String?
-  kohaSerialId    Int?      @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

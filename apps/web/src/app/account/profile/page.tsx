@@ -2,20 +2,33 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { Shield, QrCode, UserCircle, CheckCircle2, Printer, Mail, Phone, Building, Calendar, Edit3 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [phone, setPhone] = useState(user?.phone || '+91 97452 34786');
-  const [affiliation, setAffiliation] = useState('Center for West Asian & Malabar Maritime Studies');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [affiliation, setAffiliation] = useState(user?.department || '');
+  const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSaveContact = (e: React.FormEvent) => {
+  const handleSaveContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveSuccess('Contact details updated successfully.');
-    setEditing(false);
-    setTimeout(() => setSaveSuccess(''), 3500);
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateMyProfile({ phone, department: affiliation });
+      await refreshUser();
+      setSaveSuccess('Contact details updated successfully.');
+      setEditing(false);
+      setTimeout(() => setSaveSuccess(''), 3500);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update contact details.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePrint = () => {
@@ -51,6 +64,11 @@ export default function ProfilePage() {
         <div className="p-3 bg-green-50 text-green-800 border border-green-300 text-xs font-semibold flex items-center gap-2 rounded">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
           <span>{saveSuccess}</span>
+        </div>
+      )}
+      {error && (
+        <div className="p-3 bg-red-50 text-red-800 border border-red-300 text-xs font-semibold rounded">
+          {error}
         </div>
       )}
 
@@ -182,9 +200,10 @@ export default function ProfilePage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="px-5 py-2 bg-black text-white rounded text-xs font-bold hover:bg-heritage-red hover:text-white  transition-colors cursor-pointer"
+                disabled={saving}
+                className="px-5 py-2 bg-black text-white rounded text-xs font-bold hover:bg-heritage-red hover:text-white transition-colors cursor-pointer disabled:opacity-50"
               >
-                Save Changes
+                {saving ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </form>

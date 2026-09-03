@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 const PREFIX = 'circulation.';
 
@@ -181,7 +182,7 @@ export default function CirculationConfigurationPage() {
   };
 
   const handleDeleteRule = async (id: string, name: string) => {
-    if (!confirm(`Remove membership type "${name}"?`)) return;
+    if (!(await confirmDialog({ message: `Remove membership type "${name}"?`, variant: 'danger' }))) return;
     try {
       await api.deleteMembershipType(id);
       setNotification({ type: 'success', text: `Membership type "${name}" removed.` });
@@ -262,7 +263,7 @@ export default function CirculationConfigurationPage() {
               <h3 className="text-base font-bold text-gray-900">Membership Type Loan Durations &amp; Quotas</h3>
               <p className="text-xs text-gray-500 mt-0.5">
                 Every patron is assigned a Membership Type; these values govern their borrow quota and loan duration. Manage the full type registry on the{' '}
-                <Link href="/admin/administration/membership-types" className="text-[#A52307] underline font-semibold">Membership Types</Link> page.
+                <Link href="/admin/members/membership-types" className="text-[#A52307] underline font-semibold">Membership Types</Link> page.
               </p>
             </div>
             <button
@@ -515,6 +516,16 @@ export default function CirculationConfigurationPage() {
           <div className="border-b border-[#E2E0DB] pb-3">
             <h3 className="text-base font-bold text-gray-900">Automated Patron Email &amp; SMS Notice Triggers</h3>
             <p className="text-xs text-gray-500 mt-0.5">Configure when the system dispatches automated return reminder notices.</p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900 flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold">Not Yet Automated</strong>
+              <p className="mt-0.5 text-[11px]">
+                These thresholds are saved, but no scheduled job is wired up yet to dispatch email/SMS notices automatically — in-app notifications are still created immediately at issue, return, and hold-ready time.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getMemberIdentifier } from '@/lib/slugs';
+import { confirmDialog } from '@/lib/dialog';
 
 export default function MembersManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -142,7 +143,7 @@ export default function MembersManagementPage() {
   };
 
   const handleDeleteMember = async (userId: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete member "${name}"? This is only possible for members with no circulation history.`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete member "${name}"? This is only possible for members with no circulation history.`, variant: 'danger' }))) return;
     try {
       await api.deleteUser(userId);
       setNotification({ type: 'success', text: `Member "${name}" deleted successfully.` });

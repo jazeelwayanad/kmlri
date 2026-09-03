@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, CheckCircle2, ShieldAlert, X, Trash2, BookOpenCheck, Link2 } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 const HEADING_TYPES = ['PERSONAL_NAME', 'CORPORATE_NAME', 'SUBJECT', 'SERIES', 'UNIFORM_TITLE'];
 
@@ -138,7 +139,7 @@ export default function AuthoritiesAdminPage() {
   };
 
   const handleDelete = async (r: AuthorityRecord) => {
-    if (!confirm(`Permanently remove authority record "${r.heading}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ message: `Permanently remove authority record "${r.heading}"? This cannot be undone.`, variant: 'danger' }))) return;
     try {
       await api.deleteAuthority(r.id);
       notify('success', `Authority "${r.heading}" removed.`);

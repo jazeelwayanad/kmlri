@@ -1,23 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  Settings, 
-  Upload, 
-  Download, 
-  Plus, 
-  CheckCircle2, 
-  AlertCircle, 
-  Database, 
-  Tag, 
-  FileSpreadsheet, 
-  FileCode,
+import {
+  Upload,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  FileSpreadsheet,
   Save,
-  CheckSquare,
-  Square,
-  Sliders
 } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { PageHeader, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import KohaOdsImportModal from '@/components/admin/KohaOdsImportModal';
 
@@ -46,7 +39,7 @@ const DEFAULT_CATALOG_FIELDS = [
 ];
 
 export default function CatalogueConfigurationPage() {
-  const [activeTab, setActiveTab] = useState<'field_requirements' | 'categories' | 'record_types' | 'item_types' | 'classification' | 'import_export'>('field_requirements');
+  const [activeTab, setActiveTab] = useState<'field_requirements' | 'classification' | 'import_export'>('field_requirements');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingFields, setLoadingFields] = useState(true);
   const [savingFields, setSavingFields] = useState(false);
@@ -82,31 +75,6 @@ export default function CatalogueConfigurationPage() {
       cancelled = true;
     };
   }, []);
-
-  // Categories
-  const [categories, setCategories] = useState([
-    { id: 'CAT-01', code: 'ISL-JUR', name: 'Islamic Jurisprudence (Fiqh)', prefix: 'MS-FIQ', count: 142 },
-    { id: 'CAT-02', code: 'MAL-HIST', name: 'Malabar History & Historiography', prefix: 'HIS-MAL', count: 98 },
-    { id: 'CAT-03', code: 'ARB-LIT', name: 'Classical Arabic & Arabi-Malayalam Poetry', prefix: 'LIT-ARM', count: 64 },
-    { id: 'CAT-04', code: 'ASTR-MED', name: 'Traditional Unani & Coastal Navigation', prefix: 'NAV-MED', count: 28 },
-  ]);
-
-  // Record Types
-  const [recordTypes, setRecordTypes] = useState([
-    { id: 'RT-01', code: 'MANUSCRIPT', name: 'Archival Manuscript Codex', defaultAccess: 'DIGITISED_FULL' },
-    { id: 'RT-02', code: 'ARABI_MALAYALAM_PRINT', name: 'Arabi-Malayalam Lithograph Print', defaultAccess: 'DIGITISED_FULL' },
-    { id: 'RT-03', code: 'RARE_BOOK', name: 'Rare Antiquarian Book', defaultAccess: 'READING_ROOM_ONLY' },
-    { id: 'RT-04', code: 'PERIODICAL', name: 'Serial & Historical Journal', defaultAccess: 'DIGITISED_FULL' },
-    { id: 'RT-05', code: 'THESIS', name: 'Doctoral Dissertation & Research Monograph', defaultAccess: 'OPEN_ACCESS' },
-  ]);
-
-  // Item Types
-  const [itemTypes, setItemTypes] = useState([
-    { id: 'IT-01', code: 'CIRCULATING_BOOK', name: 'Circulating General Volume', maxDays: 14, renewable: true },
-    { id: 'IT-02', code: 'REFERENCE_ONLY', name: 'Reference Reading Room Copy', maxDays: 0, renewable: false },
-    { id: 'IT-03', code: 'RARE_VAULT', name: 'Rare Archival Manuscript Folio', maxDays: 0, renewable: false },
-    { id: 'IT-04', code: 'FACSIMILE_REPRINT', name: 'Study Facsimile / Working Print', maxDays: 7, renewable: true },
-  ]);
 
   // Import / Export State
   const [importFormat, setImportFormat] = useState('KOHA_ODS');
@@ -149,12 +117,6 @@ export default function CatalogueConfigurationPage() {
       setSavingFields(false);
       setTimeout(() => setNotification(null), 4000);
     }
-  };
-
-  const handleImport = (e: React.FormEvent) => {
-    e.preventDefault();
-    setNotification({ type: 'error', text: 'Catalogue dataset import is not yet connected — no import pipeline is wired up on the backend.' });
-    setTimeout(() => setNotification(null), 4000);
   };
 
   const handleExport = async (format: 'marcxml' | 'csv') => {
@@ -212,9 +174,6 @@ export default function CatalogueConfigurationPage() {
       <div className="border-b border-[#E2E0DB] flex gap-2 flex-wrap">
         {[
           { key: 'field_requirements', label: 'Field Requirements (Required / Optional)' },
-          { key: 'categories', label: 'Catalogue Categories' },
-          { key: 'record_types', label: 'Record Types' },
-          { key: 'item_types', label: 'Item Types' },
           { key: 'classification', label: 'Classification Schemes' },
           { key: 'import_export', label: 'Import & Export Data' },
         ].map((tab) => (
@@ -247,6 +206,16 @@ export default function CatalogueConfigurationPage() {
               <span className="text-xs text-gray-500">
                 {catalogFields.filter((f) => f.required).length} Required fields
               </span>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900 flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold">Not Yet Enforced</strong>
+              <p className="mt-0.5 text-[11px]">
+                These toggles are saved, but the cataloguing form does not yet read them to enforce required/hidden fields at record entry time.
+              </p>
             </div>
           </div>
 
@@ -306,104 +275,7 @@ export default function CatalogueConfigurationPage() {
         </div>
       )}
 
-      {/* TAB 2: CATEGORIES */}
-      {activeTab === 'categories' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3">
-            <div>
-              <h3 className="font-bold text-gray-900 text-base">Catalogue Taxonomy Categories</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Define subject categories and call number shelfmark prefixes.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => alert('Add Category')}
-              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Category</span>
-            </button>
-          </div>
-
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Category Name</th>
-                <th className="py-3 px-4">Shelfmark Prefix</th>
-                <th className="py-3 px-4">Active Records</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {categories.map((c) => (
-                <tr key={c.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{c.code}</td>
-                  <td className="py-3.5 px-4 font-semibold text-gray-900">{c.name}</td>
-                  <td className="py-3.5 px-4 font-mono text-gray-600">{c.prefix}</td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{c.count} Records</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 3: RECORD TYPES */}
-      {activeTab === 'record_types' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-gray-900 text-base border-b border-[#E2E0DB] pb-3">Bibliographic Record Formats</h3>
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Record Type Name</th>
-                <th className="py-3 px-4">Default Digital Clearance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {recordTypes.map((rt) => (
-                <tr key={rt.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{rt.code}</td>
-                  <td className="py-3.5 px-4 font-semibold text-gray-900">{rt.name}</td>
-                  <td className="py-3.5 px-4 font-mono text-gray-600">{rt.defaultAccess}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 4: ITEM TYPES */}
-      {activeTab === 'item_types' && (
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-gray-900 text-base border-b border-[#E2E0DB] pb-3">Physical Item Loan Types</h3>
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Item Type Name</th>
-                <th className="py-3 px-4">Max Loan Period</th>
-                <th className="py-3 px-4">Renewable</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {itemTypes.map((it) => (
-                <tr key={it.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{it.code}</td>
-                  <td className="py-3.5 px-4 font-semibold text-gray-900">{it.name}</td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                    {it.maxDays > 0 ? `${it.maxDays} Days` : 'Reading Room Only (0 Days)'}
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-emerald-800">
-                    {it.renewable ? 'Yes' : 'No'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 5: CLASSIFICATION SCHEMES */}
+      {/* TAB 2: CLASSIFICATION SCHEMES */}
       {activeTab === 'classification' && (
         <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4 text-xs font-sans">
           <h3 className="font-bold text-gray-900 text-base border-b border-[#E2E0DB] pb-3">Classification &amp; Call Number Rules</h3>

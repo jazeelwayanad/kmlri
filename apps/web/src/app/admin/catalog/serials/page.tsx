@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 const PERIODICITY_CODES = [
   'DAILY',
@@ -275,7 +276,7 @@ export default function CatalogueSerialsPage() {
   };
 
   const handleDeleteSerial = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete subscription "${title}"?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to delete subscription "${title}"?`, variant: 'danger' }))) return;
     setError(null);
     try {
       await api.deleteSerial(id);

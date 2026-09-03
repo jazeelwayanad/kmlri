@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/admin/ui';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
+import { confirmDialog } from '@/lib/dialog';
 
 type CopyStatus = 'AVAILABLE' | 'ON_LOAN' | 'RESERVED' | 'IN_CONSERVATION' | 'LOST' | 'WITHDRAWN';
 
@@ -150,7 +151,7 @@ export default function RecordDetailsPage() {
   };
 
   const handleDeleteRecord = async () => {
-    if (!confirm(`Are you sure you want to permanently delete catalogue record "${record.titleLatin}" and all associated item copies?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete catalogue record "${record.titleLatin}" and all associated item copies?`, variant: 'danger' }))) return;
     try {
       await api.deleteCatalogItem(record.id);
       setNotification({ type: 'success', text: 'Record deleted. Redirecting to catalogue holdings...' });
@@ -215,7 +216,7 @@ export default function RecordDetailsPage() {
 
   // Delete Item Copy
   const handleDeleteItem = async (itemId: string, barcodeName: string) => {
-    if (!confirm(`Are you sure you want to delete item copy "${barcodeName}"?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to delete item copy "${barcodeName}"?`, variant: 'danger' }))) return;
     try {
       await api.deleteCatalogCopy(record.id, itemId);
       setNotification({ type: 'success', text: `Item copy "${barcodeName}" removed.` });

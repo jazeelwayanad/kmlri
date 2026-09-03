@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { DialogRoot } from '@/components/ui/DialogRoot';
 
 export const metadata: Metadata = {
   title: 'Kunhīn Musliyār Library & Research Institute',
@@ -20,6 +21,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <DialogRoot />
       </body>
     </html>
   );

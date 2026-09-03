@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { DEFAULT_HOMEPAGE_SECTIONS, resolveHomepageSections, type HomepageSection } from '@/lib/site-config-defaults';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('News');
@@ -17,6 +18,24 @@ export default function HomePage() {
 
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<HomepageSection[]>(DEFAULT_HOMEPAGE_SECTIONS);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getPublicWebsiteSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        const saved = settings?.homepageSections as Array<{ id: string; visible: boolean }> | undefined;
+        setSectionOrder(resolveHomepageSections(saved));
+      })
+      .catch(() => {
+        // Keep the default section order if the settings service is unreachable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -77,11 +96,11 @@ export default function HomePage() {
     return `/news/${slug}`;
   };
 
-  return (
-    <div className="min-h-screen bg-paper text-black font-amiri">
-      <TopBar />
-      <Navbar />
-
+  const renderSection = (id: string) => {
+    switch (id) {
+      case 'sec-hero':
+        return (
+      <Fragment key="sec-hero">
       {/* Arabic Wordmark Section */}
       <section className="max-w-[1100px] mx-auto pt-6 sm:pt-[42px] px-4 sm:px-5 text-center">
         <img
@@ -128,7 +147,11 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
+      </Fragment>
+        );
+      case 'sec-whatson':
+        return (
+      <Fragment key="sec-whatson">
       {/* What's On Section Header & Overlapping Tabs */}
       <section id="whatson" className="max-w-[1100px] mx-auto pt-12 sm:pt-20 px-4 sm:px-5 relative z-20">
         <div className="flex items-end justify-between gap-4 font-amiri flex-wrap">
@@ -210,7 +233,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      </Fragment>
+        );
+      case 'sec-collections':
+        return (
+      <Fragment key="sec-collections">
       {/* Browse the Collections Section */}
       <section id="collections" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5">
         <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -242,7 +269,11 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
+      </Fragment>
+        );
+      case 'sec-archive':
+        return (
+      <Fragment key="sec-archive">
       {/* From the Archive Featured Section */}
       <section id="stories" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5">
         <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -279,7 +310,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      </Fragment>
+        );
+      case 'sec-services':
+        return (
+      <Fragment key="sec-services">
       {/* Services 4-Column Grid */}
       <section id="services" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5 pb-16">
         <div className="double-rule"></div>
@@ -297,6 +332,21 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      </Fragment>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-paper text-black font-amiri">
+      <TopBar />
+      <Navbar />
+
+      {sectionOrder.filter((s) => s.visible).map((s) => (
+        <Fragment key={s.id}>{renderSection(s.id)}</Fragment>
+      ))}
 
       <Footer />
     </div>

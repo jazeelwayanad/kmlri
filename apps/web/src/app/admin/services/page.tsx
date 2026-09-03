@@ -1,60 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { HelpCircle, DoorOpen, FileText, ArrowRight } from 'lucide-react';
-import { PageHeader } from '@/components/admin/ui';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function ServicesAdminPage() {
-  const sections = [
-    {
-      title: 'Ask a Librarian',
-      desc: 'Review and answer patron reference inquiries submitted through the public site.',
-      href: '/admin/ask',
-      icon: HelpCircle,
-    },
-    {
-      title: 'Room & Desk Bookings',
-      desc: 'Manage reading desk, study room, and consultation reservations made by members.',
-      href: '/admin/support-services/reservations-bookings',
-      icon: DoorOpen,
-    },
-    {
-      title: 'Reproduction & Document Delivery',
-      desc: 'Track scan and photocopy requests for manuscript and rare book reproductions.',
-      href: '/admin/support-services/document-delivery',
-      icon: FileText,
-    },
-  ];
+export default function ServicesRedirectPage() {
+  const router = useRouter();
 
-  return (
-    <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
-      <PageHeader
-        eyebrow="Library Operations"
-        title="Member Services"
-        description="Manage the services patrons can request through the public portal and reference desk."
-      />
+  useEffect(() => {
+    router.replace('/admin/support-services');
+  }, [router]);
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sections.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Link
-              key={s.href}
-              href={s.href}
-              className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-sm hover:shadow-md hover:border-[#A52307] transition-all group flex flex-col gap-3"
-            >
-              <Icon className="w-6 h-6 text-[#A52307]" />
-              <div>
-                <h3 className="font-bold text-gray-900 text-sm">{s.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">{s.desc}</p>
-              </div>
-              <span className="text-[11px] font-bold text-[#A52307] flex items-center gap-1 mt-auto group-hover:gap-2 transition-all">
-                Open <ArrowRight className="w-3 h-3" />
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <div className="p-8 text-center text-gray-500 text-sm font-sans">Redirecting to Support Services Desk…</div>;
 }

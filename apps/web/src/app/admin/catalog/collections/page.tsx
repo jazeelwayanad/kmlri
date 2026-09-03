@@ -18,6 +18,7 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { CollectionRecordPicker } from '@/components/content/CollectionRecordPicker';
+import { confirmDialog } from '@/lib/dialog';
 
 interface Collection {
   id: string;
@@ -97,7 +98,7 @@ export default function CatalogueCollectionsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete collection "${name}"?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to delete collection "${name}"?`, variant: 'danger' }))) return;
     setError(null);
     try {
       await api.deleteCollection(id);

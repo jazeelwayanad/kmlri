@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, ShieldAlert, X, Trash2, Tag } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 interface AuthorisedValueCategory {
   id: string;
@@ -100,7 +101,7 @@ export default function AuthorisedValuesAdminPage() {
   };
 
   const handleDeleteCategory = async (c: AuthorisedValueCategory) => {
-    if (!confirm(`Permanently remove category "${c.category}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ message: `Permanently remove category "${c.category}"? This cannot be undone.`, variant: 'danger' }))) return;
     try {
       await api.deleteAuthorisedValueCategory(c.id);
       notify('success', `Category "${c.category}" removed.`);
@@ -154,7 +155,7 @@ export default function AuthorisedValuesAdminPage() {
 
   const handleDeleteValue = async (v: AuthorisedValue) => {
     if (!selectedCategory) return;
-    if (!confirm(`Remove value "${v.code}"?`)) return;
+    if (!(await confirmDialog({ message: `Remove value "${v.code}"?`, variant: 'danger' }))) return;
     try {
       await api.deleteAuthorisedValue(v.id);
       notify('success', `Value "${v.code}" removed.`);

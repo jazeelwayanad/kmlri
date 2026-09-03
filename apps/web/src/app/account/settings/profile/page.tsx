@@ -2,22 +2,38 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { CheckCircle2, Shield, Globe, Award, BookOpen } from 'lucide-react';
 
 export default function SettingsResearchProfilePage() {
-  const { user } = useAuth();
-  const [profileAffiliation, setProfileAffiliation] = useState('Center for West Asian & Malabar Maritime Studies');
-  const [profileOrcid, setProfileOrcid] = useState('0000-0002-1825-0097');
-  const [profileBio, setProfileBio] = useState(
-    'Doctoral Fellow researching Indian Ocean manuscript networks, Shafi’i jurisprudence traditions, and Arabi-Malayalam epigraphy.'
-  );
-  const [languages, setLanguages] = useState('Arabic, Arabi-Malayalam, Persian, Malayalam, English');
+  const { user, refreshUser } = useAuth();
+  const [profileAffiliation, setProfileAffiliation] = useState(user?.department || '');
+  const [profileOrcid, setProfileOrcid] = useState(user?.orcid || '');
+  const [profileBio, setProfileBio] = useState(user?.bio || '');
+  const [languages, setLanguages] = useState(user?.researchLanguages || '');
+  const [saving, setSaving] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileSuccessMsg('Research profile and academic credentials updated successfully.');
-    setTimeout(() => setProfileSuccessMsg(''), 4000);
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateMyProfile({
+        department: profileAffiliation,
+        orcid: profileOrcid,
+        bio: profileBio,
+        researchLanguages: languages,
+      });
+      await refreshUser();
+      setProfileSuccessMsg('Research profile and academic credentials updated successfully.');
+      setTimeout(() => setProfileSuccessMsg(''), 4000);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update research profile.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!user) return null;
@@ -39,6 +55,11 @@ export default function SettingsResearchProfilePage() {
         <div className="p-3.5 bg-green-50 text-green-800 border border-green-300 text-xs font-semibold flex items-center gap-2 rounded">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
           <span>{profileSuccessMsg}</span>
+        </div>
+      )}
+      {error && (
+        <div className="p-3.5 bg-red-50 text-red-800 border border-red-300 text-xs font-semibold rounded">
+          {error}
         </div>
       )}
 
@@ -97,9 +118,10 @@ export default function SettingsResearchProfilePage() {
         <div className="pt-3 border-t border-gray-200 flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 bg-black text-white rounded font-amiri font-bold text-base hover:bg-heritage-red hover:text-white  transition-colors cursor-pointer"
+            disabled={saving}
+            className="px-6 py-2.5 bg-black text-white rounded font-amiri font-bold text-base hover:bg-heritage-red hover:text-white transition-colors cursor-pointer disabled:opacity-50"
           >
-            Save Research Profile →
+            {saving ? 'Saving…' : 'Save Research Profile →'}
           </button>
         </div>
       </form>

@@ -38,7 +38,9 @@ async function main() {
   await prisma.role.deleteMany();
   await prisma.newsletterSubscriber.deleteMany();
 
-  // 2. Create Dynamic Roles
+  // 2. Create the single default role. Super Administrator is the only
+  // system-seeded role — additional roles can be created from the Roles &
+  // Permissions admin screen as needed.
   const superAdminRole = await prisma.role.create({
     data: {
       name: 'Super Administrator',
@@ -49,81 +51,9 @@ async function main() {
     },
   });
 
-  const librarianRole = await prisma.role.create({
-    data: {
-      name: 'Librarian Staff',
-      slug: 'librarian',
-      description: 'Librarian desk access for circulation, cataloging, patrons, and reports.',
-      isSystem: true,
-      permissions: JSON.stringify([
-        'ADMIN_ACCESS',
-        'CIRCULATION_VIEW',
-        'CIRCULATION_ISSUE',
-        'CIRCULATION_RETURN',
-        'CIRCULATION_FINES',
-        'CATALOG_VIEW',
-        'CATALOG_CREATE',
-        'CATALOG_EDIT',
-        'CATALOG_PRINT_BARCODES',
-        'USERS_VIEW',
-        'REPORTS_VIEW',
-        'REPORTS_EXPORT',
-      ]),
-    },
-  });
-
-  const catalogerRole = await prisma.role.create({
-    data: {
-      name: 'Cataloger & Archivist',
-      slug: 'cataloger',
-      description: 'Access to catalog repository, metadata editing, and barcode generation.',
-      isSystem: false,
-      permissions: JSON.stringify([
-        'ADMIN_ACCESS',
-        'CATALOG_VIEW',
-        'CATALOG_CREATE',
-        'CATALOG_EDIT',
-        'CATALOG_PRINT_BARCODES',
-        'REPORTS_VIEW',
-      ]),
-    },
-  });
-
-  const researcherRole = await prisma.role.create({
-    data: {
-      name: 'Researcher / Visiting Fellow',
-      slug: 'researcher',
-      description: 'Patron role with advanced research access, digitised folio viewer, and higher borrow limits.',
-      isSystem: true,
-      permissions: JSON.stringify([]),
-    },
-  });
-
-  const studentRole = await prisma.role.create({
-    data: {
-      name: 'Student Member',
-      slug: 'student',
-      description: 'Standard student borrowing rights and reading room access.',
-      isSystem: true,
-      permissions: JSON.stringify([]),
-    },
-  });
-
-  const publicRole = await prisma.role.create({
-    data: {
-      name: 'Public Reader',
-      slug: 'public',
-      description: 'Guest and public catalog consultation access.',
-      isSystem: true,
-      permissions: JSON.stringify([]),
-    },
-  });
-
   // 3. Create Users
   const salt = await bcrypt.genSalt(10);
   const adminPass = await bcrypt.hash('Admin@123456', salt);
-  const staffPass = await bcrypt.hash('Librarian@123456', salt);
-  const userPass = await bcrypt.hash('Member@123456', salt);
 
   const admin = await prisma.user.create({
     data: {
@@ -140,62 +70,7 @@ async function main() {
     },
   });
 
-  const librarian = await prisma.user.create({
-    data: {
-      membershipNumber: 'KMLRI-STAFF-02',
-      email: 'librarian@kmlri.in',
-      fullName: 'Fathima Reference Desk',
-      passwordHash: staffPass,
-      role: 'LIBRARIAN',
-      roleId: librarianRole.id,
-      phone: '+91 97452 34787',
-      status: 'ACTIVE',
-      permissions: JSON.stringify([
-        'ADMIN_ACCESS',
-        'CIRCULATION_VIEW',
-        'CIRCULATION_ISSUE',
-        'CIRCULATION_RETURN',
-        'CIRCULATION_FINES',
-        'CATALOG_VIEW',
-        'CATALOG_CREATE',
-        'CATALOG_EDIT',
-        'CATALOG_PRINT_BARCODES',
-        'USERS_VIEW',
-        'REPORTS_VIEW',
-      ]),
-      maxBorrowLimit: 15,
-    },
-  });
-
-  const rashid = await prisma.user.create({
-    data: {
-      membershipNumber: 'KMLRI-2026-0001',
-      email: 'rashid@kmlri.in',
-      fullName: 'Rashid Vattaparamba',
-      passwordHash: userPass,
-      role: 'RESEARCHER',
-      roleId: researcherRole.id,
-      phone: '+91 98471 23456',
-      status: 'ACTIVE',
-      maxBorrowLimit: 10,
-    },
-  });
-
-  const student = await prisma.user.create({
-    data: {
-      membershipNumber: 'KMLRI-2026-0002',
-      email: 'student@kmlri.in',
-      fullName: 'Amina Sabeelul Hidaya',
-      passwordHash: userPass,
-      role: 'STUDENT',
-      roleId: studentRole.id,
-      phone: '+91 98471 65432',
-      status: 'ACTIVE',
-      maxBorrowLimit: 5,
-    },
-  });
-
-  console.log('✅ Created roles and default users');
+  console.log('✅ Created default Super Administrator role and admin user');
 
   // 4. Create Bibliographic Records
   const rec1 = await prisma.bibliographicRecord.create({

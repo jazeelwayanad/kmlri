@@ -28,6 +28,12 @@ export interface User {
   email: string;
   fullName: string;
   phone?: string;
+  designation?: string;
+  department?: string;
+  bio?: string;
+  orcid?: string;
+  researchLanguages?: string;
+  avatarUrl?: string;
   role: string;
   roleId?: string;
   roleRel?: {
@@ -201,6 +207,20 @@ export const api = {
     return this.fetchWithAuth('/auth/me');
   },
 
+  async updateMyProfile(data: { fullName?: string; phone?: string; designation?: string; department?: string; bio?: string; orcid?: string; researchLanguages?: string; avatarUrl?: string }) {
+    return this.fetchWithAuth('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.fetchWithAuth('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
   // Content (Stories, Events, News, Opportunities)
   async getContentItems(params?: { category?: string; featured?: boolean; search?: string; limit?: number; page?: number }): Promise<{ items: ContentItem[]; total: number }> {
     try {
@@ -278,6 +298,7 @@ export const api = {
     sortBy?: string;
     page?: number;
     limit?: number;
+    collection?: string;
   }) {
     const query = new URLSearchParams();
     if (params.q) query.append('q', params.q);
@@ -285,6 +306,7 @@ export const api = {
     const accessVal = params.accessLevel || params.access;
     if (accessVal) query.append('access', accessVal);
     if (params.script) query.append('script', params.script);
+    if (params.collection) query.append('collection', params.collection);
     if (params.subject) query.append('subject', params.subject);
     if (params.author) query.append('author', params.author);
     if (params.yearFrom) query.append('yearFrom', params.yearFrom);
@@ -663,6 +685,12 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ entries }),
     });
+  },
+
+  // Public mirror of the "website." settings namespace — no auth required,
+  // used by the public Navbar/Footer to reflect admin configuration live.
+  async getPublicWebsiteSettings(): Promise<Record<string, any>> {
+    return this.fetchWithAuth('/public-settings/website');
   },
 
   // Vendors

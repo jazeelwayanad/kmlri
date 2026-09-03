@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -98,10 +99,7 @@ export class UsersService {
     return safe;
   }
 
-  async updateRoleOrStatus(
-    id: string,
-    data: { role?: string; roleId?: string; status?: string; maxBorrowLimit?: number; permissions?: string },
-  ) {
+  async updateRoleOrStatus(id: string, data: UpdateUserDto) {
     const updateData: any = { ...data };
 
     // If roleId provided, fetch role to sync role slug

@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -50,6 +52,12 @@ export class AuthService {
         email: true,
         fullName: true,
         phone: true,
+        designation: true,
+        department: true,
+        bio: true,
+        orcid: true,
+        researchLanguages: true,
+        avatarUrl: true,
         role: true,
         roleId: true,
         roleRel: true,
@@ -114,6 +122,12 @@ export class AuthService {
         email: true,
         fullName: true,
         phone: true,
+        designation: true,
+        department: true,
+        bio: true,
+        orcid: true,
+        researchLanguages: true,
+        avatarUrl: true,
         role: true,
         roleId: true,
         roleRel: true,
@@ -142,6 +156,57 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
+    return this.computeEffectivePermissions(user);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isValidPassword = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isValidPassword) {
+      throw new BadRequestException('Your current password is incorrect.');
+    }
+
+    if (await bcrypt.compare(dto.newPassword, user.passwordHash)) {
+      throw new BadRequestException('New password must be different from the current password.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(dto.newPassword, salt);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+    return { success: true };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: dto,
+      select: {
+        id: true,
+        membershipNumber: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        designation: true,
+        department: true,
+        bio: true,
+        orcid: true,
+        researchLanguages: true,
+        avatarUrl: true,
+        role: true,
+        roleId: true,
+        roleRel: true,
+        status: true,
+        permissions: true,
+        maxBorrowLimit: true,
+        createdAt: true,
+      },
+    });
 
     return this.computeEffectivePermissions(user);
   }

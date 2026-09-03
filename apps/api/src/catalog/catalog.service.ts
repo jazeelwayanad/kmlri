@@ -15,6 +15,17 @@ export class CatalogService {
     const where: any = {};
     const andConditions: any[] = [];
 
+    let activeCollection: { id: string; name: string; slug: string; description: string | null } | null = null;
+    if (queryDto.collection) {
+      activeCollection = await this.prisma.collection.findFirst({
+        where: { OR: [{ slug: queryDto.collection }, { name: queryDto.collection }] },
+        select: { id: true, name: true, slug: true, description: true },
+      });
+      where.collectionId = activeCollection ? activeCollection.id : '__none__';
+    } else if (queryDto.collectionId) {
+      where.collectionId = queryDto.collectionId;
+    }
+
     if (queryDto.q) {
       andConditions.push(this.buildBooleanSearchClause(queryDto.q));
     }
@@ -149,6 +160,7 @@ export class CatalogService {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+      collection: activeCollection,
       facets: {
         formats: formatAgg.map((f) => ({ key: f.format, count: f._count.format })),
         accessLevels: accessAgg.map((a) => ({ key: a.accessLevel, count: a._count.accessLevel })),

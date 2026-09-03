@@ -16,21 +16,7 @@ import {
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-
-function currentSectionLabel(pathname: string) {
-  if (pathname === '/admin') return 'Dashboard';
-  if (pathname === '/admin/profile') return 'My Profile';
-  if (pathname === '/admin/notifications') return 'Notifications Hub';
-  const parts = pathname.split('/').filter(Boolean);
-  if (parts.length >= 2) {
-    const segment = parts[parts.length - 1] || '';
-    return segment
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-  }
-  return 'Dashboard';
-}
+import { getAdminBreadcrumb } from '@/lib/admin-nav';
 
 export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth();
@@ -67,7 +53,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const activeLabel = currentSectionLabel(pathname);
+  const breadcrumb = getAdminBreadcrumb(pathname);
 
   // Priority colour ring
   const priorityRing = (p: string) =>
@@ -84,7 +70,23 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <span className="text-[15px] text-[#5A5854] font-medium truncate">Admin / {activeLabel}</span>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 min-w-0 text-[15px] font-medium truncate">
+          {breadcrumb.map((crumb, idx) => {
+            const isLast = idx === breadcrumb.length - 1;
+            return (
+              <span key={crumb.href + idx} className="flex items-center gap-1.5 min-w-0">
+                {idx > 0 && <span className="text-[#C9C6C0] flex-shrink-0">/</span>}
+                {isLast ? (
+                  <span className="text-gray-900 truncate">{crumb.label}</span>
+                ) : (
+                  <Link href={crumb.href} className="text-[#5A5854] hover:text-[#A52307] transition-colors truncate">
+                    {crumb.label}
+                  </Link>
+                )}
+              </span>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Right */}

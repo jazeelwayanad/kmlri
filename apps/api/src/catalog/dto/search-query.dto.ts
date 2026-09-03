@@ -23,6 +23,14 @@ export class SearchQueryDto {
 
   @IsOptional()
   @IsString()
+  collection?: string; // Collection slug or name
+
+  @IsOptional()
+  @IsString()
+  collectionId?: string;
+
+  @IsOptional()
+  @IsString()
   author?: string;
 
   @IsOptional()

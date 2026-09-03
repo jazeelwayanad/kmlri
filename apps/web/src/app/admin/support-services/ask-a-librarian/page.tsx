@@ -7,7 +7,7 @@ export default function AskALibrarianRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/admin/ask');
+    router.replace('/admin/support-services/ask');
   }, [router]);
 
   return (

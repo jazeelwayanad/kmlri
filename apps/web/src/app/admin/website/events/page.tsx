@@ -28,6 +28,7 @@ import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import { RichTextEditor } from '@/components/content/RichTextEditor';
+import { confirmDialog } from '@/lib/dialog';
 
 export default function WebsiteEventsPage() {
   const [events, setEvents] = useState<ContentItem[]>([]);
@@ -162,7 +163,7 @@ export default function WebsiteEventsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete event "${name}"?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete event "${name}"?`, variant: 'danger' }))) return;
     try {
       await api.deleteContentItem(id);
       setNotificationType('success');

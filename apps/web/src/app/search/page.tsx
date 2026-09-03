@@ -60,6 +60,7 @@ function SearchContent() {
   const formatParam = searchParams.get('format');
   const scriptParam = searchParams.get('script');
   const accessParam = searchParams.get('access');
+  const collectionParam = searchParams.get('collection');
   const pageParam = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
   const [query, setQuery] = useState(queryParam);
@@ -74,6 +75,7 @@ function SearchContent() {
     languages: [],
   });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [activeCollection, setActiveCollection] = useState<{ id: string; name: string; slug: string; description?: string | null } | null>(null);
 
   const selectedFormats = toSet(formatParam);
   const selectedScripts = toSet(scriptParam);
@@ -89,6 +91,7 @@ function SearchContent() {
           format: formatParam || undefined,
           script: scriptParam || undefined,
           access: accessParam || undefined,
+          collection: collectionParam || undefined,
           page: pageParam,
           limit: 10,
         });
@@ -100,6 +103,7 @@ function SearchContent() {
           accessLevels: data.facets?.accessLevels || [],
           languages: data.facets?.languages || [],
         });
+        setActiveCollection(collectionParam ? data.collection || null : null);
       } catch (err) {
         setError(true);
         setResults([]);
@@ -110,7 +114,7 @@ function SearchContent() {
       }
     }
     fetchResults();
-  }, [queryParam, formatParam, scriptParam, accessParam, pageParam]);
+  }, [queryParam, formatParam, scriptParam, accessParam, collectionParam, pageParam]);
 
   const updateParams = (mutate: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -230,6 +234,26 @@ function SearchContent() {
             <ChevronDown className={`w-4 h-4 transition-transform ${mobileFilterOpen ? 'rotate-180' : ''}`} />
           </button>
         </div>
+
+        {collectionParam && (
+          <div className="flex items-center justify-between gap-3 border border-black bg-white px-4 py-3 mb-4 font-sans text-[15px] flex-wrap">
+            <span>
+              Showing items in{' '}
+              <strong className="font-amiri text-[17px]">
+                {activeCollection ? activeCollection.name : collectionParam}
+              </strong>
+              {!loading && !activeCollection && (
+                <span className="text-heritage-red"> — collection not found</span>
+              )}
+            </span>
+            <Link
+              href="/search"
+              className="text-heritage-muted hover:text-heritage-red font-semibold whitespace-nowrap"
+            >
+              Clear collection ✕
+            </Link>
+          </div>
+        )}
 
         <div className="double-rule"></div>
 

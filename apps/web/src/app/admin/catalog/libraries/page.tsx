@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, Mail, Phone, CheckCircle2, ShieldAlert, X, Trash2 } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 interface Library {
   id: string;
@@ -109,7 +110,7 @@ export default function LibrariesAdminPage() {
   };
 
   const handleDelete = async (l: Library) => {
-    if (!confirm(`Permanently remove library "${l.name}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ message: `Permanently remove library "${l.name}"? This cannot be undone.`, variant: 'danger' }))) return;
     try {
       await api.deleteLibrary(l.id);
       notify('success', `Library "${l.name}" removed.`);

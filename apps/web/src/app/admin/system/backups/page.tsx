@@ -1,23 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { HardDrive, Play, Download, AlertCircle } from 'lucide-react';
-import { PageHeader, Button, Card, Badge, StatCard } from '@/components/admin/ui';
+import { HardDrive, AlertCircle } from 'lucide-react';
+import { PageHeader, Card, StatCard } from '@/components/admin/ui';
 
 export default function BackupsAdminPage() {
-  const [notification, setNotification] = useState<string | null>(null);
-
-  const backups = [
-    { id: 'BAK-2026-0901', name: 'Daily Automated Database Snapshot', type: 'FULL_SQL_DB', size: '1.24 GB', date: '01 Sep 2026 04:00 AM', status: 'VERIFIED', destination: 'S3 Glacier + Off-site NAS' },
-    { id: 'BAK-2026-0831', name: 'Digital Manuscripts File Archive Snapshot', type: 'FILES_ARCHIVE', size: '48.6 GB', date: '31 Aug 2026 02:00 AM', status: 'VERIFIED', destination: 'S3 Glacier' },
-    { id: 'BAK-2026-0830', name: 'Weekly System Config & Schema Dump', type: 'CONFIG_SCHEMA', size: '14 MB', date: '30 Aug 2026 01:00 AM', status: 'VERIFIED', destination: 'Encrypted Vault' },
-  ];
-
-  const showNotConnected = (action: string) => {
-    setNotification(`${action} is not connected — no backup infrastructure is wired up on the backend yet. This screen shows the intended layout only.`);
-    setTimeout(() => setNotification(null), 5000);
-  };
-
   return (
     <div className="space-y-6 font-sans pb-12">
       {/* Header */}
@@ -25,69 +11,27 @@ export default function BackupsAdminPage() {
         eyebrow="Disaster Recovery & Snapshots"
         title="Backups & Archive Recovery"
         description="Automated PostgreSQL database snapshots, high-resolution manuscript image file archives, retention rules, and point-in-time recovery."
-        actions={
-          <Button variant="primary" icon={Play} onClick={() => showNotConnected('Run Backup Now')}>
-            Run Backup Now
-          </Button>
-        }
       />
 
-      {notification && (
-        <div className="p-4 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
+      <div className="p-4 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm font-semibold flex items-center gap-2">
+        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <span>Not yet implemented — no backup infrastructure is wired up on the backend yet. No snapshots have been taken.</span>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Last Backup Completed" value="Today, 04:00 AM" hint="Integrity checksum 100% verified" hintTone="positive" icon={HardDrive} />
-        <StatCard label="Offsite Retention Rule" value="90 Days Rolling" hint="Geo-redundant encrypted storage" />
-        <StatCard label="Recovery Time Objective (RTO)" value="< 15 Minutes" hint="Automated point-in-time restore" />
+        <StatCard label="Last Backup Completed" value="Never" icon={HardDrive} />
+        <StatCard label="Offsite Retention Rule" value="Not configured" />
+        <StatCard label="Recovery Time Objective (RTO)" value="Not configured" />
       </div>
 
-      {/* Backups Table */}
+      {/* Backups Table (empty state) */}
       <Card className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-400 bg-gray-50">
-              <th className="pb-3 pt-2 px-2 font-semibold">Snapshot Name</th>
-              <th className="pb-3 pt-2 px-2 font-semibold">Type</th>
-              <th className="pb-3 pt-2 px-2 font-semibold">Size</th>
-              <th className="pb-3 pt-2 px-2 font-semibold">Created At</th>
-              <th className="pb-3 pt-2 px-2 font-semibold">Destination</th>
-              <th className="pb-3 pt-2 px-2 font-semibold">Integrity</th>
-              <th className="pb-3 pt-2 px-2 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {backups.map((b) => (
-              <tr key={b.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-3.5 px-2">
-                  <div className="font-bold text-sm text-gray-900">{b.name}</div>
-                  <div className="text-gray-400 font-mono text-[11px]">{b.id}</div>
-                </td>
-                <td className="py-3.5 px-2 font-mono text-[11px] text-gray-700 font-semibold">{b.type}</td>
-                <td className="py-3.5 px-2 font-mono text-gray-900 font-bold">{b.size}</td>
-                <td className="py-3.5 px-2 text-gray-600">{b.date}</td>
-                <td className="py-3.5 px-2 text-gray-700">{b.destination}</td>
-                <td className="py-3.5 px-2">
-                  <Badge variant="success">{b.status}</Badge>
-                </td>
-                <td className="py-3.5 px-2 text-right space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => showNotConnected('Downloading backup archives')}
-                    className="px-2.5 py-1 border border-gray-300 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-colors inline-flex items-center gap-1"
-                  >
-                    <Download className="w-3 h-3" />
-                    <span>Download</span>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="py-12 text-center text-gray-400">
+          <HardDrive className="w-8 h-8 mx-auto mb-3 stroke-[1.5]" />
+          <p className="text-sm font-semibold text-gray-500">No backups on record</p>
+          <p className="text-xs text-gray-400 mt-1">Automated backup infrastructure is not yet available on this system.</p>
+        </div>
       </Card>
     </div>
   );

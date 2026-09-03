@@ -4,21 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-
-interface NavItem {
-  label: string;
-  href: string;
-}
-
-interface NavSubGroup {
-  title?: string;
-  items: NavItem[];
-}
-
-interface NavSection {
-  title: string;
-  groups: NavSubGroup[];
-}
+import { ADMIN_NAV_SECTIONS, ADMIN_NAV_ITEMS, type AdminNavItem } from '@/lib/admin-nav';
 
 export function AdminSidebar({
   open = false,
@@ -30,101 +16,19 @@ export function AdminSidebar({
   const pathname = usePathname();
   const { user } = useAuth();
 
-  // Structure follows the approved admin information architecture:
-  // Library Operations > Members / Catalogue / Digital Library / Circulation
-  // Website Management > Stories / News / Events / Opportunities / Configuration
-  // Support & Services
-  // System Administration > Roles & Permissions (+ system-level settings)
-  const sections: NavSection[] = [
-    {
-      title: 'Library Operations',
-      groups: [
-        {
-          title: 'Members',
-          items: [{ label: 'All Members', href: '/admin/members' }],
-        },
-        {
-          title: 'Catalogue',
-          items: [
-            { label: 'Records', href: '/admin/catalog' },
-            { label: 'Collections', href: '/admin/catalog/collections' },
-            { label: 'Serials', href: '/admin/catalog/serials' },
-            { label: 'Configuration', href: '/admin/catalog/configuration' },
-          ],
-        },
-        {
-          title: 'Digital Library',
-          items: [{ label: 'Digital Library', href: '/admin/digital-library' }],
-        },
-        {
-          title: 'Circulation',
-          items: [
-            { label: 'Overview', href: '/admin/circulation' },
-            { label: 'Check Out', href: '/admin/circulation/check-out' },
-            { label: 'Check In', href: '/admin/circulation/check-in' },
-            { label: 'Holds', href: '/admin/circulation/holds' },
-            { label: 'Renewals', href: '/admin/circulation/renewals' },
-            { label: 'Overdues', href: '/admin/circulation/overdues' },
-            { label: 'Fines', href: '/admin/circulation/fines' },
-            { label: 'Configuration', href: '/admin/circulation/configuration' },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Website Management',
-      groups: [
-        {
-          items: [
-            { label: 'Stories', href: '/admin/website/stories' },
-            { label: 'News', href: '/admin/website/news' },
-            { label: 'Events', href: '/admin/website/events' },
-            { label: 'Opportunities', href: '/admin/website/opportunities' },
-          ],
-        },
-        {
-          title: 'Configuration',
-          items: [{ label: 'Homepage, Navbar & Footer', href: '/admin/website/configuration' }],
-        },
-      ],
-    },
-    {
-      title: 'Support & Services',
-      groups: [
-        {
-          items: [
-            { label: 'Ask a Librarian', href: '/admin/ask' },
-            { label: 'Reservations & Bookings', href: '/admin/support-services/reservations-bookings' },
-            { label: 'Document Delivery', href: '/admin/support-services/document-delivery' },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'System Administration',
-      groups: [
-        {
-          items: [
-            { label: 'Roles & Permissions', href: '/admin/roles' },
-            { label: 'Notifications Hub', href: '/admin/notifications' },
-            { label: 'Settings', href: '/admin/system/settings' },
-            { label: 'Audit Logs', href: '/admin/system/audit-logs' },
-            { label: 'Security', href: '/admin/system/security' },
-            { label: 'Integrations', href: '/admin/system/integrations' },
-            { label: 'API Keys', href: '/admin/system/api' },
-            { label: 'Backups', href: '/admin/system/backups' },
-            { label: 'Languages', href: '/admin/system/languages' },
-          ],
-        },
-      ],
-    },
-  ];
+  const sections = ADMIN_NAV_SECTIONS;
+  const allItems = ADMIN_NAV_ITEMS;
 
-  const allItems = sections.flatMap((s) => s.groups.flatMap((g) => g.items));
-
-  const isItemActive = (item: NavItem) => {
+  const isItemActive = (item: AdminNavItem) => {
     // Exact-match roots that would otherwise swallow every route under them
-    const rootHrefs = ['/admin/catalog', '/admin/members', '/admin/circulation'];
+    const rootHrefs = [
+      '/admin/catalog',
+      '/admin/members',
+      '/admin/circulation',
+      '/admin/acquisitions/assets',
+      '/admin/support-services',
+      '/admin/digital-library',
+    ];
     if (rootHrefs.includes(item.href)) {
       if (pathname === item.href) return true;
       // Only treat as active if the current path is a sub-route not claimed by a sibling nav item

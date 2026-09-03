@@ -20,6 +20,7 @@ import {
   Edit3,
   Trash2,
 } from 'lucide-react';
+import { confirmDialog } from '@/lib/dialog';
 
 function formatDate(d?: string) {
   if (!d) return '—';
@@ -114,7 +115,7 @@ export default function MemberDetailsPage() {
   };
 
   const handleDeleteMember = async () => {
-    if (!confirm(`Are you sure you want to delete member "${member.fullName}" (${member.membershipNumber})? This is only possible for members with no circulation history.`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to delete member "${member.fullName}" (${member.membershipNumber})? This is only possible for members with no circulation history.`, variant: 'danger' }))) return;
     try {
       await api.deleteUser(member.id);
       setNotification({ type: 'success', text: `Member "${member.fullName}" deleted. Redirecting to directory...` });

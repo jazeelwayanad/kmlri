@@ -9,7 +9,7 @@ export default function SupportServicesOverviewPage() {
     {
       title: 'Ask a Librarian',
       desc: 'Review and answer patron reference inquiries submitted through the public site.',
-      href: '/admin/ask',
+      href: '/admin/support-services/ask',
       icon: HelpCircle,
     },
     {

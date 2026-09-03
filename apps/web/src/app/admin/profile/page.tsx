@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   User,
@@ -26,12 +26,15 @@ export default function AdminProfilePage() {
   const { user, refreshUser } = useAuth();
 
   // Profile form state
-  const [fullName, setFullName] = useState(user?.fullName || 'Chief Librarian & Curator');
-  const [email, setEmail] = useState(user?.email || 'admin@kmlri.in');
-  const [phone, setPhone] = useState(user?.phone || '+91 98470 12345');
-  const [designation, setDesignation] = useState('Director of Manuscript Collections & Archival Studies');
-  const [department, setDepartment] = useState('Directorate of Archival Research & Conservation');
-  const [bio, setBio] = useState('Overseeing the cataloging, restoration, and digital preservation of 16th–19th century Arabi-Malayalam and classical Arabic manuscripts.');
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [designation, setDesignation] = useState(user?.designation || '');
+  const [department, setDepartment] = useState(user?.department || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -47,7 +50,11 @@ export default function AdminProfilePage() {
     if (user) {
       setFullName(user.fullName || '');
       setEmail(user.email || '');
-      setPhone(user.phone || '+91 98470 12345');
+      setPhone(user.phone || '');
+      setDesignation(user.designation || '');
+      setDepartment(user.department || '');
+      setBio(user.bio || '');
+      setAvatarUrl(user.avatarUrl || '');
     }
   }, [user]);
 
@@ -62,6 +69,9 @@ export default function AdminProfilePage() {
           fullName,
           email,
           phone,
+          designation,
+          department,
+          bio,
         });
       }
       // Also update local storage cached user for immediate reflection
@@ -69,7 +79,7 @@ export default function AdminProfilePage() {
         const cached = localStorage.getItem('kmlri_user');
         if (cached) {
           const parsed = JSON.parse(cached);
-          const updated = { ...parsed, fullName, email, phone };
+          const updated = { ...parsed, fullName, email, phone, designation, department, bio };
           localStorage.setItem('kmlri_user', JSON.stringify(updated));
         }
       }
@@ -112,8 +122,7 @@ export default function AdminProfilePage() {
     setNotification(null);
 
     try {
-      // Simulate API call for password update
-      await new Promise((r) => setTimeout(r, 600));
+      await api.changePassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -131,6 +140,34 @@ export default function AdminProfilePage() {
       setTimeout(() => {
         setNotification(null);
       }, 4000);
+    }
+  };
+
+  const handleAvatarSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user?.id) return;
+
+    setAvatarUploading(true);
+    setNotification(null);
+    try {
+      const { url } = await api.uploadImage(file);
+      await api.updateUser(user.id, { avatarUrl: url });
+      setAvatarUrl(url);
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('kmlri_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          localStorage.setItem('kmlri_user', JSON.stringify({ ...parsed, avatarUrl: url }));
+        }
+      }
+      await refreshUser();
+      setNotification({ type: 'success', message: 'Profile photo updated successfully!' });
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'Failed to upload profile photo.' });
+    } finally {
+      setAvatarUploading(false);
+      setTimeout(() => setNotification(null), 4000);
     }
   };
 
@@ -182,13 +219,29 @@ export default function AdminProfilePage() {
       <div className="bg-white border border-[#D6CCBC] rounded-xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="relative group">
-            <div className="w-20 h-20 rounded-full bg-heritage-red text-white flex items-center justify-center font-bold text-2xl shadow-md border-2 border-white">
-              {getInitials(fullName)}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                className="w-20 h-20 rounded-full object-cover shadow-md border-2 border-white"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-heritage-red text-white flex items-center justify-center font-bold text-2xl shadow-md border-2 border-white">
+                {getInitials(fullName)}
+              </div>
+            )}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleAvatarSelected}
+            />
             <button
               type="button"
-              onClick={() => alert('Profile photo upload feature: Select PNG/JPG image (max 2MB).')}
-              className="absolute bottom-0 right-0 p-1.5 bg-black text-white rounded-full hover:bg-heritage-red hover:text-white  transition-colors shadow"
+              disabled={avatarUploading}
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute bottom-0 right-0 p-1.5 bg-black text-white rounded-full hover:bg-heritage-red hover:text-white transition-colors shadow disabled:opacity-50"
               title="Update profile picture"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -205,9 +258,11 @@ export default function AdminProfilePage() {
             <p className="text-xs text-gray-500 font-mono mt-1">
               Membership ID: <strong className="text-gray-900">{user?.membershipNumber || 'KMLRI-ADMIN-001'}</strong> · Email: <strong className="text-gray-900">{email}</strong>
             </p>
-            <p className="text-xs text-heritage-muted mt-1 font-semibold">
-              {designation}
-            </p>
+            {designation && (
+              <p className="text-xs text-heritage-muted mt-1 font-semibold">
+                {designation}
+              </p>
+            )}
           </div>
         </div>
 
@@ -226,7 +281,7 @@ export default function AdminProfilePage() {
             <div className="border-b border-gray-100 pb-4 mb-6">
               <h3 className="font-amiri text-2xl font-bold text-black">Edit User Details</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-
+                Update your contact details and professional profile shown to other staff members.
               </p>
             </div>
 

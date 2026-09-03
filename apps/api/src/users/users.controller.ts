@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
@@ -21,10 +22,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: { role?: string; status?: string; maxBorrowLimit?: number; [key: string]: any },
-  ) {
+  update(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.usersService.updateRoleOrStatus(id, body);
   }
 

@@ -83,6 +83,11 @@ interface SourceRow {
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const BATCH = 300;
+const limitArg = process.argv.find((a) => a.startsWith('--limit='));
+// Caps the number of biblio groups (bib records) processed -- for a small, fast test/demo
+// import. Includes whatever mix of monographs and serials naturally falls in the first N
+// groups of the source file. Omit --limit for the full ~10,020-record import.
+const GROUP_LIMIT = limitArg ? parseInt(limitArg.split('=')[1], 10) : undefined;
 
 function clean(v: string | undefined): string | undefined {
   const t = (v ?? '').trim();
@@ -128,7 +133,7 @@ async function main() {
   console.log(`Loaded ${raw.length} source rows from ${jsonPath}`);
 
   const skipped: { row: SourceRow; reason: string }[] = [];
-  const byBiblio = new Map<string, SourceRow[]>();
+  let byBiblio = new Map<string, SourceRow[]>();
   for (const row of raw) {
     const biblio = clean(row.biblionumber);
     if (!biblio || !clean(row.Title)) {
@@ -139,6 +144,11 @@ async function main() {
     byBiblio.get(biblio)!.push(row);
   }
   console.log(`Grouped into ${byBiblio.size} unique biblionumbers (${skipped.length} rows skipped)`);
+
+  if (GROUP_LIMIT) {
+    byBiblio = new Map(Array.from(byBiblio.entries()).slice(0, GROUP_LIMIT));
+    console.log(`--limit=${GROUP_LIMIT}: scoping this run to the first ${byBiblio.size} biblio groups`);
+  }
 
   // --- 1. Seed reference data (Library, ItemType, AuthorisedValueCategory/Values, MarcFrameworks) ---
   const locationSet = new Set<string>();

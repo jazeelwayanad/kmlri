@@ -25,6 +25,7 @@ import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import { RichTextEditor } from '@/components/content/RichTextEditor';
+import { confirmDialog } from '@/lib/dialog';
 
 export default function WebsiteOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<ContentItem[]>([]);
@@ -168,7 +169,7 @@ export default function WebsiteOpportunitiesPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete opportunity "${name}"?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete opportunity "${name}"?`, variant: 'danger' }))) return;
     try {
       await api.deleteContentItem(id);
       setNotificationType('success');

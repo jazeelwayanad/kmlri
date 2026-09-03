@@ -1,6 +1,31 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { api } from '@/lib/api';
+import { DEFAULT_FOOTER_CONTACT, DEFAULT_SOCIAL_LINKS, type FooterContact, type SocialLinks } from '@/lib/site-config-defaults';
 
 export function Footer() {
+  const [contact, setContact] = useState<FooterContact>(DEFAULT_FOOTER_CONTACT);
+  const [social, setSocial] = useState<SocialLinks>(DEFAULT_SOCIAL_LINKS);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getPublicWebsiteSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        if (settings?.footerContact) setContact({ ...DEFAULT_FOOTER_CONTACT, ...settings.footerContact });
+        if (settings?.socialLinks) setSocial({ ...DEFAULT_SOCIAL_LINKS, ...settings.socialLinks });
+      })
+      .catch(() => {
+        // Keep the default footer contact details if the settings service is unreachable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <footer className="bg-black text-white font-amiri">
       <div className="max-w-[1100px] mx-auto pt-10 sm:pt-[65px] px-4 sm:px-5 grid grid-cols-1 md:grid-cols-[374px_1fr_1fr] gap-8 sm:gap-12">
@@ -10,37 +35,38 @@ export function Footer() {
             alt="Kunhīn Musliyār Library & Research Institute"
             className="w-[300px] sm:w-[374px] max-w-full h-auto block invert"
           />
-          <p className="text-[13px] leading-[1.4] text-white mt-5 sm:mt-[33px]">
-            Near Sabeelul Hidaya Islamic College<br />
-            Vadhee Hidaya, Vattaparamba, Parappur PO,<br />
-            Kottakkal, Malappuram, Kerala - 676503
+          <p className="text-[13px] leading-[1.4] text-white mt-5 sm:mt-[33px] whitespace-pre-line">
+            {contact.address}
           </p>
           <p className="text-[14px] leading-[1.4] text-[#9C9C9C] mt-5 sm:mt-[41px] flex gap-4 sm:gap-[19px] flex-wrap">
-            <a href="tel:+919745234786" className="text-[#9C9C9C] hover:text-white">
-              +91 97452 34786
+            <a href={`tel:${contact.phone.replace(/[^+\d]/g, '')}`} className="text-[#9C9C9C] hover:text-white">
+              {contact.phone}
             </a>
-            <a href="mailto:info@kmlri.in" className="text-[#9C9C9C] hover:text-white">
-              info@kmlri.in
+            <a href={`mailto:${contact.email}`} className="text-[#9C9C9C] hover:text-white">
+              {contact.email}
             </a>
           </p>
+          {contact.hours && (
+            <p className="text-[13px] leading-[1.4] text-[#9C9C9C] mt-3">{contact.hours}</p>
+          )}
           <div className="flex gap-4 mt-5">
             <Link
-              href="/about"
-              aria-label="Facebook"
+              href={social.twitter || '/about'}
+              aria-label="Twitter / X"
               className="w-[32px] h-[32px] rounded-[5px] bg-[#1F1F1F] flex items-center justify-center text-[15px] leading-none text-white hover:bg-[#4B4B4B] transition-colors"
             >
               f
             </Link>
             <Link
-              href="/about"
-              aria-label="Instagram"
+              href={social.github || '/about'}
+              aria-label="GitHub"
               className="w-[32px] h-[32px] rounded-[5px] bg-[#1F1F1F] flex items-center justify-center text-white hover:bg-[#4B4B4B] transition-colors"
             >
               <img src="/assets/social-icon.svg" alt="" className="w-[14px] h-[14px] invert" />
             </Link>
             <Link
-              href="/about"
-              aria-label="YouTube"
+              href={social.orcid || '/about'}
+              aria-label="ORCID"
               className="w-[32px] h-[32px] rounded-[5px] bg-[#1F1F1F] flex items-center justify-center text-[15px] leading-none text-white hover:bg-[#4B4B4B] transition-colors"
             >
               ▶

@@ -81,3 +81,14 @@ input::placeholder, textarea::placeholder {
   background: repeating-linear-gradient(135deg, #E4DCCF 0 6px, #DBD2C3 6px 12px);
   border: 1px solid #C9BEAC;
 }
+
+/* Custom dialog (replaces native alert/confirm/prompt) animations */
+@keyframes dialog-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialog-card-in {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

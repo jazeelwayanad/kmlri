@@ -15,9 +15,6 @@ import {
   Search,
   Bell,
   Settings,
-  GraduationCap,
-  BookMarked,
-  Sparkles,
   ChevronDown,
   Menu,
   CalendarClock
@@ -31,24 +28,21 @@ export function AccountNav() {
   const mainCirculation = [
     { label: 'Dashboard', href: '/account', icon: LayoutDashboard, exact: true },
     { label: 'Profile & ID Pass', href: '/account/profile', icon: User },
-    { label: 'My Loans', href: '/account/loans', icon: BookOpen, count: user?.loans?.length },
-    { label: 'My Reservations', href: '/account/reservations', icon: BookmarkCheck, count: user?.reservations?.length, badgeColor: 'bg-heritage-red text-white' },
-    { label: 'My Bookings', href: '/account/bookings', icon: CalendarClock },
-    { label: 'My Fines', href: '/account/fines', icon: Receipt },
+    { label: 'Loans', href: '/account/loans', icon: BookOpen, count: user?.loans?.length },
+    { label: 'Reservations', href: '/account/reservations', icon: BookmarkCheck, count: user?.reservations?.length, badgeColor: 'bg-heritage-red text-white' },
+    { label: 'Bookings', href: '/account/bookings', icon: CalendarClock },
+    { label: 'Fines', href: '/account/fines', icon: Receipt },
   ];
 
   const researchDiscovery: { label: string; href: string; icon: any; count?: number; badgeColor?: string }[] = [
-    { label: 'My Requests', href: '/account/requests', icon: FileText },
-    { label: 'My Reading Lists', href: '/account/reading-lists', icon: ListOrdered },
+    { label: 'Requests', href: '/account/requests', icon: FileText },
+    { label: 'Reading Lists', href: '/account/reading-lists', icon: ListOrdered },
     { label: 'Saved Searches', href: '/account/saved-searches', icon: Search },
     { label: 'Notifications', href: '/account/notifications', icon: Bell },
   ];
 
   const scholarSettings = [
     { label: 'Research Profile', href: '/account/settings/profile', icon: Settings },
-    { label: 'Publications', href: '/account/settings/publications', icon: BookMarked },
-    { label: 'Research Alerts', href: '/account/settings/alerts', icon: Sparkles },
-    { label: 'Course Reading Lists', href: '/account/settings/courses', icon: GraduationCap },
   ];
 
   const allItems = [...mainCirculation, ...researchDiscovery, ...scholarSettings];

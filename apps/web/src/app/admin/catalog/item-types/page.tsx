@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, CheckCircle2, ShieldAlert, X, Trash2 } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 interface ItemType {
   id: string;
@@ -101,7 +102,7 @@ export default function ItemTypesAdminPage() {
   };
 
   const handleDelete = async (it: ItemType) => {
-    if (!confirm(`Permanently remove item type "${it.description}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ message: `Permanently remove item type "${it.description}"? This cannot be undone.`, variant: 'danger' }))) return;
     try {
       await api.deleteItemType(it.id);
       notify('success', `Item type "${it.description}" removed.`);

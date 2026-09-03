@@ -3,40 +3,74 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api, BibliographicRecord } from '@/lib/api';
-import { 
-  Plus, 
-  Search, 
-  Library, 
-  Copy, 
-  Printer, 
-  CheckCircle2, 
-  AlertCircle, 
-  Eye, 
-  ArrowRight, 
-  X, 
-  Boxes, 
-  Barcode, 
-  Save, 
-  Globe, 
-  Settings, 
-  BookOpen, 
-  Layers, 
-  FileText, 
+import {
+  Plus,
+  Search,
+  Library,
+  Copy,
+  Printer,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  ArrowRight,
+  X,
+  Boxes,
+  Barcode,
+  Save,
+  Globe,
+  Settings,
+  BookOpen,
+  Layers,
+  FileText,
   Bookmark,
   Edit3,
   Trash2,
   FileSpreadsheet,
-  Upload
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getRecordSlug } from '@/lib/slugs';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import KohaOdsImportModal from '@/components/admin/KohaOdsImportModal';
+import { confirmDialog } from '@/lib/dialog';
+
+const FORMAT_LABELS: Record<string, string> = {
+  MANUSCRIPT: 'Manuscript',
+  ARABI_MALAYALAM_PRINT: 'Arabi-Malayalam Print',
+  RARE_BOOK: 'Rare Book',
+  PERIODICAL: 'Periodical',
+  THESIS: 'Thesis',
+  AUDIO: 'Audio',
+  MONOGRAPH: 'Monograph',
+  BOOK: 'Book',
+};
+
+const ACCESS_LABELS: Record<string, string> = {
+  DIGITISED_FULL: 'Digitised in full',
+  READING_ROOM_ONLY: 'Reading room only',
+  RESTRICTED: 'Restricted',
+};
+
+const PAGE_SIZE = 20;
 
 export default function CatalogueRecordsPage() {
   const [records, setRecords] = useState<BibliographicRecord[]>([]);
   const [search, setSearch] = useState('');
   const [formatFilter, setFormatFilter] = useState('ALL');
+  const [accessFilter, setAccessFilter] = useState('ALL');
+  const [languageFilter, setLanguageFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('recent');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [facets, setFacets] = useState<{ formats: { key: string; count: number }[]; accessLevels: { key: string; count: number }[]; languages: { key: string; count: number }[] }>({
+    formats: [],
+    accessLevels: [],
+    languages: [],
+  });
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showOdsModal, setShowOdsModal] = useState(false);
@@ -46,7 +80,7 @@ export default function CatalogueRecordsPage() {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [createdRecordId, setCreatedRecordId] = useState<string>('');
-  
+
   // Section 1: Title & Authorship
   const [title, setTitle] = useState(''); // 245$a [Required]
   const [subtitle, setSubtitle] = useState(''); // 245$b
@@ -89,10 +123,27 @@ export default function CatalogueRecordsPage() {
   const loadRecords = async () => {
     setLoading(true);
     try {
-      const res = await api.searchCatalog({ q: search, limit: 50 });
+      const res = await api.searchCatalog({
+        q: search || undefined,
+        format: formatFilter !== 'ALL' ? formatFilter : undefined,
+        access: accessFilter !== 'ALL' ? accessFilter : undefined,
+        script: languageFilter !== 'ALL' ? languageFilter : undefined,
+        sortBy,
+        page,
+        limit: PAGE_SIZE,
+      });
       setRecords(res.data || []);
+      setTotalCount(res.meta?.total ?? (res.data || []).length);
+      setTotalPages(res.meta?.totalPages ?? 1);
+      setFacets({
+        formats: res.facets?.formats || [],
+        accessLevels: res.facets?.accessLevels || [],
+        languages: res.facets?.languages || [],
+      });
     } catch {
       setRecords([]);
+      setTotalCount(0);
+      setTotalPages(1);
       setNotification({ type: 'error', text: 'Could not load catalogue records from the server.' });
     } finally {
       setLoading(false);
@@ -101,7 +152,18 @@ export default function CatalogueRecordsPage() {
 
   useEffect(() => {
     loadRecords();
-  }, [search]);
+  }, [search, formatFilter, accessFilter, languageFilter, sortBy, page]);
+
+  // Any change to search/filters should jump back to page 1.
+  const updateFilter = (setter: (v: string) => void) => (value: string) => {
+    setter(value);
+    setPage(1);
+  };
+  const handleSearchChange = updateFilter(setSearch);
+  const handleFormatChange = updateFilter(setFormatFilter);
+  const handleAccessChange = updateFilter(setAccessFilter);
+  const handleLanguageChange = updateFilter(setLanguageFilter);
+  const handleSortChange = updateFilter(setSortBy);
 
   // Open Add Record Modal
   const handleOpenAddModal = () => {
@@ -240,7 +302,7 @@ export default function CatalogueRecordsPage() {
   };
 
   const handleDeleteRecord = async (id: string, titleName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete catalogue record "${titleName}" and all associated item copies?`)) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete catalogue record "${titleName}" and all associated item copies?`, variant: 'danger' }))) return;
     try {
       await api.deleteCatalogItem(id);
       setNotification({ type: 'success', text: `Catalogue record "${titleName}" deleted successfully.` });
@@ -252,16 +314,16 @@ export default function CatalogueRecordsPage() {
     }
   };
 
-  const filteredRecords = records.filter((r) => {
-    if (formatFilter !== 'ALL' && r.format !== formatFilter) return false;
-    return true;
-  });
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+    Math.max(0, page - 3),
+    Math.max(0, page - 3) + 5,
+  );
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
       <PageHeader
         eyebrow="Cataloging · Bibliographic Master Records"
-        title="Catelogues"
+        title="Catalogues"
         description="Create bibliographic records, manage physical holdings &amp; item copies, track live availability statistics, and configure field requirements."
         actions={
           <div className="flex gap-2">
@@ -277,11 +339,10 @@ export default function CatalogueRecordsPage() {
 
       {notification && (
         <div
-          className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${
-            notification.type === 'success'
+          className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${notification.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-red-50 text-red-800 border-red-200'
-          }`}
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -293,30 +354,90 @@ export default function CatalogueRecordsPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search records by title, shelfmark, author, subjects..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
+      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search records by title, shelfmark, author, subjects..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
+            />
+          </div>
+          <span className="text-[11px] text-gray-500 font-mono whitespace-nowrap">
+            {loading ? 'Loading…' : `${totalCount.toLocaleString()} record${totalCount === 1 ? '' : 's'}`}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+          <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase mr-1">
+            <Filter className="w-3 h-3" /> Filters
+          </span>
           <select
             value={formatFilter}
-            onChange={(e) => setFormatFilter(e.target.value)}
-            className="border border-gray-200 h-10 px-3 rounded text-xs outline-none bg-white text-gray-700 font-medium"
+            onChange={(e) => handleFormatChange(e.target.value)}
+            className="border border-gray-200 h-9 px-3 rounded text-xs outline-none bg-white text-gray-700 font-medium"
           >
             <option value="ALL">All Formats</option>
-            <option value="MANUSCRIPT">Manuscripts</option>
-            <option value="ARABI_MALAYALAM_PRINT">Arabi-Malayalam Lithographs</option>
-            <option value="RARE_BOOK">Rare Books</option>
-            <option value="MONOGRAPH">Monographs</option>
+            {facets.formats.map((f) => (
+              <option key={f.key} value={f.key}>
+                {FORMAT_LABELS[f.key] || f.key} ({f.count})
+              </option>
+            ))}
           </select>
+
+          <select
+            value={accessFilter}
+            onChange={(e) => handleAccessChange(e.target.value)}
+            className="border border-gray-200 h-9 px-3 rounded text-xs outline-none bg-white text-gray-700 font-medium"
+          >
+            <option value="ALL">All Access Levels</option>
+            {facets.accessLevels.map((a) => (
+              <option key={a.key} value={a.key}>
+                {ACCESS_LABELS[a.key] || a.key} ({a.count})
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={languageFilter}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className="border border-gray-200 h-9 px-3 rounded text-xs outline-none bg-white text-gray-700 font-medium"
+          >
+            <option value="ALL">All Languages</option>
+            {facets.languages.map((l) => (
+              <option key={l.key} value={l.key}>
+                {l.key} ({l.count})
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="border border-gray-200 h-9 px-3 rounded text-xs outline-none bg-white text-gray-700 font-medium ml-auto"
+          >
+            <option value="recent">Sort: Recently catalogued</option>
+            <option value="title">Sort: Title A&ndash;Z</option>
+            <option value="year">Sort: Publication year</option>
+          </select>
+
+          {(formatFilter !== 'ALL' || accessFilter !== 'ALL' || languageFilter !== 'ALL' || search) && (
+            <button
+              type="button"
+              onClick={() => {
+                handleSearchChange('');
+                handleFormatChange('ALL');
+                handleAccessChange('ALL');
+                handleLanguageChange('ALL');
+              }}
+              className="text-[11px] font-bold text-gray-500 hover:text-[#A52307] underline"
+            >
+              Clear all
+            </button>
+          )}
         </div>
       </div>
 
@@ -339,14 +460,14 @@ export default function CatalogueRecordsPage() {
                   Loading catalogue database...
                 </td>
               </tr>
-            ) : filteredRecords.length === 0 ? (
+            ) : records.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-500 font-mono">
                   No catalogue records matching criteria.
                 </td>
               </tr>
             ) : (
-              filteredRecords.map((r) => (
+              records.map((r) => (
                 <tr key={r.id} className="hover:bg-[#FAF8F5] transition-colors">
                   <td className="py-3.5 px-4">
                     <span className="font-mono font-bold text-gray-900 block">{r.shelfmark}</span>
@@ -416,11 +537,56 @@ export default function CatalogueRecordsPage() {
         </table>
       </div>
 
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <span className="text-[11px] text-gray-500 font-mono">
+            Page {page} of {totalPages} &middot; {totalCount.toLocaleString()} record{totalCount === 1 ? '' : 's'} total
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-1.5 border border-gray-300 rounded bg-white hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-700 text-gray-700 transition-colors"
+              title="Previous page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            {pageNumbers[0] > 1 && <span className="px-1 text-gray-400 text-xs">…</span>}
+            {pageNumbers.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`min-w-[28px] h-[28px] px-1.5 rounded text-[11px] font-bold border transition-colors ${
+                  p === page
+                    ? 'bg-[#A52307] border-[#A52307] text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            {pageNumbers[pageNumbers.length - 1] < totalPages && <span className="px-1 text-gray-400 text-xs">…</span>}
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="p-1.5 border border-gray-300 rounded bg-white hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-700 text-gray-700 transition-colors"
+              title="Next page"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 2-Step Modern Add / Edit Record Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-xl max-w-4xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs max-h-[92vh] flex flex-col">
-            
+
             {/* Modal Header */}
             <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-5">
               <div>
@@ -446,7 +612,7 @@ export default function CatalogueRecordsPage() {
             {/* STEP 1: Metadata Form */}
             {step === 1 && (
               <form onSubmit={handleSaveRecord} className="flex-1 overflow-y-auto pr-2 space-y-6">
-                
+
                 {/* 1. Title & Authorship Section */}
                 <div className="bg-[#FAF8F5] border border-[#E2E0DB] p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 border-b border-[#E2E0DB] pb-2">

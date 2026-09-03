@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, ShieldAlert, X, Trash2, Star, FileCode2 } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { confirmDialog } from '@/lib/dialog';
 
 interface MarcFrameworkField {
   id: string;
@@ -123,7 +124,7 @@ export default function MarcFrameworksAdminPage() {
   };
 
   const handleDeleteFramework = async (fw: MarcFramework) => {
-    if (!confirm(`Permanently remove framework "${fw.code}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ message: `Permanently remove framework "${fw.code}"? This cannot be undone.`, variant: 'danger' }))) return;
     try {
       await api.deleteMarcFramework(fw.code);
       notify('success', `Framework "${fw.code}" removed.`);
@@ -195,7 +196,7 @@ export default function MarcFrameworksAdminPage() {
 
   const handleDeleteField = async (f: MarcFrameworkField) => {
     if (!selectedFramework) return;
-    if (!confirm(`Remove field ${f.tag}${f.subfield ? '$' + f.subfield : ''}?`)) return;
+    if (!(await confirmDialog({ message: `Remove field ${f.tag}${f.subfield ? '$' + f.subfield : ''}?`, variant: 'danger' }))) return;
     try {
       await api.removeMarcFrameworkField(f.id);
       notify('success', 'Field removed.');

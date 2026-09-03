@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Heading2, Quote } from 'lucide-react';
 import { api } from '@/lib/api';
+import { alertDialog, promptDialog } from '@/lib/dialog';
 
 interface ToolbarButtonProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -47,8 +48,8 @@ export function RichTextEditor({ value, onChange, placeholder }: { value: string
     emitChange();
   };
 
-  const insertLink = () => {
-    const url = window.prompt('Link URL:');
+  const insertLink = async () => {
+    const url = await promptDialog('Link URL:');
     if (url) exec('createLink', url);
   };
 
@@ -60,7 +61,7 @@ export function RichTextEditor({ value, onChange, placeholder }: { value: string
       const res = await api.uploadImage(file);
       exec('insertImage', res.url);
     } catch (err: any) {
-      window.alert(err.message || 'Image upload failed.');
+      await alertDialog(err.message || 'Image upload failed.');
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
