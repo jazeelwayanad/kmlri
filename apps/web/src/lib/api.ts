@@ -1,4 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl !== 'undefined' && !envUrl.includes('undefined')) {
+    return envUrl.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  return 'http://localhost:4000/api';
+};
 
 import { getCookie } from './cookies';
 
@@ -175,7 +184,9 @@ export const api = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}${url}`, {
+    const baseUrl = getApiBaseUrl();
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    const response = await fetch(`${baseUrl}${cleanUrl}`, {
       ...options,
       headers,
     });
@@ -206,7 +217,9 @@ export const api = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${API_URL}${url}`, { method, headers, body: formData });
+    const baseUrl = getApiBaseUrl();
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    const response = await fetch(`${baseUrl}${cleanUrl}`, { method, headers, body: formData });
     let data: any = {};
     try {
       data = await response.json();
@@ -398,7 +411,8 @@ export const api = {
     }
     const query = new URLSearchParams({ format });
     if (ids && ids.length) query.append('ids', ids.join(','));
-    const response = await fetch(`${API_URL}/catalog/export?${query.toString()}`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/catalog/export?${query.toString()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (!response.ok) {
@@ -519,22 +533,22 @@ export const api = {
   // Users & Members
   async getUsers(q?: string) {
     const query = q ? `?q=${encodeURIComponent(q)}` : '';
-    return this.fetchWithAuth(`s${query}`);
+    return this.fetchWithAuth(`/users${query}`);
   },
 
   async getUser(id: string) {
-    return this.fetchWithAuth(`s/${id}`);
+    return this.fetchWithAuth(`/users/${id}`);
   },
 
   async updateUser(id: string, data: any) {
-    return this.fetchWithAuth(`s/${id}`, {
+    return this.fetchWithAuth(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   },
 
   async deleteUser(id: string) {
-    return this.fetchWithAuth(`s/${id}`, {
+    return this.fetchWithAuth(`/users/${id}`, {
       method: 'DELETE',
     });
   },
@@ -1037,7 +1051,8 @@ export const api = {
     if (typeof window !== 'undefined') {
       token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
     }
-    const response = await fetch(`${API_URL}/registrations/files/${fileId}`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/registrations/files/${fileId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (!response.ok) {
@@ -1121,7 +1136,8 @@ export const api = {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${API_URL}/authorities`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/authorities`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
