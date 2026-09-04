@@ -91,22 +91,10 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
 
                 {/* Greeting Heading */}
                 <h1 className="font-amiri font-bold text-3xl sm:text-4xl text-black leading-tight tracking-tight mt-0.5">
-                  Welcome, {user.fullName?.split(' ')[0] || 'Patron'}
+                  Welcome, {user.fullName}
                 </h1>
 
-                {/* Membership ID Badge */}
-                <div className="inline-flex items-center gap-1.5 bg-[#EAE6DE] px-2.5 py-1 rounded font-mono text-xs font-bold text-black shadow-2xs mt-1.5">
-                  <span>{user.membershipNumber}</span>
-                  <button
-                    type="button"
-                    onClick={copyMembershipId}
-                    title="Copy Membership ID"
-                    className="text-stone-500 hover:text-black cursor-pointer transition-colors"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </button>
-                  {copiedId && <span className="text-[10px] text-emerald-700 font-sans font-bold ml-1">Copied!</span>}
-                </div>
+                
               </div>
             </div>
 

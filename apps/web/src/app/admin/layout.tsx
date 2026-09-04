@@ -149,7 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center text-sm font-semibold">
             <Link prefetch
-              href={user ? `/user/${user.username || user.id}` : '/login'}
+              href={user ? `/${user.username || user.id}` : '/login'}
               className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-heritage-red hover:text-white  transition-colors flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />

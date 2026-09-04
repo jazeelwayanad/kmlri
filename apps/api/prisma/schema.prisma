@@ -317,16 +317,20 @@ model DigitalFolio {
 }
 
 model Booking {
-  id           String   @id @default(uuid())
-  userId       String
-  type         String // READING_DESK, STUDY_ROOM, LIBRARIAN_CONSULTATION
-  resourceName String // e.g. "Desk #04", "Manuscript Research Lab", "Reference Consultation"
-  date         DateTime
-  timeSlot     String // e.g. "09:00 - 13:00"
-  status       String   @default("CONFIRMED") // CONFIRMED, CANCELLED
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String    @id @default(uuid())
+  userId            String
+  type              String // READING_DESK, STUDY_ROOM, LIBRARIAN_CONSULTATION or custom
+  resourceName      String // e.g. "Desk #04", "Manuscript Research Lab", "Reference Consultation"
+  date              DateTime
+  timeSlot          String // e.g. "09:00 - 13:00"
+  status            String    @default("PENDING") // PENDING, APPROVED, CONFIRMED, CANCELLED, REJECTED
+  notes             String?
+  adminNote         String?
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  customFieldValues String? // JSON string of custom dynamic field answers
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

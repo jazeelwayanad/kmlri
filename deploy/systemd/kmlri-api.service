@@ -1,0 +1,25 @@
+[Unit]
+Description=KMLRI NestJS Backend API
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kmlri/apps/api
+EnvironmentFile=/var/www/kmlri/.env
+ExecStart=/usr/bin/node dist/src/main
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kmlri-api
+
+# Process sandboxing & limits
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -9,7 +9,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   findAll(@Query('q') q?: string) {

@@ -93,7 +93,7 @@ export function Navbar() {
             </Link>
           )}
           <Link prefetch
-            href={user ? `/user/${user.username || user.id}` : '/login'}
+            href={user ? `/${user.username || user.id}` : '/login'}
             className="h-[32px] sm:h-[36px] px-2.5 sm:px-4 border-[1.5px] border-black flex items-center gap-2 justify-center font-amiri text-[14px] sm:text-[17px] font-semibold leading-none hover:bg-black hover:text-paper transition-colors group"
           >
             {user && (

@@ -9,7 +9,7 @@ export default function SavedResourcesRedirectPage() {
   const slug = (params?.slug as string) || 'patron';
 
   useEffect(() => {
-    router.replace(`/user/${slug}/reading-lists`);
+    router.replace(`/${slug}/reading-lists`);
   }, [router, slug]);
 
   return <div className="p-8 text-center text-heritage-muted text-sm font-sans">Redirecting to your reading lists…</div>;

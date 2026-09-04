@@ -26,7 +26,7 @@ function LoginForm() {
       if (redirectUrl) {
         router.replace(redirectUrl);
       } else {
-        router.replace(`/user/${user.username || user.id}`);
+        router.replace(`/${user.username || user.id}`);
       }
     }
   }, [user, authLoading, redirectUrl, router]);

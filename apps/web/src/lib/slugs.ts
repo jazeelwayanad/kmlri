@@ -37,7 +37,7 @@ export function getRecordSlug(record?: {
 }
 
 /**
- * Get human-readable identifier for a member/user
+ * Get human-readable identifier for a member
  */
 export function getMemberIdentifier(user?: {
   id?: string;

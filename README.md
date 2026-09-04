@@ -112,52 +112,13 @@ npm run dev:web
 
 ---
 
-## 🌐 Production Deployment (Ubuntu Server / Droplet)
+## 🌐 Production Deployment (Ubuntu / Debian VPS)
 
-### Subdomain Setup via Nginx / Cloudflare
-Set up DNS records:
-- `A record` $\rightarrow$ `kmlri.in` $\rightarrow$ Server IP
-- `A record` $\rightarrow$ `admin.kmlri.in` $\rightarrow$ Server IP
+For a complete production deployment **without Docker or PM2** using **Native Systemd + Local PostgreSQL + Nginx**:
 
-### Nginx Configuration Template
-```nginx
-# Client Portal
-server {
-    server_name kmlri.in www.kmlri.in;
+See the dedicated [Deployment Guide](deploy/README.md) and automated scripts in the `deploy/` directory:
+- [Automated Setup Script (`deploy/setup-vps.sh`)](deploy/setup-vps.sh)
+- [Zero-Downtime Update Script (`deploy/update.sh`)](deploy/update.sh)
+- [Systemd Services (`deploy/systemd/`)](deploy/systemd/)
+- [Nginx Configurations (`deploy/nginx/`)](deploy/nginx/)
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-
-# Admin Portal
-server {
-    server_name admin.kmlri.in;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-
-# Backend API
-server {
-    server_name api.kmlri.in;
-
-    location / {
-        proxy_pass http://localhost:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```

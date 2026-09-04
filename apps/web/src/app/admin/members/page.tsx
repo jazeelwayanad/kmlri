@@ -118,8 +118,8 @@ export default function MembersManagementPage() {
       {notification && (
         <div
           className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${notification.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-red-50 text-red-800 border-red-200'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
             }`}
         >
           {notification.type === 'success' ? (
@@ -243,8 +243,8 @@ export default function MembersManagementPage() {
                 <td className="py-3.5 px-4">
                   <span
                     className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.status === 'ACTIVE'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-red-100 text-red-800'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-red-100 text-red-800'
                       }`}
                   >
                     {u.status}
@@ -270,8 +270,8 @@ export default function MembersManagementPage() {
                     type="button"
                     onClick={() => handleStatusToggle(u.id, u.status, u.fullName)}
                     className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${u.status === 'ACTIVE'
-                        ? 'border-amber-400 text-amber-800 hover:bg-amber-100'
-                        : 'border-emerald-400 text-emerald-800 hover:bg-emerald-100'
+                      ? 'border-amber-400 text-amber-800 hover:bg-amber-100'
+                      : 'border-emerald-400 text-emerald-800 hover:bg-emerald-100'
                       }`}
                   >
                     {u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}

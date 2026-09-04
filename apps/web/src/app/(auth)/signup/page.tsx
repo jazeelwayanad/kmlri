@@ -17,7 +17,7 @@ export default function SignupPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace(`/user/${user.username || user.id}`);
+      router.replace(`/${user.username || user.id}`);
     }
   }, [user, authLoading, router]);
 
@@ -25,7 +25,7 @@ export default function SignupPage() {
     await refreshUser();
     const slug = res?.user?.username || res?.user?.id || user?.username || user?.id;
     if (slug) {
-      router.replace(`/user/${slug}`);
+      router.replace(`/${slug}`);
     } else {
       router.replace('/login');
     }

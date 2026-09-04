@@ -11,7 +11,7 @@ export default function AccountRedirectPage() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.replace(`/user/${user.username || user.id}`);
+        router.replace(`/${user.username || user.id}`);
       } else {
         router.replace('/login');
       }

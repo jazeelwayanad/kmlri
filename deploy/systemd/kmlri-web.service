@@ -1,0 +1,25 @@
+[Unit]
+Description=KMLRI Next.js Frontend Web Application
+After=network.target kmlri-api.service
+Wants=kmlri-api.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kmlri/apps/web
+EnvironmentFile=/var/www/kmlri/.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kmlri-web
+
+# Process sandboxing & limits
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

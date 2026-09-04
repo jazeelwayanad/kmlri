@@ -146,7 +146,7 @@ export default function MyLoansPage() {
       {activeTab === 'current' ? (
         <div className="space-y-4">
           {activeLoans.length === 0 ? (
-            <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+            <div className="border rounded p-8 text-center text-heritage-muted text-sm">
               You have no active loans right now.
             </div>
           ) : (
@@ -202,11 +202,7 @@ export default function MyLoansPage() {
             </div>
           )}
 
-          <div className="bg-[#F7F4EF] p-4 border border-[#D6CCBC] text-xs text-heritage-body space-y-1 rounded">
-            <p className="font-bold text-black font-averia uppercase">Circulation Guidelines:</p>
-            <p>• Volumes may be renewed up to 3 consecutive periods unless held by another scholar.</p>
-            <p>• Overnight loan requests for non-digitized rare books must be signed by the Chief Curator.</p>
-          </div>
+      
         </div>
       ) : historyLoading ? (
         <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading loan history…</div>

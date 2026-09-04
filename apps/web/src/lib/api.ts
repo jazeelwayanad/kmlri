@@ -519,22 +519,22 @@ export const api = {
   // Users & Members
   async getUsers(q?: string) {
     const query = q ? `?q=${encodeURIComponent(q)}` : '';
-    return this.fetchWithAuth(`/users${query}`);
+    return this.fetchWithAuth(`s${query}`);
   },
 
   async getUser(id: string) {
-    return this.fetchWithAuth(`/users/${id}`);
+    return this.fetchWithAuth(`s/${id}`);
   },
 
   async updateUser(id: string, data: any) {
-    return this.fetchWithAuth(`/users/${id}`, {
+    return this.fetchWithAuth(`s/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   },
 
   async deleteUser(id: string) {
-    return this.fetchWithAuth(`/users/${id}`, {
+    return this.fetchWithAuth(`s/${id}`, {
       method: 'DELETE',
     });
   },
@@ -595,23 +595,71 @@ export const api = {
   },
 
   // Bookings (space / reading room / consultation)
-  async getBookings() {
-    return this.fetchWithAuth('/bookings');
+  async getBookingConfig() {
+    return this.fetchWithAuth('/bookings/config');
   },
 
-  async getAllBookings() {
-    return this.fetchWithAuth('/bookings/all');
+  async updateBookingConfig(config: any) {
+    return this.fetchWithAuth('/bookings/config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
   },
 
-  async createBooking(data: { type: string; resourceName: string; date: string; timeSlot: string; notes?: string }) {
+  async getBookings(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`/bookings${query}`);
+  },
+
+  async getAllBookings(status?: string) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`/bookings/all${query}`);
+  },
+
+  async getBooking(id: string) {
+    return this.fetchWithAuth(`/bookings/${id}`);
+  },
+
+  async createBooking(data: {
+    type: string;
+    resourceName: string;
+    date: string;
+    timeSlot: string;
+    notes?: string;
+    customFieldValues?: Record<string, any>;
+  }) {
     return this.fetchWithAuth('/bookings', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async cancelBooking(id: string) {
-    return this.fetchWithAuth(`/bookings/${id}`, { method: 'DELETE' });
+  async approveBooking(id: string, note?: string) {
+    return this.fetchWithAuth(`/bookings/${id}/approve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    });
+  },
+
+  async rejectBooking(id: string, note: string) {
+    return this.fetchWithAuth(`/bookings/${id}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    });
+  },
+
+  async updateBooking(id: string, data: any) {
+    return this.fetchWithAuth(`/bookings/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async cancelBooking(id: string, note?: string) {
+    return this.fetchWithAuth(`/bookings/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ note }),
+    });
   },
 
   // Acquisition requests

@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('kmlri_token')?.value;
     const slug = request.cookies.get('kmlri_slug')?.value;
     if (token) {
-      const destination = slug ? `/user/${slug}` : '/account';
+      const destination = slug ? `/${slug}` : '/account';
       return NextResponse.redirect(new URL(destination, request.url));
     }
   }

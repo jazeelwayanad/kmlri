@@ -70,4 +70,4 @@ import { MediaModule } from './media/media.module';
     MediaModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
