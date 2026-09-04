@@ -38,11 +38,21 @@ input::placeholder, textarea::placeholder {
   color: rgba(216, 179, 179, 0.52);
 }
 
+@layer base {
+  ::selection,
+  *::selection,
+  ::-moz-selection,
+  *::-moz-selection {
+    background-color: rgb(165, 35, 7) !important;
+    color: #ffffff !important;
+  }
+}
+
 ::selection,
 *::selection,
 ::-moz-selection,
 *::-moz-selection {
-  background-color: #A52307 !important;
+  background-color: rgb(165, 35, 7) !important;
   color: #ffffff !important;
 }
 

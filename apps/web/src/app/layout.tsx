@@ -14,12 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="selection:bg-heritage-red selection:text-white">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
-      <body>
+      <body className="selection:bg-heritage-red selection:text-white">
         <AuthProvider>{children}</AuthProvider>
         <DialogRoot />
       </body>
