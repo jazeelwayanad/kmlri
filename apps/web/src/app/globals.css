@@ -38,9 +38,12 @@ input::placeholder, textarea::placeholder {
   color: rgba(216, 179, 179, 0.52);
 }
 
-::selection {
-  background: rgb(165, 35, 7);
-  color: #ffffff;
+::selection,
+*::selection,
+::-moz-selection,
+*::-moz-selection {
+  background-color: #A52307 !important;
+  color: #ffffff !important;
 }
 
 /* Double lines and borders */

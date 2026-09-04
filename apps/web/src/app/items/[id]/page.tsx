@@ -233,7 +233,7 @@ export default function ItemDetailPage() {
     record.coverImageUrl || (folios.length > 0 ? folios[0]?.imageUrl : null);
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-stone-900 font-serif selection:bg-amber-200">
+    <div className="min-h-screen bg-[#F9F6F0] text-stone-900 font-serif">
       <TopBar />
       <Navbar />
 
