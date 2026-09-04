@@ -148,7 +148,6 @@ export function CirculationDesk() {
   const [patronLoading, setPatronLoading] = useState(false);
 
   const [checkoutBarcode, setCheckoutBarcode] = useState('');
-  const [checkoutDays, setCheckoutDays] = useState(14);
   const [issuedThisSession, setIssuedThisSession] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [actionInProgressLoanId, setActionInProgressLoanId] = useState<string | null>(null);
@@ -164,7 +163,7 @@ export function CirculationDesk() {
   };
 
   const handlePatronLookup = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+    if (e) e.preventDefault();
     if (!patronSearch.trim()) return;
     setPatronLoading(true);
     try {
@@ -193,15 +192,16 @@ export function CirculationDesk() {
       const loan = await api.checkOut({
         barcode: checkoutBarcode.trim(),
         userIdentifier: selectedPatron.membershipNumber,
-        dueDays: checkoutDays,
       });
+      const diffMs = new Date(loan.dueDate).getTime() - Date.now();
+      const calculatedDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
       setIssuedThisSession((prev) => [
         {
           id: loan.id,
           barcode: loan.copy?.barcode || checkoutBarcode,
           title: loan.copy?.bibRecord?.titleLatin || 'Item',
           shelfmark: loan.copy?.bibRecord?.shelfmark || '',
-          days: checkoutDays,
+          days: calculatedDays,
           dueDate: formatDate(loan.dueDate),
         },
         ...prev,
@@ -741,12 +741,14 @@ export function CirculationDesk() {
                     <Barcode className="w-3.5 h-3.5 text-[#A52307]" />
                     <span>Scan Item Barcode &amp; Issue</span>
                   </span>
-                  <span className="text-[11px] font-bold font-mono text-gray-500">
-                    Duration: {checkoutDays} Days
-                  </span>
+                  {selectedPatron && (
+                    <span className="text-[11px] font-mono text-gray-500">
+                      Policy: {selectedPatron.role || 'Standard Member'} Duration
+                    </span>
+                  )}
                 </div>
 
-                <form onSubmit={handleAddCheckoutItem} className="grid grid-cols-1 sm:grid-cols-[1fr_150px_auto] gap-3">
+                <form onSubmit={handleAddCheckoutItem} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
                   <div>
                     <label className="text-[11px] font-bold text-gray-700 block mb-1">
                       Scanned Item Barcode / RFID
@@ -762,27 +764,11 @@ export function CirculationDesk() {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-700 block mb-1">Loan Period</label>
-                    <select
-                      value={checkoutDays}
-                      onChange={(e) => setCheckoutDays(Number(e.target.value))}
-                      disabled={!selectedPatron}
-                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-semibold bg-white text-gray-900 outline-none disabled:bg-gray-100"
-                    >
-                      <option value="7">7 Days (Short)</option>
-                      <option value="14">14 Days (Standard)</option>
-                      <option value="21">21 Days (Research)</option>
-                      <option value="30">30 Days (Faculty)</option>
-                      <option value="60">60 Days (Semester)</option>
-                    </select>
-                  </div>
-
                   <div className="flex items-end">
                     <button
                       type="submit"
                       disabled={!selectedPatron || issuing}
-                      className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px] disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors h-[38px] disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
                     >
                       {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
                       <span>Issue Volume</span>
