@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { NotificationProvider } from '@/lib/notification-store';
 import Link from 'next/link';
@@ -10,11 +10,16 @@ import { Shield, ShieldAlert, ArrowLeft, LogOut, UserCircle, AlertCircle } from 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, login, logout, isStaff, loading } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [identifier, setIdentifier] = useState('admin@kmlri.in');
   const [password, setPassword] = useState('Admin@123456');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleAdminSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F6F7F9] font-sans text-lg text-gray-500">
         Verifying staff credentials...
@@ -43,11 +48,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="min-h-screen bg-[#0E0E0E] flex items-center justify-center p-4 font-sans">
         <div className="bg-white rounded-xl p-8 sm:p-10 max-w-md w-full border border-gray-200 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-heritage-red text-white flex items-center justify-center rounded-lg mx-auto mb-3">
-              <Shield className="w-6 h-6" />
-            </div>
+
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              kmlri <span className="text-xs uppercase bg-gray-900 text-white px-2 py-0.5 rounded ml-1">Librarian Console</span>
+              kmlri Admin Panel
             </h1>
             <p className="text-xs text-gray-500 mt-2">
               Staff access for circulation desk, cataloging repository, and member controls.
@@ -100,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </form>
 
           <div className="mt-8 pt-5 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500">
-            <Link href="/" className="hover:underline text-gray-900 flex items-center gap-1 font-semibold">
+            <Link prefetch href="/" className="hover:underline text-gray-900 flex items-center gap-1 font-semibold">
               <ArrowLeft className="w-3 h-3" />
               <span>Public Website</span>
             </Link>
@@ -145,8 +148,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center text-sm font-semibold">
-            <Link
-              href="/account"
+            <Link prefetch
+              href={user ? `/user/${user.username || user.id}` : '/login'}
               className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-heritage-red hover:text-white  transition-colors flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />

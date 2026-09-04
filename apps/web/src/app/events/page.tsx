@@ -62,11 +62,6 @@ export default function EventsPage() {
             <Search className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
           </div>
         </div>
-
-        <p className="text-[17px] sm:text-[21px] leading-[1.4] text-heritage-body max-w-[60ch] mb-6 sm:mb-8 font-sans">
-          Join international manuscript conferences, hands-on conservation sessions in our lab, and curated exhibitions of historical codices.
-        </p>
-
         <div className="double-rule mb-8 sm:mb-12"></div>
 
         {/* Events Grid */}
@@ -88,15 +83,15 @@ export default function EventsPage() {
                     </span>
                     <span
                       className={`text-[11px] font-sans font-bold px-2 py-0.5 rounded ${isFull
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-emerald-100 text-emerald-800'
                         }`}
                     >
                       {isFull ? 'Waitlist' : 'Seats Open'}
                     </span>
                   </div>
 
-                  <Link href={`/events/${event.slug || event.id}`}>
+                  <Link prefetch href={`/events/${event.slug || event.id}`}>
                     <h2 className="font-amiri text-[22px] sm:text-[24px] font-bold leading-[1.25] mb-3 group-hover:text-heritage-red transition-colors">
                       {event.title}
                     </h2>
@@ -121,7 +116,7 @@ export default function EventsPage() {
                 </div>
 
                 <div className="pt-2 flex items-center justify-between border-t border-gray-100 mt-auto">
-                  <Link
+                  <Link prefetch
                     href={`/events/${event.slug || event.id}`}
                     className="font-amiri text-[17px] font-bold text-heritage-red hover:underline flex items-center gap-1"
                   >

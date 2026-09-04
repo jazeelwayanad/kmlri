@@ -54,7 +54,7 @@ export default function FaqsPage() {
         })}
 
         <p className="text-[17px] sm:text-[19px] text-heritage-body pt-6 sm:pt-[30px]">
-          Still stuck? <Link href="/ask" className="text-heritage-red font-bold hover:underline">Ask a librarian →</Link>
+          Still stuck? <Link prefetch href="/ask" className="text-heritage-red font-bold hover:underline">Ask a librarian →</Link>
         </p>
       </section>
 

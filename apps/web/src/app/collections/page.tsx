@@ -71,7 +71,7 @@ export default function CollectionsPage() {
             {collections.map((col) => {
               const count = col._count?.records ?? 0;
               return (
-                <Link
+                <Link prefetch
                   key={col.id}
                   href={`/search?collection=${encodeURIComponent(col.slug)}`}
                   className="flex flex-col gap-1.5 sm:gap-[7px] py-5 sm:py-6 px-2 sm:px-3 -mx-2 sm:-mx-3 border-b border-[#D6CCBC] hover:bg-paper-hover transition-colors"

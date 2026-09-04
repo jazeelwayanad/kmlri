@@ -86,13 +86,12 @@ export function AdminSidebar({
       )}
 
       <aside
-        className={`fixed lg:sticky top-0 z-50 lg:z-auto w-[264px] flex-shrink-0 bg-black text-white flex flex-col h-screen overflow-y-auto font-sans select-none transition-transform duration-200 ease-in-out ${
-          open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed lg:sticky top-0 z-50 lg:z-auto w-[264px] flex-shrink-0 bg-black text-white flex flex-col h-screen overflow-y-auto font-sans select-none transition-transform duration-200 ease-in-out ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center px-[22px] flex-shrink-0 border-b border-[#262626]">
-          <Link href="/" className="flex items-center gap-2">
+          <Link prefetch href="/" className="flex items-center gap-2">
             <span className="font-amiri text-[26px] font-bold text-white tracking-tight">kmlri</span>
             <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#A52307] border border-[#A52307] px-[7px] py-[2px] rounded-[3px]">
               Admin
@@ -104,14 +103,13 @@ export function AdminSidebar({
         <nav className="p-[14px_10px_24px] flex-1 space-y-1">
           {/* Dashboard (Standalone) */}
           <div className="mb-2">
-            <Link
+            <Link prefetch
               href="/admin"
               onClick={onClose}
-              className={`w-full text-left py-[9px] px-[14px] text-[13px] tracking-[0.04em] uppercase font-bold rounded-[4px] transition-all flex items-center justify-between ${
-                pathname === '/admin'
+              className={`w-full text-left py-[9px] px-[14px] text-[13px] tracking-[0.04em] uppercase font-bold rounded-[4px] transition-all flex items-center justify-between ${pathname === '/admin'
                   ? 'bg-[#A52307] text-white shadow-sm ring-1 ring-white/10 hover:text-white hover:bg-[#A52307]/80'
                   : 'text-[#D2D2D2] hover:bg-[#1A1A1A] hover:text-white'
-              }`}
+                }`}
             >
               <span>Dashboard</span>
               {pathname === '/admin' && <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}
@@ -129,9 +127,8 @@ export function AdminSidebar({
                 <button
                   type="button"
                   onClick={() => toggleSection(section.title)}
-                  className={`w-full bg-transparent border-none cursor-pointer flex items-center justify-between gap-2 p-[9px_12px] text-[11px] tracking-[0.08em] uppercase font-bold text-left transition-colors rounded ${
-                    hasActiveChild ? 'text-white' : 'text-[#9C9C9C] hover:text-white'
-                  }`}
+                  className={`w-full bg-transparent border-none cursor-pointer flex items-center justify-between gap-2 p-[9px_12px] text-[11px] tracking-[0.08em] uppercase font-bold text-left transition-colors rounded ${hasActiveChild ? 'text-white' : 'text-[#9C9C9C] hover:text-white'
+                    }`}
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     {hasActiveChild && <span className="w-1.5 h-1.5 rounded-full bg-[#A52307] flex-shrink-0 inline-block" />}
@@ -152,15 +149,14 @@ export function AdminSidebar({
                         {group.items.map((item) => {
                           const active = isItemActive(item);
                           return (
-                            <Link
+                            <Link prefetch
                               key={item.href}
                               href={item.href}
                               onClick={onClose}
-                              className={`w-full text-left cursor-pointer py-[7px] px-[14px] pl-[20px] text-[13px] rounded-[4px] transition-all flex items-center justify-between ${
-                                active
+                              className={`w-full text-left cursor-pointer py-[7px] px-[14px] pl-[20px] text-[13px] rounded-[4px] transition-all flex items-center justify-between ${active
                                   ? 'bg-[#A52307] text-white font-semibold shadow-sm ring-1 ring-white/10 hover:text-white hover:bg-[#A52307]/80'
                                   : 'text-[#D2D2D2] hover:bg-[#1A1A1A] hover:text-white'
-                              }`}
+                                }`}
                             >
                               <span className="truncate">{item.label}</span>
                               {active && <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}
@@ -177,14 +173,22 @@ export function AdminSidebar({
         </nav>
 
         {/* User Info Footer */}
-        <Link
+        <Link prefetch
           href="/admin/profile"
           onClick={onClose}
           className="p-[16px_22px] border-t border-[#262626] flex items-center gap-2.5 bg-[#0A0A0A] hover:bg-[#141414] transition-colors cursor-pointer"
         >
-          <span className="w-[30px] h-[30px] rounded-full bg-[#303030] text-white flex items-center justify-center text-[13px] font-bold flex-shrink-0 border border-white/10">
-            {getInitials(user?.fullName)}
-          </span>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.fullName || 'User'}
+              className="w-[30px] h-[30px] rounded-full object-cover border border-white/20 flex-shrink-0"
+            />
+          ) : (
+            <span className="w-[30px] h-[30px] rounded-full bg-[#303030] text-white flex items-center justify-center text-[13px] font-bold flex-shrink-0 border border-white/10">
+              {getInitials(user?.fullName)}
+            </span>
+          )}
           <div className="flex flex-col leading-[1.3] min-w-0 flex-1">
             <span className="text-[13px] text-white font-semibold truncate">{user?.fullName || 'Rashida A.'}</span>
             <span className="text-[11px] text-[#9C9C9C] truncate">

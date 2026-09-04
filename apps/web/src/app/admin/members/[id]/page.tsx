@@ -19,8 +19,11 @@ import {
   X,
   Edit3,
   Trash2,
+  Users,
+  Plus,
 } from 'lucide-react';
 import { confirmDialog } from '@/lib/dialog';
+import { MemberForm } from '@/components/members/MemberForm';
 
 function formatDate(d?: string) {
   if (!d) return '—';
@@ -44,20 +47,13 @@ export default function MemberDetailsPage() {
   const [member, setMember] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState<'circulations' | 'holds' | 'overdues' | 'fines' | 'history' | 'overview'>('circulations');
+  const [activeTab, setActiveTab] = useState<'circulations' | 'holds' | 'overdues' | 'fines' | 'history' | 'relatives' | 'overview'>('circulations');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
-  // Edit Member Modal State
+  // Modals
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editFullName, setEditFullName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editMembershipNumber, setEditMembershipNumber] = useState('');
-  const [editRole, setEditRole] = useState('STUDENT');
-  const [editBorrowLimit, setEditBorrowLimit] = useState(5);
-  const [editStatus, setEditStatus] = useState('ACTIVE');
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [showRelativeModal, setShowRelativeModal] = useState(false);
 
   const loadMember = async () => {
     setLoading(true);
@@ -79,39 +75,7 @@ export default function MemberDetailsPage() {
   }, [memberId]);
 
   const handleOpenEditModal = () => {
-    if (!member) return;
-    setEditFullName(member.fullName);
-    setEditEmail(member.email);
-    setEditPhone(member.phone || '');
-    setEditMembershipNumber(member.membershipNumber);
-    setEditRole(member.role);
-    setEditBorrowLimit(member.maxBorrowLimit || 5);
-    setEditStatus(member.status || 'ACTIVE');
     setShowEditModal(true);
-  };
-
-  const handleSaveMemberEdits = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingEdit(true);
-    try {
-      await api.updateUser(member.id, {
-        fullName: editFullName,
-        email: editEmail,
-        phone: editPhone || undefined,
-        membershipNumber: editMembershipNumber,
-        role: editRole,
-        status: editStatus,
-        maxBorrowLimit: Number(editBorrowLimit),
-      });
-      setShowEditModal(false);
-      setNotification({ type: 'success', text: `Member profile for "${editFullName}" updated successfully.` });
-      await loadMember();
-    } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || 'Could not update this member.' });
-    } finally {
-      setSavingEdit(false);
-      setTimeout(() => setNotification(null), 4000);
-    }
   };
 
   const handleDeleteMember = async () => {
@@ -162,7 +126,7 @@ export default function MemberDetailsPage() {
     return (
       <div className="p-12 text-center font-sans">
         <p className="text-lg font-bold text-gray-900 mb-2">Member not found</p>
-        <Link href="/admin/members" className="text-[#A52307] font-semibold text-sm hover:underline">
+        <Link prefetch href="/admin/members" className="text-[#A52307] font-semibold text-sm hover:underline">
           ← Back to Members Directory
         </Link>
       </div>
@@ -184,6 +148,7 @@ export default function MemberDetailsPage() {
     { key: 'overdues', label: 'Overdue Items', count: overdueLoans.length, icon: Clock },
     { key: 'fines', label: 'Fines & Payments', count: `₹${totalUnpaidFines}`, icon: CreditCard },
     { key: 'history', label: 'Loan History', count: pastLoans.length, icon: History },
+    { key: 'relatives', label: 'Relatives & Guarantors', count: (member.relatives?.length || 0) + (member.guarantor ? 1 : 0), icon: Users },
     { key: 'overview', label: 'Membership Profile', icon: User },
   ] as const;
 
@@ -191,7 +156,7 @@ export default function MemberDetailsPage() {
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
       {/* Top Back Link & Actions */}
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <Link href="/admin/members" className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-[#A52307] transition-colors">
+        <Link prefetch href="/admin/members" className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-[#A52307] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Members Directory</span>
         </Link>
@@ -218,9 +183,8 @@ export default function MemberDetailsPage() {
 
       {notification && (
         <div
-          className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-            notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
-          }`}
+          className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+            }`}
         >
           {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />}
           <span>{notification.text}</span>
@@ -231,9 +195,17 @@ export default function MemberDetailsPage() {
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center font-bold text-xl flex-shrink-0">
-              {member.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-            </div>
+            {member.avatarUrl ? (
+              <img
+                src={member.avatarUrl}
+                alt={member.fullName}
+                className="w-16 h-16 rounded-full object-cover border-2 border-black shadow flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center font-bold text-xl flex-shrink-0">
+                {member.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{member.fullName}</h1>
@@ -281,9 +253,8 @@ export default function MemberDetailsPage() {
                 key={t.key}
                 type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`w-full text-left cursor-pointer p-2.5 rounded-[4px] transition-all flex items-center justify-between text-xs font-semibold ${
-                  active ? 'bg-[#A52307] text-white shadow-sm font-bold' : 'text-gray-700 hover:bg-[#FAF8F5] hover:text-gray-900'
-                }`}
+                className={`w-full text-left cursor-pointer p-2.5 rounded-[4px] transition-all flex items-center justify-between text-xs font-semibold ${active ? 'bg-[#A52307] text-white shadow-sm font-bold' : 'text-gray-700 hover:bg-[#FAF8F5] hover:text-gray-900'
+                  }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-white' : 'text-gray-500'}`} />
@@ -527,6 +498,151 @@ export default function MemberDetailsPage() {
             </div>
           )}
 
+          {/* Relatives & Guarantor */}
+          {activeTab === 'relatives' && (
+            <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
+              <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Relatives &amp; Institutional Dependents</h3>
+                  <p className="text-[11px] text-gray-500">
+                    Family members, children, student supervisees, or institutional relations connected to this patron.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRelativeModal(true)}
+                  className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-semibold hover:bg-red-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Relative</span>
+                </button>
+              </div>
+
+              {/* Guarantor Section if this member has a guarantor */}
+              {member.guarantor && (
+                <div className="border border-amber-200 bg-amber-50/60 p-4 rounded-[2px] space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900 font-bold uppercase text-[10px] tracking-wider">
+                    <Shield className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Designated Guarantor / Parent Patron</span>
+                  </div>
+                  <div className="flex items-center justify-between flex-wrap gap-4 pt-1">
+                    <div className="flex items-center gap-3">
+                      {member.guarantor.avatarUrl ? (
+                        <img
+                          src={member.guarantor.avatarUrl}
+                          alt={member.guarantor.fullName}
+                          className="w-10 h-10 rounded-full object-cover border border-amber-300 shadow-sm flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                          {member.guarantor.fullName?.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <Link
+                          prefetch
+                          href={`/admin/members/${member.guarantor.id}`}
+                          className="font-bold text-gray-900 hover:text-[#A52307] hover:underline text-sm"
+                        >
+                          {member.guarantor.fullName}
+                        </Link>
+                        <p className="text-[11px] text-gray-500 font-mono">
+                          ID: {member.guarantor.membershipNumber} · {member.guarantor.email}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs bg-white border border-amber-300 text-amber-900 px-2.5 py-1 rounded font-semibold">
+                      Role: {member.guarantor.role}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Relatives List */}
+              {(!member.relatives || member.relatives.length === 0) ? (
+                <div className="p-10 text-center text-gray-500 text-xs border border-dashed border-gray-200 rounded">
+                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="font-semibold text-gray-700">No relatives or dependents recorded</p>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Click "Add Relative" to register a family member, child, or academic supervisee.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-[#E2E0DB] rounded">
+                  <table className="w-full border-collapse text-left text-xs font-sans">
+                    <thead>
+                      <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold text-[11px]">
+                        <th className="py-3 px-3">Relative Name</th>
+                        <th className="py-3 px-3">Relationship</th>
+                        <th className="py-3 px-3">Membership ID</th>
+                        <th className="py-3 px-3">Role &amp; Status</th>
+                        <th className="py-3 px-3">Active Loans</th>
+                        <th className="py-3 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#EEECE7]">
+                      {member.relatives.map((rel: any) => (
+                        <tr key={rel.id} className="hover:bg-[#FAF8F5]">
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2.5">
+                              {rel.avatarUrl ? (
+                                <img
+                                  src={rel.avatarUrl}
+                                  alt={rel.fullName}
+                                  className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[11px] flex-shrink-0">
+                                  {rel.fullName?.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div>
+                                <Link
+                                  prefetch
+                                  href={`/admin/members/${rel.id}`}
+                                  className="font-bold text-gray-900 hover:text-[#A52307] hover:underline"
+                                >
+                                  {rel.fullName}
+                                </Link>
+                                <p className="text-[10px] text-gray-500">{rel.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="bg-neutral-100 border border-neutral-300 text-neutral-800 px-2 py-0.5 rounded text-[11px] font-semibold">
+                              {rel.relationship || 'Relative'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono text-gray-700">{rel.membershipNumber}</td>
+                          <td className="py-3 px-3">
+                            <span className="text-[10px] font-bold uppercase bg-[#A52307] text-white px-1.5 py-0.5 rounded mr-1">
+                              {rel.role}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                              {rel.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-semibold text-gray-900">
+                            {rel._count?.loans ?? 0} active
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <Link
+                              prefetch
+                              href={`/admin/members/${rel.id}`}
+                              className="text-[#A52307] font-semibold hover:underline text-xs"
+                            >
+                              View Record →
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Membership Profile */}
           {activeTab === 'overview' && (
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
@@ -535,7 +651,7 @@ export default function MemberDetailsPage() {
                 <button
                   type="button"
                   onClick={handleOpenEditModal}
-                  className="px-3 py-1 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit Profile</span>
@@ -552,6 +668,10 @@ export default function MemberDetailsPage() {
                   <span className="font-mono font-bold text-gray-900 text-sm">{member.membershipNumber}</span>
                 </div>
                 <div>
+                  <span className="text-gray-500 block text-[11px]">Patron Username:</span>
+                  <span className="font-mono text-gray-900">@{member.username || '—'}</span>
+                </div>
+                <div>
                   <span className="text-gray-500 block text-[11px]">Registered Email:</span>
                   <span className="font-mono text-gray-900">{member.email}</span>
                 </div>
@@ -560,12 +680,24 @@ export default function MemberDetailsPage() {
                   <span className="font-mono text-gray-900">{member.phone || 'N/A'}</span>
                 </div>
                 <div>
+                  <span className="text-gray-500 block text-[11px]">Institution / Organization:</span>
+                  <span className="font-semibold text-gray-900">{member.institution || member.department || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block text-[11px]">Gender:</span>
+                  <span className="font-medium text-gray-900">{member.gender || 'N/A'}</span>
+                </div>
+                <div>
                   <span className="text-gray-500 block text-[11px]">Institutional Role:</span>
                   <span className="font-bold text-[#A52307] uppercase">{member.role}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block text-[11px]">Date Joined:</span>
-                  <span className="font-mono text-gray-800">{formatDate(member.createdAt)}</span>
+                  <span className="text-gray-500 block text-[11px]">Research Interest:</span>
+                  <span className="font-medium text-gray-800">{member.researchInterest || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block text-[11px]">Mailing Address:</span>
+                  <span className="text-gray-800">{member.address || '—'}</span>
                 </div>
                 <div>
                   <span className="text-gray-500 block text-[11px]">Concurrent Borrow Limit:</span>
@@ -581,123 +713,64 @@ export default function MemberDetailsPage() {
         </div>
       </div>
 
-      {/* POPUP MODAL: Edit Member Profile */}
+      {/* POPUP MODAL: Edit Member Profile with Unified MemberForm */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Member Registry</p>
                 <h3 className="text-xl font-bold text-gray-900 mt-0.5">Edit Member Profile</h3>
               </div>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-900">
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-900 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveMemberEdits} className="space-y-4">
+            <MemberForm
+              mode="admin-edit"
+              initialData={member}
+              onCancel={() => setShowEditModal(false)}
+              onSuccess={async () => {
+                setShowEditModal(false);
+                setNotification({ type: 'success', text: `Member profile updated successfully.` });
+                await loadMember();
+                setTimeout(() => setNotification(null), 4000);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* POPUP MODAL: Add Relative with Unified MemberForm */}
+      {showRelativeModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
               <div>
-                <label className="block font-bold text-gray-700 uppercase mb-1">Full Name*</label>
-                <input
-                  type="text"
-                  required
-                  value={editFullName}
-                  onChange={(e) => setEditFullName(e.target.value)}
-                  className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs font-semibold"
-                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Relative / Dependent Registration</p>
+                <h3 className="text-xl font-bold text-gray-900 mt-0.5">Add Relative for {member.fullName}</h3>
               </div>
+              <button onClick={() => setShowRelativeModal(false)} className="text-gray-400 hover:text-gray-900 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Email Address*</label>
-                  <input
-                    type="email"
-                    required
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Membership Number*</label>
-                  <input
-                    type="text"
-                    required
-                    value={editMembershipNumber}
-                    onChange={(e) => setEditMembershipNumber(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Member Role*</label>
-                  <select
-                    value={editRole}
-                    onChange={(e) => {
-                      const r = e.target.value;
-                      setEditRole(r);
-                      if (r === 'FACULTY') setEditBorrowLimit(12);
-                      else if (r === 'RESEARCHER') setEditBorrowLimit(8);
-                      else if (r === 'STAFF') setEditBorrowLimit(10);
-                      else setEditBorrowLimit(5);
-                    }}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none text-xs bg-white"
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="FACULTY">Faculty</option>
-                    <option value="RESEARCHER">Researcher</option>
-                    <option value="STAFF">Staff</option>
-                    <option value="LIBRARIAN">Librarian</option>
-                    <option value="SUPER_ADMIN">Admin</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Max Borrow Limit (Books)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={editBorrowLimit}
-                    onChange={(e) => setEditBorrowLimit(Number(e.target.value))}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Account Standing</label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none text-xs bg-white"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="SUSPENDED">Suspended</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="submit" disabled={savingEdit} className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-md disabled:opacity-50">
-                  {savingEdit ? 'Saving…' : 'Save Profile Changes'}
-                </button>
-              </div>
-            </form>
+            <MemberForm
+              mode="relative"
+              guarantorId={member.id}
+              guarantorName={member.fullName}
+              onCancel={() => setShowRelativeModal(false)}
+              onSuccess={async (rel) => {
+                setShowRelativeModal(false);
+                setNotification({
+                  type: 'success',
+                  text: `Relative "${rel?.fullName || 'Relative'}" registered and linked successfully.`,
+                });
+                await loadMember();
+                setTimeout(() => setNotification(null), 4000);
+              }}
+            />
           </div>
         </div>
       )}

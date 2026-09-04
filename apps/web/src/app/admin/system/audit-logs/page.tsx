@@ -13,7 +13,7 @@ interface AuditLog {
   details?: string;
   ipAddress?: string;
   createdAt: string;
-  user?: { fullName: string; membershipNumber: string } | null;
+  user?: { fullName: string; membershipNumber: string; avatarUrl?: string } | null;
 }
 
 function formatDateTime(d: string) {
@@ -114,7 +114,27 @@ export default function AuditLogsAdminPage() {
                 <tr key={l.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3.5 px-2 font-mono text-gray-500 text-[11px] whitespace-nowrap">{formatDateTime(l.createdAt)}</td>
                   <td className="py-3.5 px-2 font-semibold text-gray-900 whitespace-nowrap">
-                    {l.user ? `${l.user.fullName} (${l.user.membershipNumber})` : 'System'}
+                    {l.user ? (
+                      <div className="flex items-center gap-2">
+                        {l.user.avatarUrl ? (
+                          <img
+                            src={l.user.avatarUrl}
+                            alt={l.user.fullName}
+                            className="w-6 h-6 rounded-full object-cover border border-gray-300"
+                          />
+                        ) : (
+                          <span className="w-6 h-6 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">
+                            {l.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          </span>
+                        )}
+                        <span>{l.user.fullName} <span className="text-gray-500 font-mono text-[11px] font-normal">({l.user.membershipNumber})</span></span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-gray-600 font-mono text-[11px]">
+                        <span className="w-2 h-2 rounded-full bg-gray-400" />
+                        System
+                      </span>
+                    )}
                   </td>
                   <td className="py-3.5 px-2">
                     <span className="font-mono text-[11px] bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-bold">{l.action}</span>

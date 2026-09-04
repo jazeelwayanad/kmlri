@@ -204,11 +204,10 @@ export default function WebsiteOpportunitiesPage() {
       />
 
       {notification && (
-        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-          notificationType === 'success'
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notificationType === 'success'
             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
             : 'bg-red-50 text-red-800 border-red-200'
-        }`}>
+          }`}>
           {notificationType === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           ) : (
@@ -295,7 +294,7 @@ export default function WebsiteOpportunitiesPage() {
                         Featured
                       </span>
                     )}
-                    <Link
+                    <Link prefetch
                       href={`/admin/website/opportunities/${opp.slug}`}
                       className="font-bold text-gray-900 text-sm hover:text-[#A52307] transition-colors block line-clamp-1"
                     >
@@ -316,14 +315,13 @@ export default function WebsiteOpportunitiesPage() {
                   </span>
                 </td>
                 <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    opp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${opp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {opp.status}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right space-x-2">
-                  <Link
+                  <Link prefetch
                     href={`/admin/website/opportunities/${opp.slug}`}
                     className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1 shadow-sm"
                   >

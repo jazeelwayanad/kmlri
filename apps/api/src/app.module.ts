@@ -31,6 +31,7 @@ import { AuthoritiesModule } from './authorities/authorities.module';
 import { LibrariesModule } from './libraries/libraries.module';
 import { ItemTypesModule } from './item-types/item-types.module';
 import { AuthorisedValuesModule } from './authorised-values/authorised-values.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { AuthorisedValuesModule } from './authorised-values/authorised-values.mo
     LibrariesModule,
     ItemTypesModule,
     AuthorisedValuesModule,
+    MediaModule,
   ],
 })
 export class AppModule {}

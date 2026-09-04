@@ -71,8 +71,8 @@ export default function OpportunitiesPage() {
               type="button"
               onClick={() => setActiveFilter(filter)}
               className={`px-4 py-2 border transition-all text-xs font-semibold uppercase tracking-wider ${activeFilter === filter
-                  ? 'bg-black text-white border-black shadow'
-                  : 'bg-white text-gray-700 border-black/20 hover:border-black'
+                ? 'bg-black text-white border-black shadow'
+                : 'bg-white text-gray-700 border-black/20 hover:border-black'
                 }`}
             >
               {filter === 'ALL' ? 'All Opportunities' : filter}
@@ -102,7 +102,7 @@ export default function OpportunitiesPage() {
                   )}
                 </div>
 
-                <Link href={`/opportunities/${opp.slug || opp.id}`}><h2 className="font-amiri text-[22px] sm:text-[26px] font-bold leading-tight">
+                <Link prefetch href={`/opportunities/${opp.slug || opp.id}`}><h2 className="font-amiri text-[22px] sm:text-[26px] font-bold leading-tight">
                   {opp.title}
                 </h2></Link>
 
@@ -133,13 +133,13 @@ export default function OpportunitiesPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row md:flex-col gap-3 min-w-[170px] justify-center">
-                <Link
+                <Link prefetch
                   href={`/opportunities/${opp.slug || opp.id}`}
                   className="bg-black text-white font-amiri font-bold text-[17px] py-2 px-5 hover:bg-heritage-red hover:text-white  transition-colors text-center"
                 >
                   Apply Now →
                 </Link>
-                <Link
+                <Link prefetch
                   href={`/opportunities/${opp.id}`}
                   className="border border-black font-amiri text-[16px] py-1.5 px-4 hover:bg-black/5 transition-colors text-center text-black"
                 >

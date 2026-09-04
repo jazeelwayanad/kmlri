@@ -19,49 +19,84 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem('kmlri_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return getCookie('kmlri_token') || localStorage.getItem('kmlri_token') || null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const hasToken = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    if (!hasToken) return false;
+    const cached = localStorage.getItem('kmlri_user');
+    return !cached;
+  });
 
   const refreshUser = async () => {
     if (typeof window === 'undefined') {
       setLoading(false);
       return;
     }
-    try {
-      const savedToken = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
-      if (!savedToken) {
-        setUser(null);
-        setToken(null);
-        setLoading(false);
-        return;
-      }
 
-      // Restore cached user profile immediately for 0ms UI hydration
-      const cachedUser = localStorage.getItem('kmlri_user');
-      if (cachedUser) {
-        try {
-          setUser(JSON.parse(cachedUser));
-        } catch {}
-      }
+    const savedToken = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
+    if (!savedToken) {
+      setUser(null);
+      setToken(null);
+      setLoading(false);
+      return;
+    }
 
+    // Hydrate immediately from cache
+    const cachedUser = localStorage.getItem('kmlri_user');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        setUser(parsed);
+        setToken(savedToken);
+        setCookie('kmlri_token', savedToken);
+        setCookie('kmlri_slug', parsed.username || parsed.id);
+      } catch {}
+    } else {
       setToken(savedToken);
       setCookie('kmlri_token', savedToken);
-      localStorage.setItem('kmlri_token', savedToken);
+    }
 
-      // Verify and fetch fresh user profile
+    try {
+      // Verify and fetch fresh user profile in background
       const profile = await api.getMe();
       if (profile && profile.id) {
         setUser(profile);
+        setToken(savedToken);
         localStorage.setItem('kmlri_user', JSON.stringify(profile));
+        localStorage.setItem('kmlri_token', savedToken);
+        setCookie('kmlri_token', savedToken);
+        setCookie('kmlri_slug', profile.username || profile.id);
       }
-    } catch (err) {
-      console.warn('Session check expired or invalid, clearing stale credentials:', err);
-      localStorage.removeItem('kmlri_token');
-      localStorage.removeItem('kmlri_user');
-      deleteCookie('kmlri_token');
-      setUser(null);
-      setToken(null);
+    } catch (err: any) {
+      // ONLY clear session if server explicitly returned 401 Unauthorized!
+      if (err?.status === 401) {
+        console.warn('Session expired (401 Unauthorized). Clearing credentials.');
+        localStorage.removeItem('kmlri_token');
+        localStorage.removeItem('kmlri_user');
+        deleteCookie('kmlri_token');
+        deleteCookie('kmlri_slug');
+        setUser(null);
+        setToken(null);
+      } else {
+        // Network failure, browser refresh cancellation, or offline:
+        // DO NOT log out! Retain authenticated state from localStorage.
+        console.warn('Background profile refresh non-fatal error (retaining session):', err?.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -77,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('kmlri_token', res.accessToken);
       localStorage.setItem('kmlri_user', JSON.stringify(res.user));
       setCookie('kmlri_token', res.accessToken);
+      setCookie('kmlri_slug', res.user?.username || res.user?.id);
     }
     setToken(res.accessToken);
     setUser(res.user);
@@ -89,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('kmlri_token', res.accessToken);
       localStorage.setItem('kmlri_user', JSON.stringify(res.user));
       setCookie('kmlri_token', res.accessToken);
+      setCookie('kmlri_slug', res.user?.username || res.user?.id);
     }
     setToken(res.accessToken);
     setUser(res.user);
@@ -100,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('kmlri_token');
       localStorage.removeItem('kmlri_user');
       deleteCookie('kmlri_token');
+      deleteCookie('kmlri_slug');
     }
     setToken(null);
     setUser(null);

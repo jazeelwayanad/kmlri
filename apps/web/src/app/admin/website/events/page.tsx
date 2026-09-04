@@ -199,11 +199,10 @@ export default function WebsiteEventsPage() {
       />
 
       {notification && (
-        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-          notificationType === 'success'
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notificationType === 'success'
             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
             : 'bg-red-50 text-red-800 border-red-200'
-        }`}>
+          }`}>
           {notificationType === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           ) : (
@@ -290,7 +289,7 @@ export default function WebsiteEventsPage() {
                         Featured
                       </span>
                     )}
-                    <Link
+                    <Link prefetch
                       href={`/admin/website/events/${ev.slug}`}
                       className="font-bold text-gray-900 text-sm hover:text-[#A52307] transition-colors block line-clamp-1"
                     >
@@ -315,22 +314,20 @@ export default function WebsiteEventsPage() {
                   </span>
                   <div className="w-24 bg-gray-200 h-1.5 rounded-full mt-1 overflow-hidden">
                     <div
-                      className={`h-full ${
-                        (ev.registered || 0) >= (ev.capacity || 0) ? 'bg-[#A52307]' : 'bg-emerald-600'
-                      }`}
+                      className={`h-full ${(ev.registered || 0) >= (ev.capacity || 0) ? 'bg-[#A52307]' : 'bg-emerald-600'
+                        }`}
                       style={{ width: `${Math.min(100, ((ev.registered || 0) / (ev.capacity || 1)) * 100)}%` }}
                     />
                   </div>
                 </td>
                 <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    ev.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ev.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {ev.status}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right space-x-2">
-                  <Link
+                  <Link prefetch
                     href={`/admin/website/events/${ev.slug}`}
                     className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1 shadow-sm"
                   >

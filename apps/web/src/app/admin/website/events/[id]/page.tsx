@@ -161,7 +161,7 @@ export default function ManageEventDetailPage() {
   if (loadError || !eventData) {
     return (
       <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
-        <Link
+        <Link prefetch
           href="/admin/website/events"
           className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-[#A52307] transition-colors"
         >
@@ -184,7 +184,7 @@ export default function ManageEventDetailPage() {
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
       {/* Top Breadcrumb & Actions */}
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <Link
+        <Link prefetch
           href="/admin/website/events"
           className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-[#A52307] transition-colors"
         >
@@ -192,7 +192,7 @@ export default function ManageEventDetailPage() {
           <span>Back to All Events</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Link
+          <Link prefetch
             href={`/events/${eventData.slug}`}
             target="_blank"
             className="px-3.5 py-1.5 border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
@@ -204,11 +204,10 @@ export default function ManageEventDetailPage() {
       </div>
 
       {notification && (
-        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-          notificationType === 'success'
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notificationType === 'success'
             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
             : 'bg-red-50 text-red-800 border-red-200'
-        }`}>
+          }`}>
           {notificationType === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           ) : (
@@ -228,9 +227,8 @@ export default function ManageEventDetailPage() {
                   {eventData.kicker}
                 </span>
               )}
-              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                eventData.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-              }`}>
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${eventData.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                }`}>
                 {eventData.status}
               </span>
             </div>
@@ -294,11 +292,10 @@ export default function ManageEventDetailPage() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === tab.key
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTab === tab.key
                   ? 'border-[#A52307] text-[#A52307]'
                   : 'border-transparent text-gray-500 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               <span>{tab.label}</span>
@@ -370,18 +367,16 @@ export default function ManageEventDetailPage() {
                   <button
                     type="button"
                     onClick={() => setRegSubTab('submissions')}
-                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${
-                      regSubTab === 'submissions' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${regSubTab === 'submissions' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     Submissions
                   </button>
                   <button
                     type="button"
                     onClick={() => setRegSubTab('fields')}
-                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${
-                      regSubTab === 'fields' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1.5 rounded text-[11px] font-bold transition-colors ${regSubTab === 'fields' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     Form Fields
                   </button>

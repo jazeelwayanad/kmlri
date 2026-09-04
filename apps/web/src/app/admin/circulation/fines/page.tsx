@@ -13,7 +13,7 @@ interface Fine {
   status: 'UNPAID' | 'PAID' | 'WAIVED';
   createdAt: string;
   paidAt?: string;
-  user: { fullName: string; membershipNumber: string };
+  user: { fullName: string; membershipNumber: string; avatarUrl?: string };
   loan?: { copy: { bibRecord: { titleLatin: string; shelfmark: string } } } | null;
 }
 
@@ -170,8 +170,23 @@ export default function CirculationFinesPage() {
               {filtered.map((f) => (
                 <tr key={f.id} className="hover:bg-[#FAF8F5] transition-colors">
                   <td className="py-3.5 px-4">
-                    <span className="font-bold text-gray-900 block">{f.user.fullName}</span>
-                    <span className="font-mono text-[11px] text-gray-500">{f.user.membershipNumber}</span>
+                    <div className="flex items-center gap-2.5">
+                      {f.user.avatarUrl ? (
+                        <img
+                          src={f.user.avatarUrl}
+                          alt={f.user.fullName}
+                          className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                          {f.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-bold text-gray-900 block">{f.user.fullName}</span>
+                        <span className="font-mono text-[11px] text-gray-500">{f.user.membershipNumber}</span>
+                      </div>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="font-semibold text-gray-900 block">{f.loan?.copy.bibRecord.titleLatin || '—'}</span>

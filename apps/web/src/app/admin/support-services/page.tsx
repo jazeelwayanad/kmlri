@@ -38,7 +38,7 @@ export default function SupportServicesOverviewPage() {
         {sections.map((s) => {
           const Icon = s.icon;
           return (
-            <Link
+            <Link prefetch
               key={s.href}
               href={s.href}
               className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-sm hover:shadow-md hover:border-[#A52307] transition-all group flex flex-col gap-3"

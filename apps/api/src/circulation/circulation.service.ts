@@ -89,9 +89,18 @@ export class CirculationService {
       throw new BadRequestException(`Member has outstanding unpaid fines of ₹${unpaidFinesTotal}. Please settle fines before borrowing.`);
     }
 
-    const durationDays = dto.loanDurationDays || 14;
+    let durationDays = dto.loanDurationDays;
+    if (!durationDays) {
+      const roleLoanRulesSetting = await this.settings.get('circulation.roleLoanRules');
+      const rules = roleLoanRulesSetting?.value || {};
+      const userRole = (user as any).role;
+      const userRoleId = (user as any).roleId;
+      const matched = (userRole && rules[userRole]) || (userRoleId && rules[userRoleId]);
+      durationDays = matched?.loanDurationDays || 14;
+    }
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + durationDays);
+
 
     // Create loan and update copy status in transaction
     const [loan] = await this.prisma.$transaction([
@@ -316,6 +325,16 @@ export class CirculationService {
 
     if (!record) {
       throw new NotFoundException('Record not found.');
+    }
+
+    const copiesCount = await this.prisma.itemCopy.count({
+      where: { bibRecordId },
+    });
+
+    if (copiesCount === 0) {
+      throw new BadRequestException(
+        'This bibliographic record has no physical holding copies and cannot be held or reserved.',
+      );
     }
 
     const existingHold = await this.prisma.reservation.findFirst({

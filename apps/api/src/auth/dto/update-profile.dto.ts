@@ -38,5 +38,27 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(64)
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  institution?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
+  researchInterest?: string;
+
+  @IsOptional()
+  @IsString()
   avatarUrl?: string;
 }

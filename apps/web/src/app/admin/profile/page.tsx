@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   User,
@@ -256,7 +257,7 @@ export default function AdminProfilePage() {
               </span>
             </div>
             <p className="text-xs text-gray-500 font-mono mt-1">
-              Membership ID: <strong className="text-gray-900">{user?.membershipNumber || 'KMLRI-ADMIN-001'}</strong> · Email: <strong className="text-gray-900">{email}</strong>
+              Membership ID: <strong className="text-gray-900">{user?.membershipNumber}</strong> · Email: <strong className="text-gray-900">{email}</strong>
             </p>
             {designation && (
               <p className="text-xs text-heritage-muted mt-1 font-semibold">
@@ -493,12 +494,13 @@ export default function AdminProfilePage() {
             </div>
 
             <div className="pt-4 border-t border-[#E8E1D6]">
-              <a
+              <Link
+                prefetch
                 href="/admin/system/security"
                 className="text-heritage-red font-bold hover:underline block text-center text-xs"
               >
                 Configure Security Policies →
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -236,7 +236,7 @@ export default function RecordDetailsPage() {
     return (
       <div className="p-12 text-center font-sans">
         <p className="text-lg font-bold text-gray-900 mb-2">Record not found</p>
-        <Link href="/admin/catalog" className="text-[#A52307] font-semibold text-sm hover:underline">
+        <Link prefetch href="/admin/catalog" className="text-[#A52307] font-semibold text-sm hover:underline">
           ← Back to Catalogue Holdings
         </Link>
       </div>
@@ -254,7 +254,7 @@ export default function RecordDetailsPage() {
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
       {/* Top Back Link & Header Controls */}
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <Link
+        <Link prefetch
           href="/admin/catalog"
           className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-[#A52307] transition-colors"
         >
@@ -302,9 +302,8 @@ export default function RecordDetailsPage() {
 
       {notification && (
         <div
-          className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-            notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
-          }`}
+          className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -475,15 +474,14 @@ export default function RecordDetailsPage() {
                     <td className="py-3.5 px-3 text-gray-700">{item.location}</td>
                     <td className="py-3.5 px-3">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          item.status === 'AVAILABLE'
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.status === 'AVAILABLE'
                             ? 'bg-emerald-100 text-emerald-800'
                             : item.status === 'ON_LOAN'
-                            ? 'bg-blue-100 text-blue-800'
-                            : item.status === 'RESERVED'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+                              ? 'bg-blue-100 text-blue-800'
+                              : item.status === 'RESERVED'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-red-100 text-red-800'
+                          }`}
                       >
                         {item.status.replace(/_/g, ' ')}
                       </span>

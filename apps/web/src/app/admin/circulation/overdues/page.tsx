@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 interface Loan {
   id: string;
   dueDate: string;
-  user: { fullName: string; membershipNumber: string; email: string };
+  user: { fullName: string; membershipNumber: string; email: string; avatarUrl?: string };
   copy: { barcode: string; bibRecord: { titleLatin: string } };
 }
 
@@ -104,8 +104,23 @@ export default function CirculationOverduesPage() {
                   <td className="py-3.5 px-4 font-mono font-bold text-gray-900">{o.copy.barcode}</td>
                   <td className="py-3.5 px-4 font-semibold text-gray-900">{o.copy.bibRecord.titleLatin}</td>
                   <td className="py-3.5 px-4">
-                    <span className="font-bold text-gray-900 block">{o.user.fullName}</span>
-                    <span className="font-mono text-[11px] text-gray-500">{o.user.membershipNumber} · {o.user.email}</span>
+                    <div className="flex items-center gap-2.5">
+                      {o.user.avatarUrl ? (
+                        <img
+                          src={o.user.avatarUrl}
+                          alt={o.user.fullName}
+                          className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                          {o.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-bold text-gray-900 block">{o.user.fullName}</span>
+                        <span className="font-mono text-[11px] text-gray-500">{o.user.membershipNumber} · {o.user.email}</span>
+                      </div>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4 font-mono text-red-700 font-bold">{new Date(o.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                   <td className="py-3.5 px-4 font-bold text-[#A52307]">{o.days} Days Late</td>

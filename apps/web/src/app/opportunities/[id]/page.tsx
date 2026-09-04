@@ -111,7 +111,7 @@ export default function OpportunityDetailPage() {
           <p className="font-sans text-heritage-body mb-6">
             The requested fellowship, grant, or placement announcement could not be located.
           </p>
-          <Link
+          <Link prefetch
             href="/opportunities"
             className="inline-block bg-black text-white px-6 py-2.5 rounded-full text-base font-bold hover:bg-heritage-red transition-colors"
           >
@@ -131,7 +131,7 @@ export default function OpportunityDetailPage() {
       <main className="max-w-[1100px] mx-auto pt-6 sm:pt-12 px-4 sm:px-5 pb-24">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 font-sans text-xs sm:text-sm text-heritage-muted">
-          <Link
+          <Link prefetch
             href="/opportunities"
             className="inline-flex items-center gap-1.5 font-semibold text-black hover:text-heritage-red transition-colors"
           >
@@ -310,7 +310,7 @@ export default function OpportunityDetailPage() {
               )}
 
               <div className="mt-4 pt-4 border-t border-black/10 text-center">
-                <Link
+                <Link prefetch
                   href="/services"
                   className="text-xs font-sans text-heritage-muted hover:text-black font-semibold underline underline-offset-2"
                 >
@@ -340,7 +340,7 @@ export default function OpportunityDetailPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {relatedOpps.map((r, idx) => (
-                <Link
+                <Link prefetch
                   key={r.id || idx}
                   href={`/opportunities/${r.id}`}
                   className="bg-white border border-black/15 p-5 hover:border-black transition-all flex flex-col justify-between group"

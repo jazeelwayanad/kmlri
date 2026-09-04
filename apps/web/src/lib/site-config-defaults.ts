@@ -68,8 +68,6 @@ export interface HomepageSection {
 export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   { id: 'sec-hero', name: 'Hero Banner & Universal Search', visible: true },
   { id: 'sec-whatson', name: "What's On — Events, News, Stories & Opportunities", visible: true },
-  { id: 'sec-collections', name: 'Browse the Collections', visible: true },
-  { id: 'sec-archive', name: 'From the Archive — Featured Item', visible: true },
   { id: 'sec-services', name: 'Services & Support Grid', visible: true },
 ];
 
@@ -96,3 +94,36 @@ export function resolveHomepageSections(saved: Array<{ id: string; visible: bool
 
   return resolved.length > 0 ? resolved : DEFAULT_HOMEPAGE_SECTIONS;
 }
+
+export interface SiteService {
+  id?: string;
+  name: string;
+  note: string;
+  action: string;
+  href: string;
+}
+
+export const DEFAULT_SERVICES: SiteService[] = [
+  { id: 'svc-reading-room', name: 'Reading Room', note: 'Open to researchers, Monday to Saturday, 9:00 to 17:00.', action: 'Plan a visit', href: '/services' },
+  { id: 'svc-reproduction', name: 'Reproduction', note: 'Digital copies of catalogued items on request.', action: 'Request a scan', href: '/services' },
+  { id: 'svc-reference', name: 'Reference Help', note: 'Ask a librarian about sources, scripts and citations.', action: 'Ask a question', href: '/ask' },
+  { id: 'svc-membership', name: 'Membership', note: 'Borrowing and remote access for members of the institute.', action: 'Become a member', href: '/ask' },
+];
+
+export interface SiteHeroConfig {
+  wordmarkUrl?: string;
+  wordmarkAlt?: string;
+  searchPlaceholder?: string;
+  showAdvancedSearch?: boolean;
+  showBrowseStacks?: boolean;
+}
+
+export const DEFAULT_HERO_CONFIG: SiteHeroConfig = {
+  wordmarkUrl: '/assets/wordmark-arabic.svg',
+  wordmarkAlt: 'كنجين مسليار — Kunhīn Musliyār Library & Research Institute',
+  searchPlaceholder: 'Enter Keywords to Search',
+  showAdvancedSearch: true,
+  showBrowseStacks: true,
+};
+
+

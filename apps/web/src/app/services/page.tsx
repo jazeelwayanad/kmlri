@@ -8,7 +8,7 @@ export default function ServicesPage() {
     { name: 'Reading Room', note: 'Open to researchers, Monday to Saturday, 9:00 to 17:00.', action: 'Book a desk or room', href: '/account/bookings' },
     { name: 'Reproduction', note: 'Digital copies of catalogued items on request.', action: 'Request a scan', href: '/ask' },
     { name: 'Reference Help', note: 'Ask a librarian about sources, scripts and citations.', action: 'Ask a question', href: '/ask' },
-    { name: 'Membership', note: 'Borrowing and remote access for members of the institute.', action: 'Become a member', href: '/ask' },
+    { name: 'Membership', note: 'Borrowing and remote access for members of the institute.', action: 'Become a member', href: '/signup' },
   ];
 
   const hours = [
@@ -35,7 +35,7 @@ export default function ServicesPage() {
             <div key={idx} className="bg-paper p-6 sm:p-8 md:p-9 flex flex-col gap-2 sm:gap-[10px]">
               <span className="font-amiri text-[24px] sm:text-[28px] font-semibold">{svc.name}</span>
               <span className="text-[16px] sm:text-[19px] leading-[1.5] text-heritage-body text-pretty font-sans">{svc.note}</span>
-              <Link href={svc.href} className="text-[16px] sm:text-[18px] text-heritage-red font-semibold mt-1 sm:mt-[6px] hover:underline">
+              <Link prefetch href={svc.href} className="text-[16px] sm:text-[18px] text-heritage-red font-semibold mt-1 sm:mt-[6px] hover:underline">
                 {svc.action} →
               </Link>
             </div>

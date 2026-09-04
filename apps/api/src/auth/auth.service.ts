@@ -23,6 +23,29 @@ export class AuthService {
       throw new ConflictException('An account with this email already exists.');
     }
 
+    let username = dto.username?.trim().toLowerCase();
+    if (username) {
+      username = username.replace(/[^a-z0-9_-]/g, '-').replace(/(^-|-$)/g, '');
+      const existingUsername = await this.prisma.user.findUnique({
+        where: { username },
+      });
+      if (existingUsername) {
+        throw new ConflictException('This username is already taken. Please choose another.');
+      }
+    } else {
+      const baseSlug = (dto.fullName || dto.email.split('@')[0])
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      let candidate = baseSlug || 'patron';
+      let suffix = 1;
+      while (await this.prisma.user.findUnique({ where: { username: candidate } })) {
+        candidate = `${baseSlug}-${suffix}`;
+        suffix++;
+      }
+      username = candidate;
+    }
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
@@ -32,26 +55,41 @@ export class AuthService {
     });
 
     const count = await this.prisma.user.count();
-    const membershipNumber = `KMLRI-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    const membershipNumber = dto.membershipNumber || `KMLRI-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
     const user = await this.prisma.user.create({
       data: {
         membershipNumber,
         email: dto.email.toLowerCase(),
+        username,
         passwordHash,
         fullName: dto.fullName,
         phone: dto.phone,
+        address: dto.address,
+        institution: dto.institution,
+        gender: dto.gender,
+        researchInterest: dto.researchInterest,
+        avatarUrl: dto.avatarUrl,
+        guarantorId: dto.guarantorId,
+        relationship: dto.relationship,
         role: defaultRole?.slug || dto.role || 'STUDENT',
         roleId: defaultRole?.id,
         status: 'ACTIVE',
-        maxBorrowLimit: dto.role === 'FACULTY' || dto.role === 'RESEARCHER' ? 10 : 5,
+        maxBorrowLimit: dto.maxBorrowLimit ? Number(dto.maxBorrowLimit) : (dto.role === 'FACULTY' || dto.role === 'RESEARCHER' ? 10 : 5),
       },
       select: {
         id: true,
         membershipNumber: true,
+        username: true,
         email: true,
         fullName: true,
         phone: true,
+        address: true,
+        institution: true,
+        gender: true,
+        researchInterest: true,
+        guarantorId: true,
+        relationship: true,
         designation: true,
         department: true,
         bio: true,
@@ -83,6 +121,7 @@ export class AuthService {
         OR: [
           { email: identifier.toLowerCase() },
           { membershipNumber: identifier },
+          { username: identifier.toLowerCase() },
         ],
       },
       include: {
@@ -119,9 +158,14 @@ export class AuthService {
       select: {
         id: true,
         membershipNumber: true,
+        username: true,
         email: true,
         fullName: true,
         phone: true,
+        address: true,
+        institution: true,
+        gender: true,
+        researchInterest: true,
         designation: true,
         department: true,
         bio: true,
@@ -189,9 +233,14 @@ export class AuthService {
       select: {
         id: true,
         membershipNumber: true,
+        username: true,
         email: true,
         fullName: true,
         phone: true,
+        address: true,
+        institution: true,
+        gender: true,
+        researchInterest: true,
         designation: true,
         department: true,
         bio: true,

@@ -101,7 +101,7 @@ export function Button({
   const classes = `inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none ${buttonStyles[variant]} ${className}`;
   if (href) {
     return (
-      <Link href={href} className={classes}>
+      <Link prefetch href={href} className={classes}>
         {Icon && <Icon className="w-3.5 h-3.5" />}
         {children}
       </Link>
@@ -158,7 +158,7 @@ export function EmptyState({ title, description }: { title: string; description?
 
 export function SectionLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 hover:text-heritage-red transition-colors group">
+    <Link prefetch href={href} className="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 hover:text-heritage-red transition-colors group">
       <span>{children}</span>
       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
     </Link>

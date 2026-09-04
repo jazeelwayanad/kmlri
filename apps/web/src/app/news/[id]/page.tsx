@@ -141,7 +141,7 @@ export default function NewsEventDetailPage() {
           <p className="font-sans text-heritage-body mb-6">
             The requested news update or event announcement could not be located.
           </p>
-          <Link
+          <Link prefetch
             href="/news"
             className="inline-block bg-black text-white px-6 py-2.5 rounded-full text-base font-bold hover:bg-heritage-red transition-colors"
           >
@@ -164,7 +164,7 @@ export default function NewsEventDetailPage() {
       <main className="max-w-[1100px] mx-auto pt-6 sm:pt-12 px-4 sm:px-5 pb-24">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 font-sans text-xs sm:text-sm text-heritage-muted">
-          <Link
+          <Link prefetch
             href="/news"
             className="inline-flex items-center gap-1.5 font-semibold text-black hover:text-heritage-red transition-colors"
           >
@@ -353,7 +353,7 @@ export default function NewsEventDetailPage() {
                 <p><strong>Phone:</strong> +91 97452 34786</p>
                 <p><strong>Reading Room:</strong> Mon–Sat, 9:00–17:00</p>
               </div>
-              <Link
+              <Link prefetch
                 href="/ask"
                 className="inline-block mt-4 text-xs font-bold text-heritage-red uppercase tracking-wider hover:underline"
               >
@@ -371,7 +371,7 @@ export default function NewsEventDetailPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {relatedItems.map((r, idx) => (
-                <Link
+                <Link prefetch
                   key={r.id || idx}
                   href={`/news/${r.id}`}
                   className="bg-white border border-black/15 p-5 hover:border-black transition-all flex flex-col justify-between group"

@@ -192,7 +192,7 @@ function SearchContent() {
 
         <div className="flex justify-between items-baseline my-3 sm:my-[14px] mb-4 sm:mb-[26px] text-[16px] sm:text-[18px] flex-wrap gap-2">
           <div className="flex items-center gap-4">
-            <Link href="/advanced" className="hover:text-heritage-red font-semibold">
+            <Link prefetch href="/advanced" className="hover:text-heritage-red font-semibold">
               Advanced Search →
             </Link>
             {user && queryParam && (
@@ -246,7 +246,7 @@ function SearchContent() {
                 <span className="text-heritage-red"> — collection not found</span>
               )}
             </span>
-            <Link
+            <Link prefetch
               href="/search"
               className="text-heritage-muted hover:text-heritage-red font-semibold whitespace-nowrap"
             >
@@ -301,7 +301,7 @@ function SearchContent() {
             )}
 
             {results.map((r, idx) => (
-              <Link
+              <Link prefetch
                 key={r.id || idx}
                 href={`/items/${getRecordSlug(r)}`}
                 className="flex flex-col sm:grid sm:grid-cols-[90px_1fr_auto] md:grid-cols-[104px_1fr_auto] gap-4 sm:gap-6 py-5 sm:py-6 border-b border-[#D6CCBC] items-start hover:bg-paper-hover px-2 sm:px-3 -mx-2 sm:-mx-3 transition-colors"

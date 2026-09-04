@@ -15,6 +15,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Auto-redirect logged-in patrons trying to access /login or /signup
+  if (pathname === '/login' || pathname === '/signup') {
+    const token = request.cookies.get('kmlri_token')?.value;
+    const slug = request.cookies.get('kmlri_slug')?.value;
+    if (token) {
+      const destination = slug ? `/user/${slug}` : '/account';
+      return NextResponse.redirect(new URL(destination, request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

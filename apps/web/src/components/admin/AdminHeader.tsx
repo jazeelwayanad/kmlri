@@ -46,7 +46,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     };
   }, []);
 
-  const handleLogout = () => { setDropdownOpen(false); logout(); router.push('/account'); };
+  const handleLogout = () => { setDropdownOpen(false); logout(); router.push('/login'); };
 
   const getInitials = (name?: string) => {
     if (!name) return 'RA';
@@ -79,7 +79,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                 {isLast ? (
                   <span className="text-gray-900 truncate">{crumb.label}</span>
                 ) : (
-                  <Link href={crumb.href} className="text-[#5A5854] hover:text-[#A52307] transition-colors truncate">
+                  <Link prefetch href={crumb.href} className="text-[#5A5854] hover:text-[#A52307] transition-colors truncate">
                     {crumb.label}
                   </Link>
                 )}
@@ -129,7 +129,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                   return (
                     <div key={n.id}
                       className={`flex items-start gap-3 px-3.5 py-3 group hover:bg-[#FAF8F5] transition-colors ${n.unread ? 'bg-amber-50/40' : ''}`}>
-                      <Link href={n.href} onClick={() => { markRead(n.id); setNotifOpen(false); }}
+                      <Link prefetch href={n.href} onClick={() => { markRead(n.id); setNotifOpen(false); }}
                         className="flex items-start gap-3 flex-1 min-w-0">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${priorityRing(n.priority)}`}>
                           <Bell className="w-4 h-4" />
@@ -155,7 +155,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
 
               {/* Footer link */}
               <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 text-center">
-                <Link href="/admin/notifications" onClick={() => setNotifOpen(false)}
+                <Link prefetch href="/admin/notifications" onClick={() => setNotifOpen(false)}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-[#A52307] hover:underline">
                   <span>Open Notifications Hub</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -166,17 +166,25 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
 
         {/* View public site */}
-        <a href="/" className="hidden sm:inline text-[14px] text-[#5A5854] hover:text-[#A52307] transition-colors">
+        <Link prefetch href="/" className="hidden sm:inline text-[14px] text-[#5A5854] hover:text-[#A52307] transition-colors">
           View public site ↗
-        </a>
+        </Link>
 
         {/* ── User Profile Dropdown ── */}
         <div className="relative" ref={dropdownRef}>
           <button type="button" onClick={() => setDropdownOpen((p) => !p)}
             className="flex items-center gap-2 p-1 rounded-full sm:rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
-            <span className="w-[30px] h-[30px] rounded-full bg-[#303030] text-white flex items-center justify-center text-[12px] font-bold">
-              {getInitials(user?.fullName)}
-            </span>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || 'User'}
+                className="w-[30px] h-[30px] rounded-full object-cover border border-gray-300 flex-shrink-0"
+              />
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-full bg-[#303030] text-white flex items-center justify-center text-[12px] font-bold flex-shrink-0">
+                {getInitials(user?.fullName)}
+              </span>
+            )}
             <span className="hidden md:inline text-[13px] font-semibold text-gray-900 max-w-[130px] truncate">
               {user?.fullName || 'Rashida A.'}
             </span>
@@ -185,12 +193,25 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
 
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-[#E2E0DB] py-1 text-xs z-50 divide-y divide-gray-100">
-              <div className="p-4 bg-[#FAF8F5] rounded-t-xl">
-                <p className="font-bold text-sm text-gray-900 truncate">{user?.fullName || 'Rashida A.'}</p>
-                <p className="text-[11px] text-gray-500 font-mono truncate">{user?.email || 'admin@kmlri.in'}</p>
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-[#A52307] text-white px-2 py-0.5 rounded mt-1.5">
-                  {user?.role || 'SUPER_ADMIN'}
-                </span>
+              <div className="p-4 bg-[#FAF8F5] rounded-t-xl flex items-center gap-3">
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName || 'User'}
+                    className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#303030] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    {getInitials(user?.fullName)}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm text-gray-900 truncate">{user?.fullName || 'Rashida A.'}</p>
+                  <p className="text-[11px] text-gray-500 font-mono truncate">{user?.email || 'admin@kmlri.in'}</p>
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-[#A52307] text-white px-2 py-0.5 rounded mt-1">
+                    {user?.role || 'SUPER_ADMIN'}
+                  </span>
+                </div>
               </div>
 
               <div className="py-1 font-medium">
@@ -200,7 +221,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                   { href: '/admin/system/security', icon: Shield, label: 'Security & 2FA' },
                   { href: '/admin/system/audit-logs', icon: History, label: 'Session Audit Logs' },
                 ].map(({ href, icon: Icon, label }) => (
-                  <Link key={href} href={href} onClick={() => setDropdownOpen(false)}
+                  <Link prefetch key={href} href={href} onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-gray-700 hover:bg-[#FAF8F5] hover:text-[#A52307] transition-colors">
                     <Icon className="w-4 h-4 text-gray-400" />
                     <span>{label}</span>

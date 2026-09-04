@@ -58,9 +58,8 @@ export default function DigitalLibraryAdminPage() {
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  filter === tab ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${filter === tab ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {tab === 'ALL' ? 'All Digital Records' : tab.replace(/_/g, ' ')}
               </button>
@@ -111,7 +110,7 @@ export default function DigitalLibraryAdminPage() {
                   </td>
                   <td className="py-3.5 px-2 font-mono font-bold text-gray-900">{(r.digitalFolios || []).length}</td>
                   <td className="py-3.5 px-2 text-right">
-                    <Link
+                    <Link prefetch
                       href={`/admin/catalog/${getRecordSlug(r)}`}
                       className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-heritage-red transition-colors inline-flex items-center gap-1"
                     >

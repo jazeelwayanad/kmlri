@@ -61,7 +61,7 @@ export default function StoriesPage() {
         {/* Featured Story Hero Article */}
         {featuredStory && (
           <article className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 sm:gap-11 items-center mb-12 sm:mb-16 bg-white p-6 sm:p-8 border border-black/20 shadow-sm">
-            <Link
+            <Link prefetch
               href={`/stories/${featuredStory.slug || featuredStory.id}`}
               className="w-full h-[240px] sm:h-[340px] bg-[#E2DACB] border border-black flex flex-col items-center justify-center text-center p-6 relative overflow-hidden group hover:bg-[#d8cfbe] transition-colors"
             >
@@ -88,7 +88,7 @@ export default function StoriesPage() {
                   </span>
                 )}
               </div>
-              <Link href={`/stories/${featuredStory.slug || featuredStory.id}`}>
+              <Link prefetch href={`/stories/${featuredStory.slug || featuredStory.id}`}>
                 <h2 className="font-amiri text-[28px] sm:text-[38px] font-semibold leading-[1.15] mb-3 sm:mb-4 text-balance text-black hover:text-heritage-red transition-colors">
                   {featuredStory.title}
                 </h2>
@@ -96,7 +96,7 @@ export default function StoriesPage() {
               <p className="text-[16px] sm:text-[19px] leading-[1.5] text-heritage-body mb-5 sm:mb-6 text-pretty font-sans">
                 {featuredStory.summary}
               </p>
-              <Link
+              <Link prefetch
                 href={`/stories/${featuredStory.slug || featuredStory.id}`}
                 className="inline-block bg-black text-paper font-amiri font-semibold text-[16px] sm:text-[17px] py-2.5 sm:py-3 px-6 sm:px-[30px] rounded-full hover:bg-heritage-red hover:text-white transition-colors"
               >
@@ -129,7 +129,7 @@ export default function StoriesPage() {
         {/* Stories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-9">
           {filteredStories.map((s, idx) => (
-            <Link
+            <Link prefetch
               key={s.id || idx}
               href={`/stories/${s.slug || s.id}`}
               className="flex flex-col justify-between gap-3 group bg-white p-5 border border-black/20 hover:border-black transition-all cursor-pointer shadow-sm hover:shadow"

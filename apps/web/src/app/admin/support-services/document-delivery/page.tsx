@@ -16,7 +16,7 @@ interface ReproductionRequest {
   status: ReproStatus;
   createdAt: string;
   updatedAt: string;
-  user?: { id: string; fullName: string; membershipNumber: string };
+  user?: { id: string; fullName: string; membershipNumber: string; avatarUrl?: string };
 }
 
 const STATUS_LABEL: Record<ReproStatus, string> = {
@@ -139,7 +139,27 @@ export default function DocumentDeliveryPage() {
                       {doc.purpose && <span className="text-gray-500 text-[11px]">{doc.purpose}</span>}
                     </td>
                     <td className="py-3.5 px-4 text-gray-700">
-                      {doc.user ? `${doc.user.fullName} (${doc.user.membershipNumber})` : '—'}
+                      {doc.user ? (
+                        <div className="flex items-center gap-2.5">
+                          {doc.user.avatarUrl ? (
+                            <img
+                              src={doc.user.avatarUrl}
+                              alt={doc.user.fullName}
+                              className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                              {doc.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-semibold text-gray-900">{doc.user.fullName}</div>
+                            <div className="text-gray-500 text-[11px] font-mono">{doc.user.membershipNumber}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-gray-600">{doc.format || '—'}</td>
                     <td className="py-3.5 px-4">

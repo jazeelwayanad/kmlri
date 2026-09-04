@@ -177,11 +177,10 @@ export default function AuthoritiesAdminPage() {
 
       {notification && (
         <div
-          className={`p-4 rounded-lg text-sm font-semibold flex items-center gap-2 ${
-            notification.type === 'success'
+          className={`p-4 rounded-lg text-sm font-semibold flex items-center gap-2 ${notification.type === 'success'
               ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
               : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-          }`}
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />

@@ -10,7 +10,7 @@ interface Hold {
   status: 'PENDING' | 'READY_FOR_PICKUP' | 'CANCELLED' | 'FULFILLED' | 'EXPIRED';
   requestedAt: string;
   availableUntil?: string;
-  user: { id: string; fullName: string; membershipNumber: string };
+  user: { id: string; fullName: string; membershipNumber: string; avatarUrl?: string };
   bibRecord: { id: string; titleLatin: string; shelfmark: string };
 }
 
@@ -153,8 +153,23 @@ export default function ReservationsAdminPage() {
                     <div className="text-gray-400 text-[11px]">{r.bibRecord.shelfmark} · Requested: {formatDate(r.requestedAt)}</div>
                   </td>
                   <td className="py-3.5 px-3">
-                    <div className="font-semibold text-gray-900">{r.user.fullName}</div>
-                    <div className="text-gray-500 text-[11px]">{r.user.membershipNumber}</div>
+                    <div className="flex items-center gap-2.5">
+                      {r.user.avatarUrl ? (
+                        <img
+                          src={r.user.avatarUrl}
+                          alt={r.user.fullName}
+                          className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                          {r.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-gray-900">{r.user.fullName}</div>
+                        <div className="text-gray-500 text-[11px] font-mono">{r.user.membershipNumber}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="py-3.5 px-3">
                     <Badge variant={r.status === 'READY_FOR_PICKUP' ? 'success' : 'warning'}>{r.status.replace(/_/g, ' ')}</Badge>

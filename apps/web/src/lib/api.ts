@@ -25,9 +25,14 @@ export interface PermissionDefinition {
 export interface User {
   id: string;
   membershipNumber: string;
+  username?: string;
   email: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  institution?: string;
+  gender?: string;
+  researchInterest?: string;
   designation?: string;
   department?: string;
   bio?: string;
@@ -47,6 +52,10 @@ export interface User {
   effectivePermissions?: string[];
   maxBorrowLimit: number;
   createdAt: string;
+  guarantorId?: string;
+  relationship?: string;
+  guarantor?: any;
+  relatives?: any[];
   loans?: any[];
   reservations?: any[];
   fines?: any[];
@@ -60,6 +69,16 @@ export interface ItemCopy {
   status: string;
   copyNumber: number;
   imageUrl?: string;
+  conditionNote?: string;
+  accessionNumber?: string;
+  itemTypeCode?: string;
+  collectionCode?: string;
+  homeLibraryCode?: string;
+  currentLibraryCode?: string;
+  loans?: {
+    dueDate: string;
+    user?: { fullName: string; membershipNumber: string };
+  }[];
 }
 
 export interface BibliographicRecord {
@@ -161,10 +180,17 @@ export const api = {
       headers,
     });
 
-    const data = await response.json();
+    let data: any = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
 
     if (!response.ok) {
-      throw new Error(data.message || 'API request failed');
+      const err: any = new Error(data.message || `API request failed with status ${response.status}`);
+      err.status = response.status;
+      throw err;
     }
 
     return data;
@@ -181,9 +207,17 @@ export const api = {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(`${API_URL}${url}`, { method, headers, body: formData });
-    const data = await response.json();
+    let data: any = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
     if (!response.ok) {
-      throw new Error(data.message || 'API request failed');
+      const err: any = new Error(data.message || `API request failed with status ${response.status}`);
+      err.status = response.status;
+      throw err;
     }
     return data;
   },
@@ -722,20 +756,6 @@ export const api = {
     return this.fetchWithAuth(`/departments/${id}`, { method: 'DELETE' });
   },
 
-  // Membership Types
-  async getMembershipTypes() {
-    return this.fetchWithAuth('/membership-types');
-  },
-  async createMembershipType(data: { name: string; maxBorrowLimit?: number; loanDurationDays?: number; description?: string }) {
-    return this.fetchWithAuth('/membership-types', { method: 'POST', body: JSON.stringify(data) });
-  },
-  async updateMembershipType(id: string, data: any) {
-    return this.fetchWithAuth(`/membership-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-  },
-  async deleteMembershipType(id: string) {
-    return this.fetchWithAuth(`/membership-types/${id}`, { method: 'DELETE' });
-  },
-
   // Assets
   async getAssets(q?: string) {
     const query = q ? `?q=${encodeURIComponent(q)}` : '';
@@ -898,10 +918,23 @@ export const api = {
   },
 
   // Image upload (generic — items, records, content featured images, rich-text inline images)
-  async uploadImage(file: File): Promise<{ url: string }> {
+  // `folder` optionally selects a Cloudinary sub-folder (see CloudinaryService.resolveFolder
+  // on the API: 'catalogCovers' | 'catalogItems' | 'avatars' | 'storiesNews' | 'events' |
+  // 'opportunities' | 'misc'); omit to default to 'misc'.
+  async uploadImage(file: File, folder?: string): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('file', file);
+    if (folder) formData.append('folder', folder);
     return this.fetchFormData('/uploads/image', formData);
+  },
+
+  // Looks up a cover image for an ISBN (Google Books -> Open Library -> Amazon) and stores
+  // it in Cloudinary, returning its URL. `found: false` means no cover was located anywhere.
+  async fetchCoverByIsbn(isbn: string): Promise<{ found: true; url: string; source: string } | { found: false }> {
+    return this.fetchWithAuth('/media/fetch-cover-by-isbn', {
+      method: 'POST',
+      body: JSON.stringify({ isbn }),
+    });
   },
 
   // Notifications

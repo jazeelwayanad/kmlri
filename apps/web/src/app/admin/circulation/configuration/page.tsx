@@ -17,10 +17,13 @@ import {
   Trash2,
   Edit3,
   X,
+  Shield,
+  Lock,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
-import { api } from '@/lib/api';
-import { confirmDialog } from '@/lib/dialog';
+import { api, Role } from '@/lib/api';
+import { confirmDialog, alertDialog } from '@/lib/dialog';
 
 const PREFIX = 'circulation.';
 
@@ -50,12 +53,15 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   sendSmsAlerts: false,
 };
 
-interface MembershipType {
-  id: string;
+interface RoleLoanConfig {
+  roleId: string;
   name: string;
+  slug: string;
+  description?: string;
+  isSystem: boolean;
+  memberCount: number;
   maxBorrowLimit: number;
   loanDurationDays: number;
-  description?: string;
 }
 
 export default function CirculationConfigurationPage() {
@@ -65,13 +71,14 @@ export default function CirculationConfigurationPage() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Membership type loan durations & quotas
-  const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
+  // Role loan durations & quotas (sourced from system/roles + circulation settings)
+  const [roleConfigs, setRoleConfigs] = useState<RoleLoanConfig[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
 
-  // Add Membership Type Modal State
-  const [showAddRuleModal, setShowAddRuleModal] = useState(false);
-  const [newRuleName, setNewRuleName] = useState('');
+  // Add Role Modal State
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
   const [newRuleDays, setNewRuleDays] = useState(14);
   const [newRuleQuota, setNewRuleQuota] = useState(5);
 
@@ -84,70 +91,79 @@ export default function CirculationConfigurationPage() {
   // Notification settings
   const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
 
-  // Load persisted settings from backend
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const settings = await api.getSettings(PREFIX);
-        const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
-        if (cancelled) return;
-        setRenewalSettings({ ...DEFAULT_RENEWAL_SETTINGS, ...(map.get(`${PREFIX}renewalSettings`) ?? {}) });
-        setFineSettings({ ...DEFAULT_FINE_SETTINGS, ...(map.get(`${PREFIX}fineSettings`) ?? {}) });
-        setNotificationSettings({ ...DEFAULT_NOTIFICATION_SETTINGS, ...(map.get(`${PREFIX}notificationSettings`) ?? {}) });
-      } catch (err: any) {
-        if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load circulation configuration.' });
-      } finally {
-        if (!cancelled) setLoadingSettings(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Load real membership types from backend
-  const loadMembershipTypes = async () => {
-    setLoadingTypes(true);
+  // Load all configuration & roles from system
+  const loadData = async () => {
+    setLoadingSettings(true);
+    setLoadingRoles(true);
     try {
-      const data = await api.getMembershipTypes();
-      setMembershipTypes(data || []);
+      const [settings, rolesData] = await Promise.all([
+        api.getSettings(PREFIX).catch(() => []),
+        api.getRoles().catch(() => []),
+      ]);
+
+      const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
+      setRenewalSettings({ ...DEFAULT_RENEWAL_SETTINGS, ...(map.get(`${PREFIX}renewalSettings`) ?? {}) });
+      setFineSettings({ ...DEFAULT_FINE_SETTINGS, ...(map.get(`${PREFIX}fineSettings`) ?? {}) });
+      setNotificationSettings({ ...DEFAULT_NOTIFICATION_SETTINGS, ...(map.get(`${PREFIX}notificationSettings`) ?? {}) });
+
+      const savedRules = map.get(`${PREFIX}roleLoanRules`) || {};
+
+      const combined: RoleLoanConfig[] = (rolesData || []).map((r: Role) => {
+        const saved = savedRules[r.slug] || savedRules[r.id] || {};
+        const defaultDays = r.slug === 'faculty' ? 30 : r.slug === 'researcher' ? 28 : 14;
+        const defaultQuota = r.slug === 'faculty' ? 10 : r.slug === 'researcher' ? 8 : 5;
+        return {
+          roleId: r.id,
+          name: r.name,
+          slug: r.slug,
+          description: r.description,
+          isSystem: r.isSystem,
+          memberCount: r.memberCount || 0,
+          loanDurationDays: saved.loanDurationDays !== undefined ? Number(saved.loanDurationDays) : defaultDays,
+          maxBorrowLimit: saved.maxBorrowLimit !== undefined ? Number(saved.maxBorrowLimit) : defaultQuota,
+        };
+      });
+
+      setRoleConfigs(combined);
     } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || 'Failed to load membership types.' });
+      setNotification({ type: 'error', text: err.message || 'Failed to load circulation configuration.' });
     } finally {
-      setLoadingTypes(false);
+      setLoadingSettings(false);
+      setLoadingRoles(false);
     }
   };
 
   useEffect(() => {
-    loadMembershipTypes();
+    loadData();
   }, []);
 
   const handleRuleChange = (index: number, field: 'maxBorrowLimit' | 'loanDurationDays', value: any) => {
-    const updated = [...membershipTypes];
+    const updated = [...roleConfigs];
     (updated[index] as any)[field] = Number(value);
-    setMembershipTypes(updated);
+    setRoleConfigs(updated);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await Promise.all(
-        membershipTypes.map((mt) =>
-          api.updateMembershipType(mt.id, {
-            maxBorrowLimit: mt.maxBorrowLimit,
-            loanDurationDays: mt.loanDurationDays,
-          })
-        )
-      );
+      const roleLoanRules: Record<string, { loanDurationDays: number; maxBorrowLimit: number }> = {};
+      roleConfigs.forEach((c) => {
+        const config = {
+          loanDurationDays: c.loanDurationDays,
+          maxBorrowLimit: c.maxBorrowLimit,
+        };
+        roleLoanRules[c.slug] = config;
+        roleLoanRules[c.roleId] = config;
+      });
+
       await api.setSettings([
+        { key: `${PREFIX}roleLoanRules`, value: roleLoanRules },
         { key: `${PREFIX}renewalSettings`, value: renewalSettings },
         { key: `${PREFIX}fineSettings`, value: fineSettings },
         { key: `${PREFIX}notificationSettings`, value: notificationSettings },
       ]);
       setSaved(true);
-      setNotification({ type: 'success', text: 'Circulation configuration & membership loan limits saved successfully.' });
-      await loadMembershipTypes();
+      setNotification({ type: 'success', text: 'Circulation rules & membership role limits saved successfully.' });
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message || 'Failed to save circulation configuration.' });
     } finally {
@@ -159,36 +175,59 @@ export default function CirculationConfigurationPage() {
     }
   };
 
-  const handleAddCustomRule = async (e: React.FormEvent) => {
+  const handleAddCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRuleName.trim()) return;
+    if (!newRoleName.trim()) return;
     try {
-      await api.createMembershipType({
-        name: newRuleName,
-        maxBorrowLimit: Number(newRuleQuota),
-        loanDurationDays: Number(newRuleDays),
+      const generatedSlug = newRoleName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const createdRole = await api.createRole({
+        name: newRoleName.trim(),
+        slug: generatedSlug,
+        description: newRoleDescription.trim() || undefined,
+        permissions: ['CATALOG_VIEW', 'MEMBER_HOLD_PLACE', 'MEMBER_DIGITAL_ACCESS'],
       });
-      setShowAddRuleModal(false);
-      setNewRuleName('');
+
+      // Update roleLoanRules setting with the initial duration & quota
+      const currentSettings = await api.getSettings(PREFIX).catch(() => []);
+      const map = new Map<string, any>(currentSettings.map((s: any) => [s.key, s.value]));
+      const roleLoanRules = map.get(`${PREFIX}roleLoanRules`) || {};
+      const rule = {
+        loanDurationDays: Number(newRuleDays),
+        maxBorrowLimit: Number(newRuleQuota),
+      };
+      roleLoanRules[createdRole.slug] = rule;
+      roleLoanRules[createdRole.id] = rule;
+
+      await api.setSettings([
+        { key: `${PREFIX}roleLoanRules`, value: roleLoanRules },
+      ]);
+
+      setShowAddRoleModal(false);
+      setNewRoleName('');
+      setNewRoleDescription('');
       setNewRuleDays(14);
       setNewRuleQuota(5);
-      setNotification({ type: 'success', text: `Membership type "${newRuleName}" created successfully.` });
-      await loadMembershipTypes();
+      setNotification({ type: 'success', text: `Role "${newRoleName}" created and loan parameters configured.` });
+      await loadData();
     } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || 'Could not create membership type.' });
+      setNotification({ type: 'error', text: err.message || 'Could not create role.' });
     } finally {
       setTimeout(() => setNotification(null), 4000);
     }
   };
 
-  const handleDeleteRule = async (id: string, name: string) => {
-    if (!(await confirmDialog({ message: `Remove membership type "${name}"?`, variant: 'danger' }))) return;
+  const handleDeleteRole = async (roleId: string, name: string, isSystem: boolean) => {
+    if (isSystem) {
+      alertDialog('System protected roles cannot be deleted.');
+      return;
+    }
+    if (!(await confirmDialog({ message: `Delete member role "${name}" from the system? Members assigned to it must be reassigned first.`, variant: 'danger' }))) return;
     try {
-      await api.deleteMembershipType(id);
-      setNotification({ type: 'success', text: `Membership type "${name}" removed.` });
-      await loadMembershipTypes();
+      await api.deleteRole(roleId);
+      setNotification({ type: 'success', text: `Role "${name}" removed.` });
+      await loadData();
     } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || 'Could not delete membership type.' });
+      setNotification({ type: 'error', text: err.message || 'Could not delete role.' });
     } finally {
       setTimeout(() => setNotification(null), 4000);
     }
@@ -199,7 +238,7 @@ export default function CirculationConfigurationPage() {
       <PageHeader
         eyebrow="Library Operations · Circulation"
         title="Circulation Configuration"
-        description="Configure default loan periods, renewal rules, borrow quotas by membership type, daily fine calculations, and automated return notice triggers."
+        description="Configure loan periods and borrow quotas by system member role, renewal policies, daily fine calculations, and return notice triggers."
         actions={
           <Button variant="primary" icon={Save} onClick={handleSave} disabled={saving || loadingSettings}>
             {saving ? 'Saving…' : 'Save Changes'}
@@ -231,7 +270,7 @@ export default function CirculationConfigurationPage() {
       {/* Tabs */}
       <div className="border-b border-[#E2E0DB] flex gap-2 flex-wrap">
         {[
-          { key: 'loan_rules', label: `Membership Loan Periods (${membershipTypes.length})`, icon: Clock },
+          { key: 'loan_rules', label: `Member Role Loan Periods (${roleConfigs.length})`, icon: Clock },
           { key: 'renewals', label: 'Renewal Policies', icon: RotateCcw },
           { key: 'fines', label: 'Fines & Penalties', icon: CreditCard },
           { key: 'notifications', label: 'Overdue & Reminder Triggers', icon: Bell },
@@ -255,45 +294,74 @@ export default function CirculationConfigurationPage() {
         })}
       </div>
 
-      {/* TAB 1: Loan Periods & Quotas (Membership Types) */}
+      {/* TAB 1: Loan Periods & Quotas (Fetched from system/roles) */}
       {activeTab === 'loan_rules' && (
         <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6">
           <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-3">
             <div>
-              <h3 className="text-base font-bold text-gray-900">Membership Type Loan Durations &amp; Quotas</h3>
+              <h3 className="text-base font-bold text-gray-900">Member Role Loan Durations &amp; Quotas</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Every patron is assigned a Membership Type; these values govern their borrow quota and loan duration. Manage the full type registry on the{' '}
-                <Link href="/admin/members/membership-types" className="text-[#A52307] underline font-semibold">Membership Types</Link> page.
+                Member types are fetched dynamically from <strong className="text-gray-700">System Roles</strong>. Configure the checkout limits and duration here, or manage role permissions on the{' '}
+                <Link prefetch href="/admin/system/roles" className="text-[#A52307] underline font-semibold inline-flex items-center gap-1">
+                  Roles &amp; Permissions page <ExternalLink className="w-3 h-3" />
+                </Link>.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddRuleModal(true)}
-              className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors flex items-center gap-1.5 shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Membership Type</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                prefetch
+                href="/admin/system/roles"
+                className="px-3.5 py-1.5 border border-gray-300 text-gray-700 rounded text-xs font-semibold hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5 text-gray-500" />
+                <span>Manage Roles &amp; Permissions</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAddRoleModal(true)}
+                className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Member Role</span>
+              </button>
+            </div>
           </div>
 
-          {loadingTypes ? (
-            <div className="p-6 text-center text-gray-400 text-xs">Loading membership types…</div>
+          {loadingRoles ? (
+            <div className="p-6 text-center text-gray-400 text-xs">Loading member roles from system/roles…</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs font-sans">
                 <thead>
                   <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                    <th className="py-3 px-4">Membership Type</th>
+                    <th className="py-3 px-4">Member Role</th>
+                    <th className="py-3 px-4">Identifier / Slug</th>
                     <th className="py-3 px-4">Loan Period (Days)</th>
                     <th className="py-3 px-4">Max Borrow Quota (Books)</th>
+                    <th className="py-3 px-4 text-center">Active Members</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EEECE7]">
-                  {membershipTypes.map((mt, idx) => (
-                    <tr key={mt.id} className="hover:bg-[#FAF8F5]">
+                  {roleConfigs.map((role, idx) => (
+                    <tr key={role.roleId} className="hover:bg-[#FAF8F5]">
                       <td className="py-3.5 px-4">
-                        <strong className="text-gray-900 block text-sm">{mt.name}</strong>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-gray-900 block text-sm">{role.name}</strong>
+                          {role.isSystem && (
+                            <span className="bg-gray-900 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded">
+                              System
+                            </span>
+                          )}
+                        </div>
+                        {role.description && (
+                          <p className="text-[11px] text-gray-500 mt-0.5 max-w-sm truncate">{role.description}</p>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                          {role.slug}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
@@ -301,7 +369,7 @@ export default function CirculationConfigurationPage() {
                             type="number"
                             min={1}
                             max={180}
-                            value={mt.loanDurationDays}
+                            value={role.loanDurationDays}
                             onChange={(e) => handleRuleChange(idx, 'loanDurationDays', e.target.value)}
                             className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
                           />
@@ -314,28 +382,37 @@ export default function CirculationConfigurationPage() {
                             type="number"
                             min={1}
                             max={50}
-                            value={mt.maxBorrowLimit}
+                            value={role.maxBorrowLimit}
                             onChange={(e) => handleRuleChange(idx, 'maxBorrowLimit', e.target.value)}
                             className="w-20 px-2.5 py-1.5 border border-gray-300 rounded font-mono font-bold text-gray-900 text-xs text-center focus:border-[#A52307] outline-none bg-white"
                           />
                           <span className="text-gray-500 text-[11px]">books</span>
                         </div>
                       </td>
+                      <td className="py-3.5 px-4 text-center font-mono text-gray-700">
+                        {role.memberCount}
+                      </td>
                       <td className="py-3.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRule(mt.id, mt.name)}
-                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                          title="Delete Membership Type"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!role.isSystem ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRole(role.roleId, role.name, role.isSystem)}
+                            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                            title="Delete Member Role"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 font-mono italic">
+                            Protected
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
-                  {membershipTypes.length === 0 && (
+                  {roleConfigs.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-gray-400">No membership types defined yet.</td>
+                      <td colSpan={6} className="py-8 text-center text-gray-400">No member roles found in the system.</td>
                     </tr>
                   )}
                 </tbody>
@@ -346,9 +423,9 @@ export default function CirculationConfigurationPage() {
           <div className="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900 flex items-start gap-3">
             <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
             <div>
-              <strong className="block font-bold">Applied at Check-out</strong>
+              <strong className="block font-bold">Applied at Circulation Check-out</strong>
               <p className="mt-0.5 text-[11px]">
-                A patron's membership type determines their default due date and how many items they may borrow at once.
+                A patron's role determines their default loan duration and maximum items quota when books are issued.
               </p>
             </div>
           </div>
@@ -592,26 +669,37 @@ export default function CirculationConfigurationPage() {
         </div>
       )}
 
-      {/* POPUP MODAL: Add Custom Role Rule */}
-      {showAddRuleModal && (
+      {/* POPUP MODAL: Add Role & Loan Rule */}
+      {showAddRoleModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-200">
             <div className="px-6 py-4 bg-[#FAF8F5] border-b border-gray-200 flex justify-between items-center">
-              <h3 className="font-bold text-gray-900 text-sm">Add Dynamic Role Circulation Rule</h3>
-              <button onClick={() => setShowAddRuleModal(false)} className="text-gray-400 hover:text-gray-700">
+              <h3 className="font-bold text-gray-900 text-sm">Add New Member Role</h3>
+              <button onClick={() => setShowAddRoleModal(false)} className="text-gray-400 hover:text-gray-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddCustomRule} className="p-6 space-y-4 text-xs font-sans">
+            <form onSubmit={handleAddCustomRole} className="p-6 space-y-4 text-xs font-sans">
               <div>
-                <label className="font-bold text-gray-800 block mb-1">Membership Type Name *</label>
+                <label className="font-bold text-gray-800 block mb-1">Role Display Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Visiting Scholar / PhD Fellow"
-                  value={newRuleName}
-                  onChange={(e) => setNewRuleName(e.target.value)}
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-800 block mb-1">Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Scope and purpose of this member role..."
+                  value={newRoleDescription}
+                  onChange={(e) => setNewRoleDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
                 />
               </div>
@@ -628,7 +716,7 @@ export default function CirculationConfigurationPage() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-gray-800 block mb-1">Borrow Quota</label>
+                  <label className="font-bold text-gray-800 block mb-1">Borrow Quota (Books)</label>
                   <input
                     type="number"
                     min={1}
@@ -642,7 +730,7 @@ export default function CirculationConfigurationPage() {
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setShowAddRuleModal(false)}
+                  onClick={() => setShowAddRoleModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700"
                 >
                   Cancel
@@ -651,7 +739,7 @@ export default function CirculationConfigurationPage() {
                   type="submit"
                   className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800"
                 >
-                  Add Membership Type
+                  Create Member Role
                 </button>
               </div>
             </form>
@@ -661,3 +749,4 @@ export default function CirculationConfigurationPage() {
     </div>
   );
 }
+

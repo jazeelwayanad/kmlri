@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  Filter, 
-  MoreVertical, 
-  Edit3, 
-  Eye, 
-  ShieldCheck, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
-  UserCheck, 
+import {
+  Users,
+  Search,
+  Plus,
+  Filter,
+  MoreVertical,
+  Edit3,
+  Eye,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  UserCheck,
   UserX,
   CreditCard,
   BookOpen,
@@ -25,6 +25,8 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { getMemberIdentifier } from '@/lib/slugs';
 import { confirmDialog } from '@/lib/dialog';
+import { MemberForm } from '@/components/members/MemberForm';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export default function MembersManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -35,17 +37,9 @@ export default function MembersManagementPage() {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Member Modal State (Used for both Create and Edit)
+  // Member Modal State
   const [showModal, setShowModal] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [membershipNumber, setMembershipNumber] = useState('');
-  const [selectedRole, setSelectedRole] = useState('STUDENT');
-  const [borrowLimit, setBorrowLimit] = useState(5);
-  const [memberStatus, setMemberStatus] = useState('ACTIVE');
-  const [submitting, setSubmitting] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -68,78 +62,13 @@ export default function MembersManagementPage() {
   }, [search]);
 
   const openCreateModal = () => {
-    setEditingUserId(null);
-    setFullName('');
-    setEmail('');
-    setPhone('');
-    setMembershipNumber(`MEM-${Date.now().toString().slice(-4)}`);
-    setSelectedRole('STUDENT');
-    setBorrowLimit(5);
-    setMemberStatus('ACTIVE');
+    setEditingUser(null);
     setShowModal(true);
   };
 
   const openEditModal = (u: any) => {
-    setEditingUserId(u.id);
-    setFullName(u.fullName || '');
-    setEmail(u.email || '');
-    setPhone(u.phone || '');
-    setMembershipNumber(u.membershipNumber || '');
-    setSelectedRole(u.role || 'STUDENT');
-    setBorrowLimit(u.maxBorrowLimit || 5);
-    setMemberStatus(u.status || 'ACTIVE');
+    setEditingUser(u);
     setShowModal(true);
-  };
-
-  const handleSaveMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setNotification(null);
-
-    if (editingUserId) {
-      // Update existing member
-      try {
-        await api.updateUser(editingUserId, {
-          fullName,
-          email,
-          phone: phone || undefined,
-          membershipNumber,
-          role: selectedRole,
-          status: memberStatus,
-          maxBorrowLimit: Number(borrowLimit),
-        });
-        setNotification({ type: 'success', text: `Member "${fullName}" updated successfully.` });
-        setShowModal(false);
-        await loadData();
-      } catch (err: any) {
-        setNotification({ type: 'error', text: err.message || `Could not update "${fullName}".` });
-      } finally {
-        setSubmitting(false);
-        setTimeout(() => setNotification(null), 4000);
-      }
-      return;
-    }
-
-    // Create new member
-    try {
-      await api.register({
-        fullName,
-        email,
-        phone: phone || undefined,
-        membershipNumber: membershipNumber || `MEM-${Date.now().toString().slice(-4)}`,
-        role: selectedRole,
-        password: 'Password@123',
-        maxBorrowLimit: Number(borrowLimit),
-      });
-      setNotification({ type: 'success', text: `Member "${fullName}" created successfully.` });
-      setShowModal(false);
-      await loadData();
-    } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || `Could not create "${fullName}".` });
-    } finally {
-      setSubmitting(false);
-      setTimeout(() => setNotification(null), 4000);
-    }
   };
 
   const handleDeleteMember = async (userId: string, name: string) => {
@@ -179,7 +108,6 @@ export default function MembersManagementPage() {
       <PageHeader
         eyebrow="Library Operations · Members"
         title="Member Management"
-        description="Search, view, create, edit, and manage all library members (Students, Faculty, Researchers, and Staff). Click any member to view full circulation history."
         actions={
           <Button variant="primary" icon={Plus} onClick={openCreateModal}>
             Create New Member
@@ -189,11 +117,10 @@ export default function MembersManagementPage() {
 
       {notification && (
         <div
-          className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${
-            notification.type === 'success'
+          className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${notification.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-red-50 text-red-800 border-red-200'
-          }`}
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -290,15 +217,20 @@ export default function MembersManagementPage() {
             {filteredUsers.map((u) => (
               <tr key={u.id} className="hover:bg-[#FAF8F5] transition-colors group">
                 <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                  <Link href={`/admin/members/${getMemberIdentifier(u)}`} className="hover:text-[#A52307] underline">
+                  <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="hover:text-[#A52307] underline">
                     {u.membershipNumber}
                   </Link>
                 </td>
                 <td className="py-3.5 px-4">
-                  <Link href={`/admin/members/${getMemberIdentifier(u)}`} className="font-semibold text-gray-900 text-sm hover:text-[#A52307] block">
-                    {u.fullName}
-                  </Link>
-                  <span className="text-[11px] text-gray-500">{u.email}</span>
+                  <div className="flex items-center gap-3">
+                    <UserAvatar src={u.avatarUrl} name={u.fullName} size="sm" />
+                    <div>
+                      <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="font-semibold text-gray-900 text-sm hover:text-[#A52307] block">
+                        {u.fullName}
+                      </Link>
+                      <span className="text-[11px] text-gray-500 font-mono">{u.email}</span>
+                    </div>
+                  </div>
                 </td>
                 <td className="py-3.5 px-4">
                   <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
@@ -310,17 +242,16 @@ export default function MembersManagementPage() {
                 </td>
                 <td className="py-3.5 px-4">
                   <span
-                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      u.status === 'ACTIVE'
+                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.status === 'ACTIVE'
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-red-100 text-red-800'
-                    }`}
+                      }`}
                   >
                     {u.status}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right space-x-1.5">
-                  <Link
+                  <Link prefetch
                     href={`/admin/members/${getMemberIdentifier(u)}`}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
                   >
@@ -338,11 +269,10 @@ export default function MembersManagementPage() {
                   <button
                     type="button"
                     onClick={() => handleStatusToggle(u.id, u.status, u.fullName)}
-                    className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${
-                      u.status === 'ACTIVE'
+                    className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${u.status === 'ACTIVE'
                         ? 'border-amber-400 text-amber-800 hover:bg-amber-100'
                         : 'border-emerald-400 text-emerald-800 hover:bg-emerald-100'
-                    }`}
+                      }`}
                   >
                     {u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
                   </button>
@@ -367,140 +297,39 @@ export default function MembersManagementPage() {
         )}
       </div>
 
-      {/* Create / Edit Member Modal */}
+      {/* POPUP MODAL: Unified Member Form */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Member Registry</p>
                 <h3 className="text-xl font-bold text-gray-900 mt-0.5">
-                  {editingUserId ? 'Edit Member Profile' : 'Create New Member'}
+                  {editingUser ? 'Edit Member Profile' : 'Create New Member'}
                 </h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-900">
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-900 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveMember} className="space-y-4">
-              <div>
-                <label className="block font-bold text-gray-700 uppercase mb-1">Full Name*</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Rashid Vattaparamba"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Email Address*</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@kmlri.in"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    placeholder="+91 98470 12345"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Membership Number*</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="MEM-0001"
-                    value={membershipNumber}
-                    onChange={(e) => setMembershipNumber(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 font-mono text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Member Role*</label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => {
-                      const r = e.target.value;
-                      setSelectedRole(r);
-                      if (r === 'FACULTY') setBorrowLimit(12);
-                      else if (r === 'RESEARCHER') setBorrowLimit(8);
-                      else if (r === 'STAFF') setBorrowLimit(10);
-                      else setBorrowLimit(5);
-                    }}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none text-xs bg-white"
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="FACULTY">Faculty</option>
-                    <option value="RESEARCHER">Researcher</option>
-                    <option value="STAFF">Staff</option>
-                    <option value="LIBRARIAN">Librarian</option>
-                    <option value="SUPER_ADMIN">Admin</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Max Borrow Limit (Books)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={borrowLimit}
-                    onChange={(e) => setBorrowLimit(Number(e.target.value))}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] bg-white text-gray-900 font-mono text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Account Status</label>
-                  <select
-                    value={memberStatus}
-                    onChange={(e) => setMemberStatus(e.target.value)}
-                    className="w-full border border-gray-200 h-10 px-3 rounded outline-none text-xs bg-white"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="SUSPENDED">Suspended</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-200 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-md disabled:opacity-50"
-                >
-                  {submitting ? 'Saving...' : editingUserId ? 'Save Member Changes' : 'Create Member Record'}
-                </button>
-              </div>
-            </form>
+            <MemberForm
+              mode={editingUser ? 'admin-edit' : 'admin-create'}
+              initialData={editingUser}
+              rolesList={roles}
+              onCancel={() => setShowModal(false)}
+              onSuccess={async (u) => {
+                setNotification({
+                  type: 'success',
+                  text: editingUser
+                    ? `Member "${u?.fullName || editingUser.fullName}" updated successfully.`
+                    : `Member "${u?.fullName || 'New member'}" created successfully.`,
+                });
+                setShowModal(false);
+                await loadData();
+                setTimeout(() => setNotification(null), 4000);
+              }}
+            />
           </div>
         </div>
       )}

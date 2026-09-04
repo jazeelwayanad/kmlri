@@ -104,7 +104,7 @@ const DEFAULT_TEMPLATES: NotifTemplate[] = [
     subject: 'Library Courtesy Reminder: {{item_title}} due on {{due_date}}',
     bodyPreview:
       'Dear {{patron_name}}, your borrowed item "{{item_title}}" (Barcode: {{barcode}}) is due for return on {{due_date}}. You may renew online via your OPAC account.',
-    smsText: 'KMLRI: {{item_title}} is due on {{due_date}}. Renew online: kmlri.in/account',
+    smsText: 'KMLRI: {{item_title}} is due on {{due_date}}. Renew online: kmlri.in/[slug]',
     status: 'ACTIVE',
     variables: ['patron_name', 'item_title', 'barcode', 'due_date', 'renew_url'],
   },

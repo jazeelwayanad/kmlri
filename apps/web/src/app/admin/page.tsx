@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
+import {
   ArrowRight,
   BookOpen,
   Calendar,
@@ -101,15 +101,15 @@ export default function AdminDashboardPage() {
 
   const stats = [
     { value: loading ? '—' : `${data.totalRecords}`, label: 'Catalogue Records', accent: 'rgb(165,35,7)', href: '/admin/catalog' },
-    { value: loading ? '—' : `${data.activeLoans}`, label: 'Active Loans', accent: 'rgb(20,20,20)', href: '/admin/circulation' },
+    { value: loading ? '—' : `${data.activeLoans}`, label: 'Active Loans', accent: 'rgb(20,20,20)', href: '/admin/circulation/desk' },
     { value: loading ? '—' : `${data.overdueLoans}`, label: 'Overdue Volumes', accent: data.overdueLoans > 0 ? 'rgb(165,35,7)' : 'rgb(20,20,20)', href: '/admin/circulation/overdues' },
     { value: loading ? '—' : `${data.totalMembers}`, label: 'Registered Members', accent: 'rgb(20,20,20)', href: '/admin/members' },
   ];
 
   const ops = [
-    { icon: ArrowUpRight, label: 'Issue (Check-out)', href: '/admin/circulation/check-out' },
-    { icon: ArrowDownLeft, label: 'Return (Check-in)', href: '/admin/circulation/check-in' },
-    { icon: RotateCcw, label: 'Renewals', href: '/admin/circulation/renewals' },
+    { icon: ArrowUpRight, label: 'Issue (Check-out)', href: '/admin/circulation/desk?tab=checkout' },
+    { icon: ArrowDownLeft, label: 'Return (Check-in)', href: '/admin/circulation/desk?tab=checkin' },
+    { icon: RotateCcw, label: 'Renewals Desk', href: '/admin/circulation/desk?tab=renewals' },
     { icon: Bookmark, label: 'Holds & Queue', href: '/admin/circulation/holds' },
     { icon: Users, label: 'Members Directory', href: '/admin/members' },
     { icon: Layers, label: 'Catalogue Records', href: '/admin/catalog' },
@@ -129,7 +129,7 @@ export default function AdminDashboardPage() {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, idx) => (
-          <Link
+          <Link prefetch
             key={idx}
             href={s.href}
             className="bg-white border border-[#E2E0DB] p-5 flex flex-col gap-1 hover:shadow-xs transition-shadow rounded-[2px]"
@@ -148,7 +148,7 @@ export default function AdminDashboardPage() {
           {ops.map((o, idx) => {
             const Icon = o.icon;
             return (
-              <Link
+              <Link prefetch
                 key={idx}
                 href={o.href}
                 className="bg-white border border-[#E2E0DB] p-4 flex flex-col items-center gap-2.5 text-xs text-gray-800 hover:border-[#A52307] hover:text-[#A52307] transition-all rounded-[2px] text-center font-bold group"
@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">Publish stories, news, events, and grant opportunities.</p>
           </div>
-          <Link
+          <Link prefetch
             href="/admin/website/configuration"
             className="text-xs text-[#A52307] hover:underline font-bold"
           >
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
           ].map((item, idx) => {
             const Icon = item.icon;
             return (
-              <Link
+              <Link prefetch
                 key={idx}
                 href={item.href}
                 className="p-3 border border-gray-200 hover:border-black bg-[#FAF8F5] transition-all flex items-center gap-2.5 rounded-[2px] text-xs font-semibold text-gray-900 hover:text-[#A52307]"
@@ -206,7 +206,7 @@ export default function AdminDashboardPage() {
         <section className="bg-white border border-[#E2E0DB] rounded-[2px] p-5 shadow-xs space-y-3">
           <div className="flex items-baseline justify-between border-b border-gray-100 pb-2.5">
             <h2 className="text-sm font-bold text-gray-900">Recent Desk Activity</h2>
-            <Link href="/admin/system/audit-logs" className="text-xs text-[#A52307] hover:underline font-bold">
+            <Link prefetch href="/admin/system/audit-logs" className="text-xs text-[#A52307] hover:underline font-bold">
               Full Audit Log →
             </Link>
           </div>
@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
 
           <div className="space-y-2.5">
             {data.overdueLoans > 0 && (
-              <Link
+              <Link prefetch
                 href="/admin/circulation/overdues"
                 className="p-3 border-l-3 border-l-[#A52307] bg-red-50/50 border border-red-100 rounded-[2px] block hover:bg-red-50 transition-colors"
               >
@@ -249,7 +249,7 @@ export default function AdminDashboardPage() {
             )}
 
             {data.pendingHolds > 0 && (
-              <Link
+              <Link prefetch
                 href="/admin/circulation/holds"
                 className="p-3 border-l-3 border-l-amber-600 bg-amber-50/50 border border-amber-100 rounded-[2px] block hover:bg-amber-50 transition-colors"
               >

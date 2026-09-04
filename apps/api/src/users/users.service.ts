@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -10,8 +11,9 @@ export class UsersService {
     const where: any = {};
     if (query) {
       where.OR = [
-        { fullName: { contains: query } },
-        { email: { contains: query } },
+        { fullName: { contains: query, mode: 'insensitive' } },
+        { email: { contains: query, mode: 'insensitive' } },
+        { username: { contains: query, mode: 'insensitive' } },
         { membershipNumber: { contains: query } },
         { phone: { contains: query } },
       ];
@@ -22,9 +24,17 @@ export class UsersService {
       select: {
         id: true,
         membershipNumber: true,
+        username: true,
         email: true,
         fullName: true,
         phone: true,
+        avatarUrl: true,
+        address: true,
+        institution: true,
+        gender: true,
+        researchInterest: true,
+        guarantorId: true,
+        relationship: true,
         role: true,
         roleId: true,
         roleRel: {
@@ -44,6 +54,7 @@ export class UsersService {
             loans: { where: { status: 'ACTIVE' } },
             reservations: { where: { status: 'PENDING' } },
             fines: { where: { status: 'UNPAID' } },
+            relatives: true,
           },
         },
       },
@@ -71,6 +82,39 @@ export class UsersService {
   async findOne(idOrMembershipNumber: string) {
     const include = {
       roleRel: true,
+      guarantor: {
+        select: {
+          id: true,
+          fullName: true,
+          membershipNumber: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+          role: true,
+          status: true,
+        },
+      },
+      relatives: {
+        select: {
+          id: true,
+          fullName: true,
+          username: true,
+          membershipNumber: true,
+          relationship: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+          role: true,
+          status: true,
+          maxBorrowLimit: true,
+          _count: {
+            select: {
+              loans: { where: { status: 'ACTIVE' } },
+              fines: { where: { status: 'UNPAID' } },
+            },
+          },
+        },
+      },
       loans: {
         include: { copy: { include: { bibRecord: true } } },
         orderBy: { createdAt: 'desc' as const },
@@ -92,6 +136,10 @@ export class UsersService {
     }
 
     if (!user) {
+      user = await this.prisma.user.findUnique({ where: { username: idOrMembershipNumber }, include });
+    }
+
+    if (!user) {
       throw new NotFoundException('User not found');
     }
 
@@ -101,6 +149,12 @@ export class UsersService {
 
   async updateRoleOrStatus(id: string, data: UpdateUserDto) {
     const updateData: any = { ...data };
+
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.passwordHash = await bcrypt.hash(data.password, salt);
+      delete updateData.password;
+    }
 
     // If roleId provided, fetch role to sync role slug
     if (data.roleId) {
@@ -116,6 +170,16 @@ export class UsersService {
       select: {
         id: true,
         fullName: true,
+        username: true,
+        email: true,
+        phone: true,
+        avatarUrl: true,
+        address: true,
+        institution: true,
+        gender: true,
+        researchInterest: true,
+        guarantorId: true,
+        relationship: true,
         membershipNumber: true,
         role: true,
         roleId: true,

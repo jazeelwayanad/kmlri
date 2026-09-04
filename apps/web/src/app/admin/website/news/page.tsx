@@ -186,11 +186,10 @@ export default function WebsiteNewsPage() {
       />
 
       {notification && (
-        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${
-          notificationType === 'success'
+        <div className={`p-4 border rounded-xl text-xs font-semibold flex items-center gap-2 ${notificationType === 'success'
             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
             : 'bg-red-50 text-red-800 border-red-200'
-        }`}>
+          }`}>
           {notificationType === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           ) : (
@@ -298,14 +297,13 @@ export default function WebsiteNewsPage() {
                 </td>
                 <td className="py-3.5 px-4 text-gray-600 font-mono">{n.date}</td>
                 <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    n.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${n.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                    }`}>
                     {n.status}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right space-x-2">
-                  <Link
+                  <Link prefetch
                     href={`/news/${n.slug}`}
                     target="_blank"
                     className="p-1 text-gray-400 hover:text-black inline-block"

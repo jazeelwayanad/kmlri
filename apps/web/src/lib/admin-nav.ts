@@ -29,11 +29,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     groups: [
       {
         items: [
-          { label: 'Desk Overview', href: '/admin/circulation' },
-          { label: 'Check Out', href: '/admin/circulation/check-out' },
-          { label: 'Check In', href: '/admin/circulation/check-in' },
+          { label: 'Circulation Desk', href: '/admin/circulation/desk' },
           { label: 'Holds', href: '/admin/circulation/holds' },
-          { label: 'Renewals', href: '/admin/circulation/renewals' },
           { label: 'Overdues', href: '/admin/circulation/overdues' },
           { label: 'Fines & Payments', href: '/admin/circulation/fines' },
         ],
@@ -79,7 +76,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       {
         title: 'Configuration',
         items: [
-          { label: 'Membership Types & Quotas', href: '/admin/members/membership-types' },
+          
           { label: 'Access Policies & Clearances', href: '/admin/members/access-policies' },
         ],
       },

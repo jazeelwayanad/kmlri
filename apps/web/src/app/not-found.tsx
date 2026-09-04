@@ -8,7 +8,7 @@ export default function NotFound() {
       <p className="text-sm text-gray-600 max-w-md mb-6">
         The page you are looking for does not exist or has been moved.
       </p>
-      <Link
+      <Link prefetch
         href="/"
         className="px-5 py-2.5 bg-[#A52307] text-white rounded font-medium hover:bg-red-700 transition-colors"
       >

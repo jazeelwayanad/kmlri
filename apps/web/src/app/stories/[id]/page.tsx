@@ -105,7 +105,7 @@ export default function StoryDetailPage() {
           <p className="font-sans text-heritage-body mb-6">
             The requested reading room story or research note could not be found.
           </p>
-          <Link
+          <Link prefetch
             href="/stories"
             className="inline-block bg-black text-white px-6 py-2.5 rounded-full text-base font-bold hover:bg-heritage-red hover:text-white  transition-colors"
           >
@@ -125,7 +125,7 @@ export default function StoryDetailPage() {
       <main className="max-w-[1100px] mx-auto pt-6 sm:pt-12 px-4 sm:px-5 pb-24">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 font-sans text-xs sm:text-sm text-heritage-muted">
-          <Link
+          <Link prefetch
             href="/stories"
             className="inline-flex items-center gap-1.5 font-semibold text-black hover:text-heritage-red transition-colors"
           >
@@ -238,13 +238,13 @@ export default function StoryDetailPage() {
                 <p><strong>Appointment:</strong> Minimum 24-hour advance booking</p>
               </div>
               <div className="pt-2 flex flex-col gap-2">
-                <Link
+                <Link prefetch
                   href="/services"
                   className="w-full bg-black text-white font-amiri font-bold text-center py-2.5 rounded-full hover:bg-heritage-red hover:text-white transition-colors text-base"
                 >
                   Plan Reading Room Visit →
                 </Link>
-                <Link
+                <Link prefetch
                   href="/ask"
                   className="w-full border border-black text-black font-amiri font-bold text-center py-2 rounded-full hover:bg-black hover:text-white transition-colors text-base"
                 >
@@ -271,7 +271,7 @@ export default function StoryDetailPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {relatedStories.map((r, idx) => (
-                <Link
+                <Link prefetch
                   key={r.id || idx}
                   href={`/stories/${r.id}`}
                   className="bg-white border border-black/15 p-5 hover:border-black transition-all flex flex-col justify-between group"

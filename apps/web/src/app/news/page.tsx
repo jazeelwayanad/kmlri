@@ -81,9 +81,8 @@ function NewsPageContent() {
                   setActiveTab(tab);
                   setSearch('');
                 }}
-                className={`border-none cursor-pointer font-amiri text-[16px] sm:text-[20px] leading-none px-4 sm:px-[26px] h-[44px] sm:h-[54px] flex items-center justify-center transition-all ${
-                  active ? 'bg-black text-white font-bold' : 'bg-transparent text-black hover:text-heritage-red'
-                }`}
+                className={`border-none cursor-pointer font-amiri text-[16px] sm:text-[20px] leading-none px-4 sm:px-[26px] h-[44px] sm:h-[54px] flex items-center justify-center transition-all ${active ? 'bg-black text-white font-bold' : 'bg-transparent text-black hover:text-heritage-red'
+                  }`}
               >
                 {tab}
               </button>
@@ -111,7 +110,7 @@ function NewsPageContent() {
                 className="flex flex-col justify-between bg-white p-5 border border-black/20 hover:border-black transition-all group"
               >
                 <div className="flex flex-col gap-2.5 sm:gap-3">
-                  <Link
+                  <Link prefetch
                     href={`/news/${item.slug || item.id}`}
                     className="aspect-[16/9] bg-[#EAE4D9] border border-black/10 flex flex-col items-center justify-center text-center p-4 relative overflow-hidden group-hover:bg-[#dfd7c8] transition-colors"
                   >
@@ -133,7 +132,7 @@ function NewsPageContent() {
                     {item.time && <span>{item.time}</span>}
                   </div>
 
-                  <Link href={`/news/${item.slug || item.id}`}>
+                  <Link prefetch href={`/news/${item.slug || item.id}`}>
                     <h3 className="font-amiri text-[20px] sm:text-[23px] font-semibold leading-[1.25] text-pretty text-black group-hover:text-heritage-red transition-colors">
                       {item.title}
                     </h3>
@@ -145,7 +144,7 @@ function NewsPageContent() {
                 </div>
 
                 <div className="pt-4 mt-2 border-t border-black/10 flex items-center justify-between flex-wrap gap-2">
-                  <Link
+                  <Link prefetch
                     href={`/news/${item.slug || item.id}`}
                     className="border-[1.5px] border-black font-amiri font-semibold text-[15px] sm:text-[16px] py-1 sm:py-1.5 px-4 self-start hover:bg-black hover:text-paper transition-colors"
                   >

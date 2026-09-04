@@ -155,6 +155,31 @@ export default function CatalogueRecordsPage() {
   }, [search, formatFilter, accessFilter, languageFilter, sortBy, page]);
 
   // Any change to search/filters should jump back to page 1.
+  const [coverFetchLoading, setCoverFetchLoading] = useState(false);
+  const [coverFetchMessage, setCoverFetchMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleFetchCoverByIsbn = async () => {
+    if (!isbn.trim()) {
+      setCoverFetchMessage({ type: 'error', text: 'Enter an ISBN first.' });
+      return;
+    }
+    setCoverFetchLoading(true);
+    setCoverFetchMessage(null);
+    try {
+      const res = await api.fetchCoverByIsbn(isbn.trim());
+      if (res.found) {
+        setUri(res.url);
+        setCoverFetchMessage({ type: 'success', text: `Cover found via ${res.source.replace('_', ' ')}.` });
+      } else {
+        setCoverFetchMessage({ type: 'error', text: 'No cover image found for this ISBN.' });
+      }
+    } catch (err: any) {
+      setCoverFetchMessage({ type: 'error', text: err.message || 'Cover lookup failed.' });
+    } finally {
+      setCoverFetchLoading(false);
+    }
+  };
+
   const updateFilter = (setter: (v: string) => void) => (value: string) => {
     setter(value);
     setPage(1);
@@ -187,6 +212,7 @@ export default function CatalogueRecordsPage() {
     setNotes('');
     setUri('');
     setAddedItems([]);
+    setCoverFetchMessage(null);
     setShowAddModal(true);
   };
 
@@ -215,6 +241,7 @@ export default function CatalogueRecordsPage() {
     setNotes(rec.notes || '');
     setUri(rec.coverImageUrl || '');
     setAddedItems([]);
+    setCoverFetchMessage(null);
     setShowAddModal(true);
   };
 
@@ -340,8 +367,8 @@ export default function CatalogueRecordsPage() {
       {notification && (
         <div
           className={`p-4 border rounded-xl flex items-center gap-3 text-xs font-semibold ${notification.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-red-50 text-red-800 border-red-200'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
             }`}
         >
           {notification.type === 'success' ? (
@@ -448,6 +475,7 @@ export default function CatalogueRecordsPage() {
             <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
               <th className="py-3 px-4">Shelfmark &amp; Format</th>
               <th className="py-3 px-4">Title &amp; Author</th>
+              <th className="py-3 px-4">ISBN</th>
               <th className="py-3 px-4">Language / Access</th>
               <th className="py-3 px-4">Copies (Avail / Total)</th>
               <th className="py-3 px-4 text-right">Record Actions</th>
@@ -456,13 +484,13 @@ export default function CatalogueRecordsPage() {
           <tbody className="divide-y divide-[#EEECE7]">
             {loading ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500 font-mono">
+                <td colSpan={6} className="py-8 text-center text-gray-500 font-mono">
                   Loading catalogue database...
                 </td>
               </tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500 font-mono">
+                <td colSpan={6} className="py-8 text-center text-gray-500 font-mono">
                   No catalogue records matching criteria.
                 </td>
               </tr>
@@ -476,7 +504,7 @@ export default function CatalogueRecordsPage() {
                     </Badge>
                   </td>
                   <td className="py-3.5 px-4 max-w-sm">
-                    <Link
+                    <Link prefetch
                       href={`/admin/catalog/${getRecordSlug(r)}`}
                       className="font-bold text-sm text-gray-900 hover:text-[#A52307] transition-colors leading-tight block"
                     >
@@ -489,6 +517,11 @@ export default function CatalogueRecordsPage() {
                     )}
                     <span className="text-gray-500 text-[11px] block mt-0.5">
                       {r.authors?.join(', ') || 'Unknown'}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="font-mono text-gray-800 text-[11px]">
+                      {r.isbn || '—'}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
@@ -506,7 +539,7 @@ export default function CatalogueRecordsPage() {
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right space-x-1.5">
-                    <Link
+                    <Link prefetch
                       href={`/admin/catalog/${getRecordSlug(r)}`}
                       className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1"
                     >
@@ -559,11 +592,10 @@ export default function CatalogueRecordsPage() {
                 key={p}
                 type="button"
                 onClick={() => setPage(p)}
-                className={`min-w-[28px] h-[28px] px-1.5 rounded text-[11px] font-bold border transition-colors ${
-                  p === page
+                className={`min-w-[28px] h-[28px] px-1.5 rounded text-[11px] font-bold border transition-colors ${p === page
                     ? 'bg-[#A52307] border-[#A52307] text-white'
                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 {p}
               </button>
@@ -744,6 +776,43 @@ export default function CatalogueRecordsPage() {
                         className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-mono text-gray-900 bg-white outline-none focus:border-[#A52307]"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 items-end">
+                    <div>
+                      <label className="block font-bold text-gray-700 uppercase mb-1">
+                        ISBN / ISSN <span className="text-gray-500 font-mono text-[10px]">(020$a)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 9788126415467"
+                        value={isbn}
+                        onChange={(e) => setIsbn(e.target.value)}
+                        className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-mono text-gray-900 bg-white outline-none focus:border-[#A52307]"
+                      />
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleFetchCoverByIsbn}
+                        disabled={coverFetchLoading}
+                        className="w-full h-10 px-3 rounded text-xs font-bold border border-gray-300 bg-white text-gray-800 hover:border-[#A52307] hover:text-[#A52307] transition-colors disabled:opacity-50"
+                      >
+                        {coverFetchLoading ? 'Fetching cover…' : 'Fetch Cover by ISBN'}
+                      </button>
+                      {coverFetchMessage && (
+                        <p className={`mt-1 text-[10px] font-semibold ${coverFetchMessage.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
+                          {coverFetchMessage.text}
+                        </p>
+                      )}
+                    </div>
+                    {uri && (
+                      <div>
+                        <label className="block font-bold text-gray-700 uppercase mb-1">Cover Preview</label>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={uri} alt="Cover preview" className="h-16 w-auto rounded border border-gray-200 object-cover" />
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { 
-  Globe, 
-  BookOpen, 
-  Newspaper, 
-  Calendar, 
-  Briefcase, 
-  Settings2, 
+import {
+  Globe,
+  BookOpen,
+  Newspaper,
+  Calendar,
+  Briefcase,
+  Settings2,
   ArrowRight,
   Eye
 } from 'lucide-react';
@@ -75,7 +75,7 @@ export default function WebsiteManagementOverviewPage() {
         {sections.map((sec, i) => {
           const Icon = sec.icon;
           return (
-            <Link
+            <Link prefetch
               key={i}
               href={sec.href}
               className="bg-white border border-[#E2E0DB] p-6 rounded-[2px] hover:border-[#A52307] transition-all flex flex-col justify-between group shadow-sm"

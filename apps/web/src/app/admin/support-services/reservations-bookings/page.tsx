@@ -13,7 +13,7 @@ interface Booking {
   timeSlot: string;
   notes?: string;
   status: 'CONFIRMED' | 'CANCELLED';
-  user: { fullName: string; membershipNumber: string };
+  user: { fullName: string; membershipNumber: string; avatarUrl?: string };
 }
 
 function formatDate(d: string) {
@@ -110,8 +110,23 @@ export default function ReservationsAndBookingsPage() {
               {filtered.map((b) => (
                 <tr key={b.id} className="hover:bg-[#FAF8F5]">
                   <td className="py-3.5 px-4 font-semibold text-gray-900">
-                    {b.user.fullName}
-                    <div className="text-gray-500 text-[11px] font-mono font-normal">{b.user.membershipNumber}</div>
+                    <div className="flex items-center gap-2.5">
+                      {b.user.avatarUrl ? (
+                        <img
+                          src={b.user.avatarUrl}
+                          alt={b.user.fullName}
+                          className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                          {b.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                      <div>
+                        <div>{b.user.fullName}</div>
+                        <div className="text-gray-500 text-[11px] font-mono font-normal">{b.user.membershipNumber}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="font-bold text-gray-900 block">{b.resourceName}</span>

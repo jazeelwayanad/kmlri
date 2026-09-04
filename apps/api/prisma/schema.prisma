@@ -26,19 +26,28 @@ model User {
   email            String    @unique
   passwordHash     String
   fullName         String
+  username         String?   @unique
   phone            String?
   designation      String?
   department       String?
+  institution      String?
+  address          String?
+  gender           String?
+  researchInterest String?
   bio              String?
   orcid            String?
   researchLanguages String?
   avatarUrl        String?
   roleId           String?
   roleRel          Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  role             String    @default("STUDENT") // Role slug / identifier
+  role             String    @default("READER") // Role slug / identifier
   status           String    @default("ACTIVE") // ACTIVE, SUSPENDED, EXPIRED
   permissions      String?   @default("[]") // JSON string of custom override permissions
   maxBorrowLimit   Int       @default(5)
+  guarantorId      String?
+  guarantor        User?     @relation("UserRelatives", fields: [guarantorId], references: [id], onDelete: SetNull)
+  relatives        User[]    @relation("UserRelatives")
+  relationship     String?   // e.g. Parent, Child, Spouse, Sibling, Guardian, Supervisor, Colleague
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
