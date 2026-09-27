@@ -85,39 +85,57 @@ export const DEFAULT_BOOKING_CONFIG: BookingSystemConfig = {
     },
   ],
   requireVerification: true,
-  instructions: 'All desk and room bookings are placed in PENDING status until verified by library staff. You will receive an approval note once your slot is confirmed.',
+  instructions: 'All bookings are placed in PENDING status until verified by library staff. You will receive an approval note once your slot is confirmed.',
 };
 
 const CONFIG_SETTING_KEY = 'facilities.bookingConfig';
 
 @Injectable()
 export class BookingsService {
+  private configCache: BookingSystemConfig | null = null;
+  private configCacheTime = 0;
+  private readonly CACHE_TTL_MS = 60 * 1000;
+
   constructor(private prisma: PrismaService) {}
 
   async getConfig(): Promise<BookingSystemConfig> {
+    const now = Date.now();
+    if (this.configCache && now - this.configCacheTime < this.CACHE_TTL_MS) {
+      return this.configCache;
+    }
+
     const setting = await this.prisma.systemSetting.findUnique({
       where: { key: CONFIG_SETTING_KEY },
     });
 
     if (!setting) {
+      this.configCache = DEFAULT_BOOKING_CONFIG;
+      this.configCacheTime = now;
       return DEFAULT_BOOKING_CONFIG;
     }
 
     try {
       const parsed = JSON.parse(setting.value);
-      return {
+      const res: BookingSystemConfig = {
         types: parsed.types || DEFAULT_BOOKING_CONFIG.types,
         timeSlots: parsed.timeSlots || DEFAULT_BOOKING_CONFIG.timeSlots,
         customFields: parsed.customFields || DEFAULT_BOOKING_CONFIG.customFields,
         requireVerification: parsed.requireVerification !== undefined ? parsed.requireVerification : true,
         instructions: parsed.instructions || DEFAULT_BOOKING_CONFIG.instructions,
       };
+      this.configCache = res;
+      this.configCacheTime = now;
+      return res;
     } catch {
+      this.configCache = DEFAULT_BOOKING_CONFIG;
+      this.configCacheTime = now;
       return DEFAULT_BOOKING_CONFIG;
     }
   }
 
   async updateConfig(config: Partial<BookingSystemConfig>) {
+    this.configCache = null;
+    this.configCacheTime = 0;
     const current = await this.getConfig();
     const updated: BookingSystemConfig = {
       ...current,
@@ -136,6 +154,8 @@ export class BookingsService {
       },
     });
 
+    this.configCache = updated;
+    this.configCacheTime = Date.now();
     return updated;
   }
 

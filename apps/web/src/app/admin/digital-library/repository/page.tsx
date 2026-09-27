@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, CheckCircle2, AlertCircle, FileCheck, ArrowRight, X } from 'lucide-react';
 import { Card, PageHeader, Button, Badge, BadgeVariant } from '@/components/admin/ui';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 
 interface Submission {
@@ -188,7 +189,7 @@ export default function RepositoryAdminPage() {
       {/* Submissions Table */}
       <Card className="overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading submissions…</div>
+          <LoadingState minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No repository submissions found.</div>
         ) : (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Card, PageHeader, StatCard } from '@/components/admin/ui';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 
 interface Researcher {
@@ -59,7 +60,7 @@ export default function ResearchAdminPage() {
       <Card>
         <h3 className="text-lg font-bold text-gray-900 mb-4">Faculty &amp; Fellow Directory</h3>
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading researchers…</div>
+          <LoadingState minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No faculty or research fellow members found.</div>
         ) : (

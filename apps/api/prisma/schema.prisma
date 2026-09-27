@@ -291,6 +291,7 @@ model Fine {
   userId    String
   amount    Float
   reason    String    @default("OVERDUE") // OVERDUE, DAMAGE, LOST
+  note      String?
   status    String    @default("UNPAID") // UNPAID, PAID, WAIVED
   paidAt    DateTime?
   createdAt DateTime  @default(now())

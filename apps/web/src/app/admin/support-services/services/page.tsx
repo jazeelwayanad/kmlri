@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function SupportServicesMemberServicesRedirectPage() {
   const router = useRouter();
@@ -10,5 +11,9 @@ export default function SupportServicesMemberServicesRedirectPage() {
     router.replace('/admin/support-services');
   }, [router]);
 
-  return <div className="p-8 text-center text-gray-500 text-sm font-sans">Redirecting to Support Services Desk…</div>;
+  return (
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }

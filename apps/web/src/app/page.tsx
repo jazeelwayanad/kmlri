@@ -7,55 +7,45 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem } from '@/lib/api';
+import { usePublicWebsiteSettings } from '@/lib/website-settings';
 import {
+  type HomepageSection,
   DEFAULT_HOMEPAGE_SECTIONS,
   DEFAULT_SERVICES,
-  DEFAULT_HERO_CONFIG,
   resolveHomepageSections,
-  type HomepageSection,
-  type SiteService,
-  type SiteHeroConfig,
 } from '@/lib/site-config-defaults';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('News');
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const {
+    homepageSections: dbSections,
+    hero: heroConfig,
+    services: servicesList,
+  } = usePublicWebsiteSettings();
 
   const tabs = ['Events', 'News', 'Stories', 'Opportunities'];
 
-  // Dynamic DB state
-  const [sectionOrder, setSectionOrder] = useState<HomepageSection[]>(DEFAULT_HOMEPAGE_SECTIONS);
-  const [heroConfig, setHeroConfig] = useState<SiteHeroConfig>(DEFAULT_HERO_CONFIG);
-  const [servicesList, setServicesList] = useState<SiteService[]>(DEFAULT_SERVICES);
+  const sectionOrder =
+    Array.isArray(dbSections) && dbSections.length > 0
+      ? resolveHomepageSections(dbSections)
+      : DEFAULT_HOMEPAGE_SECTIONS;
+
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loadingContent, setLoadingContent] = useState(false);
 
-  // 1. Load public website configuration from DB settings
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getPublicWebsiteSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        if (settings?.homepageSections) {
-          setSectionOrder(resolveHomepageSections(settings.homepageSections));
-        }
-        if (settings?.hero) {
-          setHeroConfig({ ...DEFAULT_HERO_CONFIG, ...settings.hero });
-        }
-        if (Array.isArray(settings?.services) && settings.services.length > 0) {
-          setServicesList(settings.services);
-        }
-      })
-      .catch(() => {
-        // graceful fallback to defaults
-      });
+  const collections = [
+    { name: 'Manuscripts', count: '1,240 items', note: 'Arabic, Persian and Arabi-Malayalam codices, described folio by folio.' },
+    { name: 'Arabi-Malayalam Print', count: '860 items', note: 'Lithographs, chapbooks and poetry printed across Malabar.' },
+    { name: 'Rare Books', count: '2,100 items', note: 'Early editions in Arabic, Malayalam, Urdu and English.' },
+    { name: 'Periodicals', count: '310 titles', note: 'Journals and magazines, bound runs and loose issues.' },
+    { name: 'Theses & Papers', count: '470 items', note: 'Dissertations deposited by affiliated researchers.' },
+    { name: 'Audio & Oral History', count: '95 hours', note: 'Recorded recitation, interviews and lecture archives.' },
+  ];
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const services =
+    Array.isArray(servicesList) && servicesList.length > 0 ? servicesList : DEFAULT_SERVICES;
 
   // 2. Load Content Items for active "What's On" tab dynamically from DB
   useEffect(() => {
@@ -219,29 +209,39 @@ export default function HomePage() {
                             <Link
                               prefetch
                               href={detailUrl}
-                              className="w-full h-[140px] sm:h-[153px] bg-[#222] border border-white/20 flex flex-col items-center justify-center p-3 text-center relative overflow-hidden group-hover:border-white/50 transition-colors"
+                              className="w-full h-[145px] sm:h-[155px] bg-[#1a1a1a] border border-white/20 relative overflow-hidden group-hover:border-white/50 transition-colors block"
                             >
                               {item.imageUrl ? (
                                 <img
                                   src={item.imageUrl}
                                   alt={item.title}
-                                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
-                              ) : null}
-                              <div className="relative z-10">
-                                <span className="font-averia text-[11px] tracking-[0.1em] text-heritage-red uppercase font-bold mb-1 block">
+                              ) : (
+                                <div className="w-full h-full bg-[#222] flex items-center justify-center p-3 text-center">
+                                  <span className="font-averia text-[11px] tracking-[0.1em] text-heritage-red uppercase font-bold">
+                                    {item.kicker || activeTab}
+                                  </span>
+                                </div>
+                              )}
+                            </Link>
+
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                                <span className="font-averia text-[11px] tracking-[0.1em] text-heritage-red uppercase font-bold">
                                   {item.kicker || activeTab}
                                 </span>
-                                <span className="text-[12px] text-gray-300 font-sans line-clamp-2 block">
-                                  {item.date || item.deadline || 'KMLRI Archive Collection'}
+                                <span className="text-[11px] text-gray-400 font-sans">
+                                  {item.date || item.deadline}
                                 </span>
                               </div>
-                            </Link>
-                            <Link prefetch href={detailUrl}>
-                              <p className="font-amiri text-[17px] sm:text-[18px] font-bold leading-[1.35] m-0 text-pretty text-white group-hover:text-heritage-red transition-colors line-clamp-3">
-                                {item.title}
-                              </p>
-                            </Link>
+                              <Link prefetch href={detailUrl}>
+                                <p className="font-amiri text-[17px] sm:text-[18px] font-bold leading-[1.35] m-0 text-pretty text-white group-hover:text-heritage-red transition-colors line-clamp-3">
+                                  {item.title}
+                                </p>
+                              </Link>
+                            </div>
+
                             <p className="text-[13px] text-gray-400 font-sans line-clamp-2 leading-[1.4]">
                               {item.summary}
                             </p>
@@ -272,6 +272,87 @@ export default function HomePage() {
           </Fragment>
         );
 
+      case 'sec-collections':
+        return (
+          <Fragment key="sec-collections">
+            {/* Browse the Collections Section */}
+            <section id="collections" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5">
+              <div className="flex items-end justify-between gap-4 flex-wrap">
+                <h2 className="font-amiri text-[22px] sm:text-[26px] font-semibold text-heritage-red mb-2 sm:mb-[10px]">
+                  Browse the Collections
+                </h2>
+                <Link prefetch href="/collections" className="text-[16px] sm:text-[18px] mb-2 sm:mb-3 hover:text-heritage-red">
+                  All collections →
+                </Link>
+              </div>
+              <div className="double-rule"></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-black border border-black border-t-0">
+                {collections.map((col, idx) => (
+                  <Link
+                    prefetch
+                    key={idx}
+                    href={`/search?format=${encodeURIComponent(col.name)}`}
+                    className="bg-paper p-5 sm:p-7 flex flex-col gap-2 min-h-[140px] sm:min-h-[168px] hover:bg-paper-hover transition-colors"
+                  >
+                    <span className="font-averia text-[12px] tracking-[0.12em] text-heritage-muted font-bold">
+                      {col.count}
+                    </span>
+                    <span className="font-amiri text-[21px] sm:text-[23px] font-semibold leading-[1.25]">
+                      {col.name}
+                    </span>
+                    <span className="text-[15px] sm:text-[17px] leading-[1.45] text-heritage-subtle text-pretty font-sans">
+                      {col.note}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </Fragment>
+        );
+
+      case 'sec-archive':
+        return (
+          <Fragment key="sec-archive">
+            {/* From the Archive Featured Section */}
+            <section id="stories" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5">
+              <div className="flex items-end justify-between gap-4 flex-wrap">
+                <h2 className="font-amiri text-[22px] sm:text-[26px] font-semibold text-heritage-red mb-2 sm:mb-[10px]">
+                  From the Archive
+                </h2>
+                <Link prefetch href="/stories" className="text-[16px] sm:text-[18px] mb-2 sm:mb-3 hover:text-heritage-red">
+                  More stories →
+                </Link>
+              </div>
+              <div className="double-rule"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-6 sm:gap-11 pt-6 sm:pt-[38px] items-center">
+                <div className="w-full min-h-[220px] sm:h-[320px] bg-[#E2DACB] border border-black p-6 flex items-center justify-center text-center">
+                  <span className="font-averia text-[12px] tracking-[0.1em] text-[#7E7365] uppercase font-bold">
+                    manuscript folio scan &amp; codex plate
+                  </span>
+                </div>
+                <div>
+                  <p className="font-averia text-[13px] tracking-[0.06em] text-heritage-muted mb-2 sm:mb-[14px] uppercase font-bold">
+                    Featured item
+                  </p>
+                  <h3 className="font-amiri text-[28px] sm:text-[38px] font-semibold leading-[1.15] mb-3 sm:mb-[18px] text-balance">
+                    A hand-copied Arabi-Malayalam poem, newly digitised
+                  </h3>
+                  <p className="text-[17px] sm:text-[20px] leading-[1.5] text-heritage-body mb-5 sm:mb-[26px] text-pretty font-sans">
+                    Every item added to the digital reading room is catalogued in both scripts, photographed folio by folio, and made searchable for researchers working on the manuscript cultures of Malabar.
+                  </p>
+                  <Link
+                    prefetch
+                    href="/stories"
+                    className="inline-block bg-black text-paper font-amiri font-semibold text-[17px] py-2.5 sm:py-[13px] px-6 sm:px-8 rounded-full hover:bg-heritage-red hover:text-white transition-colors"
+                  >
+                    Read the story →
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </Fragment>
+        );
+
       case 'sec-services':
         return (
           <Fragment key="sec-services">
@@ -279,7 +360,7 @@ export default function HomePage() {
             <section id="services" className="max-w-[1100px] mx-auto pt-10 sm:pt-[78px] px-4 sm:px-5 pb-16">
               <div className="double-rule"></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-9 pt-6 sm:pt-[34px]">
-                {servicesList.map((svc, idx) => (
+                {services.map((svc, idx) => (
                   <div key={svc.id || idx} className="flex flex-col gap-2">
                     <span className="font-amiri text-[20px] sm:text-[21px] font-semibold">{svc.name}</span>
                     <span className="text-[15px] sm:text-[17px] leading-[1.45] text-heritage-subtle text-pretty font-sans">

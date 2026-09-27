@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface CollectionRecord {
   id: string;
@@ -126,7 +127,9 @@ export function CollectionRecordPicker({ collectionId, onChanged }: { collection
       </div>
 
       {loading ? (
-        <div className="text-xs text-gray-500 py-3">Loading records…</div>
+        <div className="py-4 flex justify-center">
+          <LoadingSpinner size="sm" label="Loading records…" />
+        </div>
       ) : records.length === 0 ? (
         <div className="p-4 text-center text-gray-400 text-xs border border-dashed border-gray-300 rounded">No records in this collection yet.</div>
       ) : (

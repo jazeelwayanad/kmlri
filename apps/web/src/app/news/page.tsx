@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Calendar, Clock, MapPin, Search, CheckCircle, ArrowRight, BookOpen, Award, Sparkles } from 'lucide-react';
 
 function NewsPageContent() {
@@ -92,7 +93,9 @@ function NewsPageContent() {
         <div className="double-rule"></div>
 
         {/* Dynamic Items Grid */}
-        {items.length === 0 ? (
+        {loading ? (
+          <LoadingState message={`Loading ${activeTab.toLowerCase()}…`} minHeight="240px" />
+        ) : items.length === 0 ? (
           <div className="py-16 text-center text-heritage-muted font-sans">
             <p className="text-lg">No {activeTab.toLowerCase()} matching your search criteria.</p>
             <button
@@ -112,16 +115,26 @@ function NewsPageContent() {
                 <div className="flex flex-col gap-2.5 sm:gap-3">
                   <Link prefetch
                     href={`/news/${item.slug || item.id}`}
-                    className="aspect-[16/9] bg-[#EAE4D9] border border-black/10 flex flex-col items-center justify-center text-center p-4 relative overflow-hidden group-hover:bg-[#dfd7c8] transition-colors"
+                    className="aspect-[16/9] bg-[#EAE4D9] border border-black/10 relative overflow-hidden group-hover:bg-[#dfd7c8] transition-colors block"
                   >
-                    <span className="font-averia text-[11px] uppercase tracking-wider text-heritage-muted font-bold mb-1">
-                      {item.kicker || activeTab}
-                    </span>
-                    <span className="font-amiri text-base font-semibold text-black/80 line-clamp-1">
-                      {item.venue || item.author || 'Kunhīn Musliyār Library'}
-                    </span>
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
+                        <span className="font-averia text-[11px] uppercase tracking-wider text-heritage-muted font-bold mb-1">
+                          {item.kicker || activeTab}
+                        </span>
+                        <span className="font-amiri text-base font-semibold text-black/80 line-clamp-1">
+                          {item.venue || item.author || 'Kunhīn Musliyār Library'}
+                        </span>
+                      </div>
+                    )}
                     {item.featured && (
-                      <span className="absolute top-2 right-2 bg-heritage-red text-white text-[10px] font-averia px-2 py-0.5 uppercase font-bold">
+                      <span className="absolute top-2 right-2 bg-heritage-red text-white text-[10px] font-averia px-2 py-0.5 uppercase font-bold shadow-sm">
                         Featured
                       </span>
                     )}
@@ -177,8 +190,8 @@ export default function NewsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-paper text-black flex items-center justify-center font-amiri text-xl">
-          Loading What’s on...
+        <div className="min-h-screen bg-paper text-black flex items-center justify-center font-amiri">
+          <LoadingState message="Loading What’s on…" minHeight="240px" />
         </div>
       }
     >

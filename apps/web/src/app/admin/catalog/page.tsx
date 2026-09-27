@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api, BibliographicRecord } from '@/lib/api';
+import { LoadingSpinner, LoadingTableRow } from '@/components/ui/LoadingSpinner';
 import {
   Plus,
   Search,
@@ -394,7 +395,11 @@ export default function CatalogueRecordsPage() {
             />
           </div>
           <span className="text-[11px] text-gray-500 font-mono whitespace-nowrap">
-            {loading ? 'Loading…' : `${totalCount.toLocaleString()} record${totalCount === 1 ? '' : 's'}`}
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5">
+                <LoadingSpinner size="xs" />
+              </span>
+            ) : `${totalCount.toLocaleString()} record${totalCount === 1 ? '' : 's'}`}
           </span>
         </div>
 
@@ -483,11 +488,7 @@ export default function CatalogueRecordsPage() {
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
             {loading ? (
-              <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500 font-mono">
-                  Loading catalogue database...
-                </td>
-              </tr>
+              <LoadingTableRow colSpan={6} message="Loading catalogue database…" />
             ) : records.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-gray-500 font-mono">

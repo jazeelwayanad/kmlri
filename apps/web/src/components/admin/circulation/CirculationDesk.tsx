@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 type TabType = 'checkout' | 'checkin' | 'renewals';
 
@@ -1004,7 +1005,7 @@ export function CirculationDesk() {
 
             <div className="overflow-x-auto">
               {loansLoading ? (
-                <div className="p-8 text-center text-gray-500 text-xs font-mono">Loading active loans…</div>
+                <LoadingState message="Loading active loans…" minHeight="120px" size="md" />
               ) : filteredLoans.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 text-xs font-mono">
                   {renewSearch ? 'No active loans match your search.' : 'No active loans currently checked out.'}

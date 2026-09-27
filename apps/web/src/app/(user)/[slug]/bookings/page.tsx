@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import {
   CalendarPlus,
   CheckCircle2,
@@ -14,6 +15,9 @@ import {
   Building,
   UserCheck,
   AlertTriangle,
+  Calendar,
+  Layers,
+  Search,
 } from 'lucide-react';
 
 interface DynamicBookingField {
@@ -125,6 +129,9 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+
   // Form State
   const [selectedType, setSelectedType] = useState(DEFAULT_CONFIG.types[0].id);
   const [resourceName, setResourceName] = useState(DEFAULT_CONFIG.types[0].resources[0]);
@@ -151,7 +158,14 @@ export default function MyBookingsPage() {
           setTimeSlot(fetchedConfig.timeSlots[0]);
         }
       }
-      setBookings(fetchedBookings || []);
+      const validBookings = Array.isArray(fetchedBookings)
+        ? fetchedBookings
+        : Array.isArray((fetchedBookings as any)?.data)
+        ? (fetchedBookings as any).data
+        : Array.isArray((fetchedBookings as any)?.bookings)
+        ? (fetchedBookings as any).bookings
+        : [];
+      setBookings(validBookings);
     } catch {
       // keep defaults
     } finally {
@@ -213,10 +227,18 @@ export default function MyBookingsPage() {
       });
       setNotes('');
       setCustomFieldsState({});
+      setShowModal(false);
 
       // Reload bookings
-      const updated = await api.getBookings();
-      setBookings(updated || []);
+      const updated = await api.getBookings().catch(() => []);
+      const validUpdated = Array.isArray(updated)
+        ? updated
+        : Array.isArray((updated as any)?.data)
+        ? (updated as any).data
+        : Array.isArray((updated as any)?.bookings)
+        ? (updated as any).bookings
+        : [];
+      setBookings(validUpdated);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Could not submit this booking request.' });
     } finally {
@@ -228,8 +250,15 @@ export default function MyBookingsPage() {
     try {
       await api.cancelBooking(id, 'Cancelled by patron.');
       setMessage({ type: 'info', text: 'Booking has been cancelled.' });
-      const updated = await api.getBookings();
-      setBookings(updated || []);
+      const updated = await api.getBookings().catch(() => []);
+      const validUpdated = Array.isArray(updated)
+        ? updated
+        : Array.isArray((updated as any)?.data)
+        ? (updated as any).data
+        : Array.isArray((updated as any)?.bookings)
+        ? (updated as any).bookings
+        : [];
+      setBookings(validUpdated);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Could not cancel this booking.' });
     }
@@ -238,36 +267,44 @@ export default function MyBookingsPage() {
   if (!user) return null;
 
   const currentTypeObj = config.types.find((t) => t.id === selectedType) || config.types[0];
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
 
-  const filteredBookings = bookings.filter((b) => {
+  const filteredBookings = safeBookings.filter((b) => {
     if (statusFilter === 'ALL') return true;
     if (statusFilter === 'CONFIRMED') return b.status === 'APPROVED' || b.status === 'CONFIRMED';
     return b.status === statusFilter;
   });
 
-  const pendingCount = bookings.filter((b) => b.status === 'PENDING').length;
-  const approvedCount = bookings.filter((b) => b.status === 'APPROVED' || b.status === 'CONFIRMED').length;
+  const pendingCount = safeBookings.filter((b) => b.status === 'PENDING').length;
+  const approvedCount = safeBookings.filter((b) => b.status === 'APPROVED' || b.status === 'CONFIRMED').length;
 
   return (
-    <div className="space-y-6 font-sans max-w-[1000px]">
-      <div>
-        <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
-          Reading Room &amp; Facility Bookings
-        </h2>
-        <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-          Reserve a reading desk, quiet study room, or 1-on-1 consultation slot with our research archivists.
-        </p>
+    <div className="space-y-6 font-sans">
+      {/* Header with Title and "New Booking" Action Button */}
+      <div className="flex justify-between items-baseline flex-wrap gap-4">
+        <div>
+          <h2 className="font-amiri text-3xl sm:text-[34px] font-bold text-black m-0 leading-tight">
+            Reading Room &amp; Facility Bookings
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMessage(null);
+            setShowModal(true);
+          }}
+          className="px-4 py-2 border border-black bg-black text-white hover:bg-stone-800 rounded text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+        >
+          <CalendarPlus className="w-3.5 h-3.5" />
+          <span>Request Facility Booking</span>
+        </button>
       </div>
 
-      <div className="double-rule"></div>
+      {/* Oxford Double-Line Divider Rule */}
+      <div className="border-t-2 border-b border-black py-0.5 my-6 w-full" />
 
-      {config.instructions && (
-        <div className="p-3.5 bg-[#FAF8F5] border border-[#E2E0DB] rounded text-xs text-gray-700 flex items-start gap-2.5">
-          <Info className="w-4 h-4 text-heritage-red flex-shrink-0 mt-0.5" />
-          <div className="leading-relaxed">{config.instructions}</div>
-        </div>
-      )}
-
+      {/* Alert Messages */}
       {message && (
         <div
           className={`p-3.5 text-xs font-semibold flex items-center gap-2 rounded border ${
@@ -289,152 +326,10 @@ export default function MyBookingsPage() {
         </div>
       )}
 
-      {/* New Booking Form */}
-      <form onSubmit={handleSubmit} className="bg-white border-2 border-black rounded p-5 sm:p-6 shadow-sm space-y-4">
-        <h3 className="font-amiri text-xl font-bold flex items-center gap-2">
-          <CalendarPlus className="w-5 h-5 text-heritage-red" /> Request Facility Booking
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Facility Type */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-averia uppercase font-bold text-heritage-muted">Facility Category</span>
-            <select
-              value={selectedType}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent font-medium"
-            >
-              {config.types.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Specific Resource */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-averia uppercase font-bold text-heritage-muted">Specific Desk / Room</span>
-            <select
-              value={resourceName}
-              onChange={(e) => setResourceName(e.target.value)}
-              className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent font-medium"
-            >
-              {currentTypeObj?.resources?.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Date Picker */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-averia uppercase font-bold text-heritage-muted">Date</span>
-            <input
-              type="date"
-              required
-              value={date}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setDate(e.target.value)}
-              className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent"
-            />
-          </label>
-
-          {/* Time Slot */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-averia uppercase font-bold text-heritage-muted">Time Slot</span>
-            <select
-              value={timeSlot}
-              onChange={(e) => setTimeSlot(e.target.value)}
-              className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent font-medium"
-            >
-              {config.timeSlots.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Dynamic Custom Dropdown & Text Fields Configured by Admin */}
-          {config.customFields?.map((field) => (
-            <div key={field.id} className="flex flex-col gap-1.5">
-              <label className="text-xs font-averia uppercase font-bold text-heritage-muted flex items-center gap-1">
-                <span>{field.label}</span>
-                {field.required && <span className="text-heritage-red">*</span>}
-              </label>
-
-              {field.type === 'select' ? (
-                <select
-                  value={customFieldsState[field.id] || ''}
-                  onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
-                  required={field.required}
-                  className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent"
-                >
-                  <option value="">{field.placeholder || `Select ${field.label}...`}</option>
-                  {field.options?.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : field.type === 'textarea' ? (
-                <textarea
-                  rows={2}
-                  value={customFieldsState[field.id] || ''}
-                  onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
-                  required={field.required}
-                  placeholder={field.placeholder || ''}
-                  className="border border-black p-2.5 text-sm rounded outline-none bg-transparent"
-                />
-              ) : (
-                <input
-                  type="text"
-                  value={customFieldsState[field.id] || ''}
-                  onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
-                  required={field.required}
-                  placeholder={field.placeholder || ''}
-                  className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent"
-                />
-              )}
-              {field.helpText && <span className="text-[11px] text-gray-500">{field.helpText}</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Notes */}
-        <label className="flex flex-col gap-1.5 pt-1">
-          <span className="text-xs font-averia uppercase font-bold text-heritage-muted">
-            Special Notes / Manuscripts to examine (optional)
-          </span>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Requesting consultation for Arabi-Malayalam codex MS 0142"
-            className="border border-black h-11 px-3 text-sm rounded outline-none bg-transparent"
-          />
-        </label>
-
-        <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
-          <div className="text-[11px] text-gray-500">
-            Booking requests will be reviewed by library administration.
-          </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-6 py-2.5 bg-black text-white rounded text-xs font-bold hover:bg-heritage-red transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
-          >
-            {submitting ? 'Submitting Request…' : 'Submit Booking for Verification'}
-          </button>
-        </div>
-      </form>
-
-      {/* Bookings History & Directory */}
-      <div className="space-y-4 pt-4">
+      {/* My Bookings History & Management (Shown First) */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h3 className="font-amiri text-2xl font-bold">My Bookings</h3>
+          <h3 className="font-amiri text-2xl font-bold text-black">My Bookings</h3>
 
           {/* Status Filter Badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -452,7 +347,7 @@ export default function MyBookingsPage() {
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
                   statusFilter === f.key
                     ? 'bg-black text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[#EAE6DE] text-stone-700 hover:bg-[#DDD7CC]'
                 }`}
               >
                 {f.label}
@@ -462,12 +357,27 @@ export default function MyBookingsPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white border border-[#E2E0DB] rounded p-8 text-center text-heritage-muted text-sm animate-pulse">
-            Loading your bookings…
+          <div className="border border-black bg-[#F8F5EF] rounded-xs">
+            <LoadingState message="Loading your bookings…" minHeight="160px" />
           </div>
         ) : filteredBookings.length === 0 ? (
-          <div className="bg-white border border-[#E2E0DB] rounded p-8 text-center text-heritage-muted text-sm">
-            No bookings found for the selected status.
+          <div className="border border-black bg-[#F8F5EF] rounded-xs p-8 text-center space-y-3">
+            <Calendar className="w-10 h-10 text-stone-400 mx-auto stroke-[1.5]" />
+            <h4 className="font-amiri font-bold text-lg text-black">No bookings found</h4>
+            <p className="text-xs text-stone-600 max-w-sm mx-auto">
+              You currently have no facility reservations matching the selected filter. Click the button below to reserve a reading desk or study suite.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMessage(null);
+                setShowModal(true);
+              }}
+              className="mt-2 px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-stone-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              <span>Request Facility Booking</span>
+            </button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -481,19 +391,19 @@ export default function MyBookingsPage() {
               return (
                 <div
                   key={b.id}
-                  className={`border rounded p-4 sm:p-5 shadow-xs bg-white transition-all ${
+                  className={`border rounded-xs p-4 sm:p-5 shadow-xs bg-[#F8F5EF] transition-all ${
                     isPending
-                      ? 'border-amber-400 bg-amber-50/20'
+                      ? 'border-amber-400 bg-amber-50/30'
                       : isApproved
-                      ? 'border-emerald-500'
+                      ? 'border-black bg-[#F8F5EF]'
                       : isRejected
                       ? 'border-red-300 bg-red-50/20'
-                      : 'border-gray-200 opacity-75'
+                      : 'border-stone-300 opacity-75'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-amiri text-lg sm:text-xl font-bold text-black">{b.resourceName}</span>
                         <span
                           className={`px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
@@ -503,25 +413,25 @@ export default function MyBookingsPage() {
                               ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                               : isRejected
                               ? 'bg-red-100 text-red-900 border border-red-300'
-                              : 'bg-gray-200 text-gray-700'
+                              : 'bg-stone-200 text-stone-700'
                           }`}
                         >
                           {isPending
-                            ? '⏳ Pending Verification'
+                            ? 'Pending Verification'
                             : isApproved
-                            ? '✓ Confirmed & Approved'
+                            ? 'Confirmed & Approved'
                             : isRejected
-                            ? '✕ Declined'
+                            ? 'Declined'
                             : 'Cancelled'}
                         </span>
                       </div>
 
-                      <div className="text-xs text-heritage-muted mt-1 flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-gray-800">{typeName}</span>
+                      <div className="text-xs text-stone-600 mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-stone-900">{typeName}</span>
                         <span>·</span>
-                        <span className="font-mono text-gray-700 font-bold">{formatDate(b.date)}</span>
+                        <span className="font-mono text-stone-800 font-bold">{formatDate(b.date)}</span>
                         <span>·</span>
-                        <span className="font-mono text-gray-700 font-bold">{b.timeSlot}</span>
+                        <span className="font-mono text-stone-800 font-bold">{b.timeSlot}</span>
                       </div>
                     </div>
 
@@ -529,23 +439,24 @@ export default function MyBookingsPage() {
                       <button
                         type="button"
                         onClick={() => handleCancel(b.id)}
-                        className="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded hover:bg-red-50 hover:text-heritage-red hover:border-heritage-red transition-colors cursor-pointer flex items-center gap-1"
+                        className="px-3 py-1.5 border border-stone-300 bg-white text-xs font-semibold rounded hover:bg-red-50 hover:text-heritage-red hover:border-heritage-red transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                       >
-                        <X className="w-3.5 h-3.5" /> Cancel Request
+                        <X className="w-3.5 h-3.5" />
+                        <span>Cancel Request</span>
                       </button>
                     )}
                   </div>
 
                   {/* Dynamic Custom Field Values */}
                   {b.customFieldValues && Object.keys(b.customFieldValues).length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="mt-3 pt-3 border-t border-stone-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {Object.entries(b.customFieldValues).map(([k, v]) => {
                         const fieldDef = config.customFields?.find((f) => f.id === k);
                         const label = fieldDef?.label || k;
                         return (
                           <div key={k} className="flex flex-col">
-                            <span className="text-[10px] uppercase font-bold text-gray-500">{label}</span>
-                            <span className="font-medium text-gray-900">{String(v)}</span>
+                            <span className="text-[10px] uppercase font-mono font-bold text-stone-500">{label}</span>
+                            <span className="font-serif font-medium text-stone-900">{String(v)}</span>
                           </div>
                         );
                       })}
@@ -554,13 +465,13 @@ export default function MyBookingsPage() {
 
                   {/* Patron Notes */}
                   {b.notes && (
-                    <div className="mt-2.5 text-xs text-gray-700 bg-[#FAF8F5] p-2 rounded">
-                      <span className="font-bold text-gray-500">Patron Notes: </span>
+                    <div className="mt-2.5 text-xs text-stone-700 bg-white/70 border border-stone-200 p-2.5 rounded">
+                      <span className="font-bold text-stone-600">Special Notes: </span>
                       {b.notes}
                     </div>
                   )}
 
-                  {/* Admin Verification Note & Verification details */}
+                  {/* Admin Verification Note */}
                   {b.adminNote && (
                     <div
                       className={`mt-2.5 p-2.5 rounded text-xs border ${
@@ -568,7 +479,7 @@ export default function MyBookingsPage() {
                           ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
                           : isRejected
                           ? 'bg-red-50 text-red-900 border-red-200'
-                          : 'bg-gray-50 text-gray-800 border-gray-200'
+                          : 'bg-stone-50 text-stone-800 border-stone-200'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 font-bold mb-0.5">
@@ -585,6 +496,184 @@ export default function MyBookingsPage() {
           </div>
         )}
       </div>
+
+      {/* =========================================================================
+          POPUP MODAL: Request Facility Booking
+      ========================================================================= */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#F8F5EF] border-2 border-black rounded-sm max-w-2xl w-full p-6 sm:p-7 shadow-2xl font-sans my-8">
+            <div className="flex items-center justify-between border-b border-black/20 pb-3">
+              <div className="flex items-center gap-2">
+                <CalendarPlus className="w-5 h-5 text-heritage-red" />
+                <h3 className="font-amiri font-bold text-2xl text-black">
+                  Request Facility Booking
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-full border border-stone-300 bg-white hover:bg-black hover:text-white flex items-center justify-center text-stone-600 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Facility Type */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-stone-600">
+                    Facility Category
+                  </span>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => handleTypeChange(e.target.value)}
+                    className="border border-black h-10 px-3 text-xs rounded outline-none bg-white font-medium"
+                  >
+                    {config.types.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Specific Resource */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-stone-600">
+                    Specific Desk / Room
+                  </span>
+                  <select
+                    value={resourceName}
+                    onChange={(e) => setResourceName(e.target.value)}
+                    className="border border-black h-10 px-3 text-xs rounded outline-none bg-white font-medium"
+                  >
+                    {currentTypeObj?.resources?.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Date Picker */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-stone-600">
+                    Reservation Date
+                  </span>
+                  <input
+                    type="date"
+                    required
+                    value={date}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="border border-black h-10 px-3 text-xs rounded outline-none bg-white font-medium"
+                  />
+                </label>
+
+                {/* Time Slot */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-stone-600">
+                    Time Slot
+                  </span>
+                  <select
+                    value={timeSlot}
+                    onChange={(e) => setTimeSlot(e.target.value)}
+                    className="border border-black h-10 px-3 text-xs rounded outline-none bg-white font-medium"
+                  >
+                    {config.timeSlots.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Dynamic Custom Dropdown & Text Fields Configured by Admin */}
+                {config.customFields?.map((field) => (
+                  <div key={field.id} className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-mono uppercase font-bold text-stone-600 flex items-center gap-1">
+                      <span>{field.label}</span>
+                      {field.required && <span className="text-heritage-red">*</span>}
+                    </label>
+
+                    {field.type === 'select' ? (
+                      <select
+                        value={customFieldsState[field.id] || ''}
+                        onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+                        required={field.required}
+                        className="border border-black h-10 px-3 text-xs rounded outline-none bg-white"
+                      >
+                        <option value="">{field.placeholder || `Select ${field.label}...`}</option>
+                        {field.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        rows={2}
+                        value={customFieldsState[field.id] || ''}
+                        onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+                        required={field.required}
+                        placeholder={field.placeholder || ''}
+                        className="border border-black p-2.5 text-xs rounded outline-none bg-white"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={customFieldsState[field.id] || ''}
+                        onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+                        required={field.required}
+                        placeholder={field.placeholder || ''}
+                        className="border border-black h-10 px-3 text-xs rounded outline-none bg-white"
+                      />
+                    )}
+                    {field.helpText && <span className="text-[11px] text-gray-500">{field.helpText}</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Notes */}
+              <label className="flex flex-col gap-1.5 pt-1">
+                <span className="text-[10px] font-mono uppercase font-bold text-stone-600">
+                  Special Notes / Manuscripts to examine (optional)
+                </span>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Requesting consultation for Arabi-Malayalam codex MS 0142"
+                  className="border border-black h-10 px-3 text-xs rounded outline-none bg-white"
+                />
+              </label>
+
+              <div className="bg-[#FAF8F5] p-3 rounded border border-stone-200 text-[11px] text-stone-600 leading-relaxed">
+                All facility and desk bookings are placed in PENDING status until verified by library staff. You will receive an alert once reviewed.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-stone-300 text-stone-700 font-bold hover:bg-stone-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 bg-black text-white rounded-full font-bold hover:bg-stone-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  {submitting ? 'Submitting Request…' : 'Submit Booking for Verification'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

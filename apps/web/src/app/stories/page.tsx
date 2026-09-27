@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { BookOpen, Tag, Calendar, User, ArrowRight, Share2, Sparkles } from 'lucide-react';
 
 export default function StoriesPage() {
@@ -58,21 +59,39 @@ export default function StoriesPage() {
         </h1>
         <div className="double-rule mb-6 sm:mb-10"></div>
 
-        {/* Featured Story Hero Article */}
-        {featuredStory && (
+        {loading ? (
+          <LoadingState message="Loading archival stories…" minHeight="300px" />
+        ) : stories.length === 0 ? (
+          <div className="border border-black p-8 text-center text-heritage-subtle font-sans">
+            No stories published yet.
+          </div>
+        ) : (
+          <>
+            {/* Featured Story Hero Article */}
+            {featuredStory && (
           <article className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 sm:gap-11 items-center mb-12 sm:mb-16 bg-white p-6 sm:p-8 border border-black/20 shadow-sm">
             <Link prefetch
               href={`/stories/${featuredStory.slug || featuredStory.id}`}
-              className="w-full h-[240px] sm:h-[340px] bg-[#E2DACB] border border-black flex flex-col items-center justify-center text-center p-6 relative overflow-hidden group hover:bg-[#d8cfbe] transition-colors"
+              className="w-full h-[240px] sm:h-[340px] bg-[#E2DACB] border border-black relative overflow-hidden group block"
             >
-              <span className="font-averia text-[11px] tracking-[0.15em] text-[#7E7365] uppercase font-bold mb-2">
-                Featured Codex Plate · {featuredStory.kicker || 'Primary Archive'}
-              </span>
-              <p className="font-amiri text-lg font-bold text-black/70 italic max-w-sm line-clamp-3 group-hover:text-black">
-                "{featuredStory.summary}"
-              </p>
+              {featuredStory.imageUrl ? (
+                <img
+                  src={featuredStory.imageUrl}
+                  alt={featuredStory.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
+                  <span className="font-averia text-[11px] tracking-[0.15em] text-[#7E7365] uppercase font-bold mb-2">
+                    Featured Codex Plate · {featuredStory.kicker || 'Primary Archive'}
+                  </span>
+                  <p className="font-amiri text-lg font-bold text-black/70 italic max-w-sm line-clamp-3 group-hover:text-black">
+                    "{featuredStory.summary}"
+                  </p>
+                </div>
+              )}
               {featuredStory.date && (
-                <span className="mt-4 text-xs font-sans text-gray-600 font-semibold bg-white/70 px-3 py-1 border border-black/20">
+                <span className="absolute bottom-3 left-3 text-xs font-sans text-gray-800 font-semibold bg-white/90 px-3 py-1 border border-black/20 shadow-sm">
                   {featuredStory.date}
                 </span>
               )}
@@ -135,13 +154,23 @@ export default function StoriesPage() {
               className="flex flex-col justify-between gap-3 group bg-white p-5 border border-black/20 hover:border-black transition-all cursor-pointer shadow-sm hover:shadow"
             >
               <div className="flex flex-col gap-2.5">
-                <span className="aspect-[4/3] bg-[#EAE4D9] border border-black/10 flex flex-col items-center justify-center p-4 text-center group-hover:bg-[#dfd7c8] transition-colors">
-                  <span className="font-averia text-[11px] uppercase tracking-wider text-heritage-muted font-bold mb-1">
-                    {s.kicker || 'Archive Note'}
-                  </span>
-                  <span className="text-xs font-sans text-gray-600 line-clamp-2">
-                    {s.title}
-                  </span>
+                <span className="aspect-[16/10] bg-[#EAE4D9] border border-black/10 overflow-hidden relative block">
+                  {s.imageUrl ? (
+                    <img
+                      src={s.imageUrl}
+                      alt={s.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                      <span className="font-averia text-[11px] uppercase tracking-wider text-heritage-muted font-bold mb-1">
+                        {s.kicker || 'Archive Note'}
+                      </span>
+                      <span className="text-xs font-sans text-gray-600 line-clamp-2">
+                        {s.title}
+                      </span>
+                    </div>
+                  )}
                 </span>
                 <span className="font-averia text-[12px] sm:text-[13px] tracking-[0.06em] text-heritage-muted uppercase font-bold">
                   {s.kicker}
@@ -163,6 +192,8 @@ export default function StoriesPage() {
             </Link>
           ))}
         </div>
+        </>
+        )}
       </section>
 
       <Footer />

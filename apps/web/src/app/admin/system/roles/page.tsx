@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Badge, Card, PageHeader, Button } from '@/components/admin/ui';
 import { confirmDialog, alertDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 export default function RolesManagementPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -217,9 +218,7 @@ export default function RolesManagementPage() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-gray-400 text-sm">
-            Loading roles and permission matrices...
-          </div>
+          <LoadingState message="Loading roles and permission matrices…" minHeight="180px" />
         ) : (
           <div className="divide-y divide-gray-100">
             {roles.map((role) => {

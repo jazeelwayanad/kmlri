@@ -1,30 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
-import { DEFAULT_FOOTER_CONTACT, DEFAULT_SOCIAL_LINKS, type FooterContact, type SocialLinks } from '@/lib/site-config-defaults';
+import { usePublicWebsiteSettings } from '@/lib/website-settings';
 
 export function Footer() {
-  const [contact, setContact] = useState<FooterContact>(DEFAULT_FOOTER_CONTACT);
-  const [social, setSocial] = useState<SocialLinks>(DEFAULT_SOCIAL_LINKS);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getPublicWebsiteSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        if (settings?.footerContact) setContact({ ...DEFAULT_FOOTER_CONTACT, ...settings.footerContact });
-        if (settings?.socialLinks) setSocial({ ...DEFAULT_SOCIAL_LINKS, ...settings.socialLinks });
-      })
-      .catch(() => {
-        // Keep the default footer contact details if the settings service is unreachable.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { footerContact: contact, socialLinks: social } = usePublicWebsiteSettings();
 
   return (
     <footer className="bg-black text-white font-amiri">
@@ -35,17 +15,25 @@ export function Footer() {
             alt="Kunhīn Musliyār Library & Research Institute"
             className="w-[300px] sm:w-[374px] max-w-full h-auto block invert"
           />
-          <p className="text-[13px] leading-[1.4] text-white mt-5 sm:mt-[33px] whitespace-pre-line">
-            {contact.address}
-          </p>
-          <p className="text-[14px] leading-[1.4] text-[#9C9C9C] mt-5 sm:mt-[41px] flex gap-4 sm:gap-[19px] flex-wrap">
-            <a href={`tel:${contact.phone.replace(/[^+\d]/g, '')}`} className="text-[#9C9C9C] hover:text-white">
-              {contact.phone}
-            </a>
-            <a href={`mailto:${contact.email}`} className="text-[#9C9C9C] hover:text-white">
-              {contact.email}
-            </a>
-          </p>
+          {contact.address && (
+            <p className="text-[13px] leading-[1.4] text-white mt-5 sm:mt-[33px] whitespace-pre-line">
+              {contact.address}
+            </p>
+          )}
+          {(contact.phone || contact.email) && (
+            <p className="text-[14px] leading-[1.4] text-[#9C9C9C] mt-5 sm:mt-[41px] flex gap-4 sm:gap-[19px] flex-wrap">
+              {contact.phone && (
+                <a href={`tel:${contact.phone.replace(/[^+\d]/g, '')}`} className="text-[#9C9C9C] hover:text-white">
+                  {contact.phone}
+                </a>
+              )}
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} className="text-[#9C9C9C] hover:text-white">
+                  {contact.email}
+                </a>
+              )}
+            </p>
+          )}
           {contact.hours && (
             <p className="text-[13px] leading-[1.4] text-[#9C9C9C] mt-3">{contact.hours}</p>
           )}

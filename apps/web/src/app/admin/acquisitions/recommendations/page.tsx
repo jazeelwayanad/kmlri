@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, CheckCircle2, Check, X, Package } from 'lucide-react';
 import { Badge, BadgeVariant, Card, PageHeader, Button, StatCard } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface AcquisitionRequest {
   id: string;
@@ -134,7 +135,7 @@ export default function AcquisitionAdminPage() {
       {/* Requests Table */}
       <Card className="overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading requests…</div>
+          <LoadingState message="Loading requests…" minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No acquisition requests found.</div>
         ) : (

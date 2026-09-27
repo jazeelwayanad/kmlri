@@ -87,6 +87,19 @@ export default function OpportunitiesPage() {
               key={opp.id || idx}
               className="bg-white border border-black/20 hover:border-black p-6 sm:p-8 transition-all shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6"
             >
+              {opp.imageUrl && (
+                <Link
+                  prefetch
+                  href={`/opportunities/${opp.slug || opp.id}`}
+                  className="w-full md:w-52 h-40 flex-shrink-0 bg-gray-100 border border-black/10 overflow-hidden block"
+                >
+                  <img
+                    src={opp.imageUrl}
+                    alt={opp.title}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
+                </Link>
+              )}
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-averia text-xs uppercase tracking-wider text-heritage-red font-bold">

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface LibraryAsset {
   id: string;
@@ -197,10 +198,7 @@ export default function AssetMaintenancePage() {
       {/* Logs Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
         {loading ? (
-          <div className="py-16 flex items-center justify-center text-gray-400 text-xs gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Loading maintenance logs...
-          </div>
+          <LoadingState message="Loading maintenance logs…" minHeight="180px" />
         ) : (
           <table className="w-full border-collapse text-left text-xs font-sans">
             <thead>

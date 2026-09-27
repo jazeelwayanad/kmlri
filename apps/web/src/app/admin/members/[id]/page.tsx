@@ -23,6 +23,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { MemberForm } from '@/components/members/MemberForm';
 
 function formatDate(d?: string) {
@@ -54,6 +55,22 @@ export default function MemberDetailsPage() {
   // Modals
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRelativeModal, setShowRelativeModal] = useState(false);
+  const [showAddFineModal, setShowAddFineModal] = useState(false);
+  const [fineFormData, setFineFormData] = useState({
+    amount: '',
+    reason: '',
+    note: '',
+    loanId: '',
+    markPaid: false,
+  });
+  const [submittingFine, setSubmittingFine] = useState(false);
+
+  // Settle Fine Modal State
+  const [settlingFine, setSettlingFine] = useState<any | null>(null);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [paymentNote, setPaymentNote] = useState('');
+  const [submittingSettle, setSubmittingSettle] = useState(false);
 
   const loadMember = async () => {
     setLoading(true);
@@ -104,22 +121,115 @@ export default function MemberDetailsPage() {
     }
   };
 
-  const handleSettleFine = async (fineId: string, amount: number) => {
-    setActingId(fineId);
+  const handleOpenSettleModal = (f: any) => {
+    setSettlingFine(f);
+    setSettleAmount(String(f.amount));
+    setPaymentMode('Cash');
+    setPaymentNote('');
+  };
+
+  const handleConfirmSettle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settlingFine) return;
+    const amt = parseFloat(settleAmount);
+    if (isNaN(amt) || amt <= 0) {
+      setNotification({ type: 'error', text: 'Please enter a valid payment amount greater than ₹0.' });
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
+    if (amt > settlingFine.amount) {
+      setNotification({
+        type: 'error',
+        text: `Settling amount cannot exceed the fine amount of ₹${settlingFine.amount}.`,
+      });
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
+    setSubmittingSettle(true);
     try {
-      await api.settleFine(fineId);
-      setNotification({ type: 'success', text: `Fine of ₹${amount} marked as paid.` });
+      await api.settleFine(settlingFine.id, {
+        amount: amt,
+        paymentMode,
+        paymentNote: paymentNote.trim() || undefined,
+      });
+
+      const isFull = amt >= settlingFine.amount;
+      setNotification({
+        type: 'success',
+        text: isFull
+          ? `Fine of ₹${amt} fully settled and marked as paid.`
+          : `Partial payment of ₹${amt} recorded. Remaining balance: ₹${settlingFine.amount - amt}.`,
+      });
+      setSettlingFine(null);
       await loadMember();
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message || 'Could not settle this fine.' });
+    } finally {
+      setSubmittingSettle(false);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const handleWaiveFine = async (fineId: string, amount: number) => {
+    if (!(await confirmDialog({ message: `Are you sure you want to waive this fine of ₹${amount}?`, variant: 'danger' }))) return;
+    setActingId(fineId);
+    try {
+      await api.waiveFine(fineId);
+      setNotification({ type: 'success', text: `Fine of ₹${amount} has been waived.` });
+      await loadMember();
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Could not waive this fine.' });
     } finally {
       setActingId(null);
       setTimeout(() => setNotification(null), 4000);
     }
   };
 
+  const handleAddFine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(fineFormData.amount);
+    if (isNaN(amt) || amt <= 0) {
+      setNotification({ type: 'error', text: 'Please enter a valid fine amount greater than ₹0.' });
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
+    setSubmittingFine(true);
+    try {
+      await api.createFine({
+        userId: member.id,
+        amount: amt,
+        reason: fineFormData.reason,
+        note: fineFormData.note.trim() || undefined,
+        loanId: fineFormData.loanId || undefined,
+        markPaid: fineFormData.markPaid,
+      });
+
+      setNotification({
+        type: 'success',
+        text: `Fine of ₹${amt} successfully assessed${fineFormData.markPaid ? ' and recorded as paid' : ''}.`,
+      });
+      setShowAddFineModal(false);
+      setFineFormData({
+        amount: '',
+        reason: '',
+        note: '',
+        loanId: '',
+        markPaid: false,
+      });
+      await loadMember();
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message || 'Failed to add manual fine.' });
+    } finally {
+      setSubmittingFine(false);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
   if (loading) {
-    return <div className="p-12 text-center text-gray-500 text-sm font-sans">Loading member record...</div>;
+    return <LoadingState message="Loading member record…" minHeight="240px" />;
   }
 
   if (notFound || !member) {
@@ -407,58 +517,112 @@ export default function MemberDetailsPage() {
           {/* Fines */}
           {activeTab === 'fines' && (
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3">
-                <h3 className="text-base font-bold text-gray-900">Fines Ledger</h3>
-                <span className="text-xs font-mono font-bold text-[#A52307]">Outstanding: ₹{totalUnpaidFines}</span>
+              <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3 flex-wrap gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Fines Ledger</h3>
+                  <span className="text-xs font-mono font-bold text-[#A52307]">Outstanding: ₹{totalUnpaidFines}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddFineModal(true)}
+                  className="px-3.5 py-1.5 bg-[#A52307] text-white rounded text-xs font-semibold hover:bg-red-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Fine Manually</span>
+                </button>
               </div>
 
               {fines.length === 0 ? (
                 <div className="p-12 text-center text-gray-500 text-xs">No fines on record.</div>
               ) : (
-                <table className="w-full border-collapse text-left text-xs font-sans">
-                  <thead>
-                    <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                      <th className="py-3 px-3">Item / Assessment</th>
-                      <th className="py-3 px-3">Date</th>
-                      <th className="py-3 px-3">Reason</th>
-                      <th className="py-3 px-3">Amount</th>
-                      <th className="py-3 px-3">Status</th>
-                      <th className="py-3 px-3 text-right">Cashier</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#EEECE7]">
-                    {fines.map((f: any) => (
-                      <tr key={f.id} className="hover:bg-[#FAF8F5]">
-                        <td className="py-3.5 px-3">
-                          <span className="font-bold text-gray-900 block">{f.loan?.copy?.bibRecord?.titleLatin || '—'}</span>
-                          <span className="text-[10px] font-mono text-gray-500">{f.loan?.copy?.barcode || ''}</span>
-                        </td>
-                        <td className="py-3.5 px-3 text-gray-600 font-mono">{formatDate(f.createdAt)}</td>
-                        <td className="py-3.5 px-3 text-gray-700">{f.reason}</td>
-                        <td className="py-3.5 px-3 font-mono font-bold text-gray-900">₹{f.amount}</td>
-                        <td className="py-3.5 px-3">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${f.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : f.status === 'WAIVED' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-[#A52307]'}`}>
-                            {f.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 text-right">
-                          {f.status === 'UNPAID' ? (
-                            <button
-                              type="button"
-                              disabled={actingId === f.id}
-                              onClick={() => handleSettleFine(f.id, f.amount)}
-                              className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors disabled:opacity-50"
-                            >
-                              {actingId === f.id ? 'Settling…' : 'Settle Fine'}
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 text-[11px]">{f.status === 'PAID' ? `Paid ${formatDate(f.paidAt)}` : '—'}</span>
-                          )}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-xs font-sans">
+                    <thead>
+                      <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold text-[11px]">
+                        <th className="py-3 px-3">Item / Assessment</th>
+                        <th className="py-3 px-3">Date</th>
+                        <th className="py-3 px-3">Reason &amp; Note</th>
+                        <th className="py-3 px-3">Amount</th>
+                        <th className="py-3 px-3">Status</th>
+                        <th className="py-3 px-3 text-right">Cashier Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[#EEECE7]">
+                      {fines.map((f: any) => (
+                        <tr key={f.id} className="hover:bg-[#FAF8F5]">
+                          <td className="py-3.5 px-3">
+                            {f.loan?.copy?.bibRecord?.titleLatin ? (
+                              <div>
+                                <span className="font-bold text-gray-900 block">{f.loan.copy.bibRecord.titleLatin}</span>
+                                <span className="text-[10px] font-mono text-gray-500">{f.loan.copy.barcode || ''}</span>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="font-semibold text-gray-900 block">Manual Assessment</span>
+                                <span className="text-[10px] text-gray-400">Direct patron ledger entry</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-3 text-gray-600 font-mono whitespace-nowrap">{formatDate(f.createdAt)}</td>
+                          <td className="py-3.5 px-3">
+                            <div className="flex flex-col gap-1 max-w-[320px]">
+                              <span className="font-semibold text-gray-900 inline-block">
+                                 {f.reason === 'OVERDUE' ? 'Late Return Penalty' :
+                                 f.reason === 'DAMAGE' ? 'Material Damage' :
+                                 f.reason === 'LOST' ? 'Lost Item Replacement' :
+                                 f.reason === 'PROCESSING_FEE' ? 'Service / Processing Fee' :
+                                 f.reason === 'ID_REPLACEMENT' ? 'ID Card Replacement' :
+                                 f.reason === 'MANUAL' ? 'Manual Assessment' :
+                                 f.reason}
+                              </span>
+                              {f.note && (
+                                <p className="text-[11px] text-gray-700 bg-amber-50/80 border border-amber-200/90 rounded px-2 py-1 italic leading-tight">
+                                  "{f.note}"
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3 font-mono font-bold text-gray-900 whitespace-nowrap">₹{f.amount}</td>
+                          <td className="py-3.5 px-3 whitespace-nowrap">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              f.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+                              f.status === 'WAIVED' ? 'bg-gray-100 text-gray-600' :
+                              'bg-red-100 text-[#A52307]'
+                            }`}>
+                              {f.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                            {f.status === 'UNPAID' ? (
+                              <div className="inline-flex items-center gap-1.5 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenSettleModal(f)}
+                                  className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-emerald-700 transition-colors cursor-pointer"
+                                >
+                                  Settle Paid
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={actingId === f.id}
+                                  onClick={() => handleWaiveFine(f.id, f.amount)}
+                                  className="px-2 py-1 bg-white border border-gray-300 text-gray-700 rounded text-[11px] font-medium hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors disabled:opacity-50 cursor-pointer"
+                                  title="Waive this fine"
+                                >
+                                  Waive
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-[11px]">
+                                {f.status === 'PAID' ? `Paid ${formatDate(f.paidAt)}` : 'Waived'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
@@ -771,6 +935,317 @@ export default function MemberDetailsPage() {
                 setTimeout(() => setNotification(null), 4000);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* POPUP MODAL: Add Fine Manually */}
+      {showAddFineModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-lg w-full border border-gray-200 shadow-2xl p-6 sm:p-7 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-5">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Desk Assessment</p>
+                <h3 className="text-xl font-bold text-gray-900 mt-0.5">Add Manual Fine</h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Patron: <strong className="text-gray-900">{member.fullName}</strong> ({member.membershipNumber})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddFineModal(false)}
+                className="text-gray-400 hover:text-gray-900 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddFine} className="space-y-4">
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Fine Amount (₹) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-500">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    value={fineFormData.amount}
+                    onChange={(e) => setFineFormData({ ...fineFormData, amount: e.target.value })}
+                    placeholder="e.g. 50"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded font-mono font-bold text-gray-900 focus:outline-none focus:border-[#A52307]"
+                  />
+                </div>
+                {/* Quick preset amounts */}
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="text-[10px] text-gray-400 font-medium">Quick select:</span>
+                  {[10, 25, 50, 100, 250, 500].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setFineFormData({ ...fineFormData, amount: String(preset) })}
+                      className="px-2 py-0.5 rounded border border-gray-200 bg-gray-50 hover:bg-black hover:text-white text-[10px] font-mono font-semibold transition-colors cursor-pointer"
+                    >
+                      ₹{preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Reason / Fine Category <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={fineFormData.reason}
+                  onChange={(e) => setFineFormData({ ...fineFormData, reason: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:border-[#A52307]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Associated Item / Loan (Optional)
+                </label>
+                <select
+                  value={fineFormData.loanId}
+                  onChange={(e) => setFineFormData({ ...fineFormData, loanId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:border-[#A52307]"
+                >
+                  <option value="">— No specific item / General Account Fine —</option>
+                  {currentLoans.length > 0 && (
+                    <optgroup label="Current Active Loans">
+                      {currentLoans.map((l: any) => (
+                        <option key={l.id} value={l.id}>
+                          {l.copy.bibRecord.titleLatin} ({l.copy.barcode}) - Active
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {pastLoans.length > 0 && (
+                    <optgroup label="Past Loans">
+                      {pastLoans.slice(0, 10).map((l: any) => (
+                        <option key={l.id} value={l.id}>
+                          {l.copy.bibRecord.titleLatin} ({l.copy.barcode}) - Returned {formatDate(l.returnedAt)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Assessment Note <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={fineFormData.note}
+                  onChange={(e) => setFineFormData({ ...fineFormData, note: e.target.value })}
+                  placeholder="Describe the reason for this fine (e.g. 'Folio 14 creased, cover binding loose. Assessed by Senior Conservator.')"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:border-[#A52307] text-xs resize-none"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">This note will appear in the fines ledger and on the member's account receipt.</p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={fineFormData.markPaid}
+                    onChange={(e) => setFineFormData({ ...fineFormData, markPaid: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#A52307] focus:ring-0 cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-gray-800">
+                    Mark as settled &amp; paid at front desk immediately
+                  </span>
+                </label>
+                <p className="text-[10px] text-gray-500 ml-6 mt-0.5">
+                  Check this if the patron paid cash or UPI right now at the counter.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddFineModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingFine}
+                  className="px-4 py-2 bg-[#A52307] text-white rounded text-xs font-semibold hover:bg-red-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  {submittingFine ? 'Adding Fine…' : 'Save & Assess Fine'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP MODAL: Settle Fine with Custom Amount */}
+      {settlingFine && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-md w-full border border-gray-200 shadow-2xl p-6 sm:p-7 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-5">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Cashier Counter</p>
+                <h3 className="text-xl font-bold text-gray-900 mt-0.5">Settle Fine &amp; Collect Payment</h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Patron: <strong className="text-gray-900">{member.fullName}</strong> ({member.membershipNumber})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettlingFine(null)}
+                className="text-gray-400 hover:text-gray-900 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Assessment Details Box */}
+            <div className="bg-[#FAF8F5] border border-[#E2E0DB] rounded p-3 mb-4 space-y-1.5">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Assessment / Reason</span>
+                  <span className="font-bold text-gray-900 text-sm">
+                    {settlingFine.reason === 'OVERDUE' ? 'Late Return Penalty' :
+                     settlingFine.reason === 'DAMAGE' ? 'Material Damage' :
+                     settlingFine.reason === 'LOST' ? 'Lost Item Replacement' :
+                     settlingFine.reason === 'PROCESSING_FEE' ? 'Service / Processing Fee' :
+                     settlingFine.reason === 'ID_REPLACEMENT' ? 'ID Card Replacement' :
+                     settlingFine.reason === 'MANUAL' ? 'Manual Assessment' :
+                     settlingFine.reason}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Current Outstanding</span>
+                  <span className="text-lg font-mono font-bold text-[#A52307]">₹{settlingFine.amount}</span>
+                </div>
+              </div>
+              {settlingFine.loan?.copy?.bibRecord?.titleLatin && (
+                <p className="text-[11px] text-gray-600 font-medium">
+                  Item: {settlingFine.loan.copy.bibRecord.titleLatin} ({settlingFine.loan.copy.barcode})
+                </p>
+              )}
+              {settlingFine.note && (
+                <p className="text-[11px] text-gray-700 bg-amber-50/70 border border-amber-200/80 rounded px-2 py-1 italic leading-tight">
+                  "{settlingFine.note}"
+                </p>
+              )}
+            </div>
+
+            <form onSubmit={handleConfirmSettle} className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block font-bold text-gray-700 text-xs">
+                    Amount to Settle (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setSettleAmount(String(settlingFine.amount))}
+                    className="text-[11px] text-[#A52307] font-semibold hover:underline cursor-pointer"
+                  >
+                    Pay Full (₹{settlingFine.amount})
+                  </button>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-500">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={settlingFine.amount}
+                    required
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded font-mono font-bold text-base text-gray-900 focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+
+                {/* Calculation indicator */}
+                {(() => {
+                  const val = parseFloat(settleAmount);
+                  if (!isNaN(val) && val > 0) {
+                    if (val >= settlingFine.amount) {
+                      return (
+                        <p className="text-[11px] font-semibold text-emerald-700 mt-1.5 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>Full settlement: this fine will be marked as completely paid.</span>
+                        </p>
+                      );
+                    }
+                    const rem = settlingFine.amount - val;
+                    return (
+                      <p className="text-[11px] text-amber-800 mt-1.5 flex items-center gap-1">
+                        <span>Partial payment: <strong>₹{rem.toFixed(2)}</strong> will remain outstanding on the account.</span>
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Payment Method
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Cash', 'UPI / GPay', 'Card', 'Bank Transfer'].map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPaymentMode(mode)}
+                      className={`py-1.5 px-2 rounded border text-xs font-semibold text-center transition-colors cursor-pointer ${
+                        paymentMode === mode
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 text-xs mb-1">
+                  Receipt No. / Cashier Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={paymentNote}
+                  onChange={(e) => setPaymentNote(e.target.value)}
+                  placeholder="e.g. Receipt #4021, UPI ref 49281, paid at desk..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:border-emerald-600 text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setSettlingFine(null)}
+                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingSettle}
+                  className="px-4 py-2 bg-emerald-700 text-white rounded text-xs font-semibold hover:bg-emerald-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  {submittingSettle ? 'Recording…' : `Confirm Payment (₹${settleAmount || '0'})`}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

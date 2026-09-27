@@ -5,6 +5,7 @@ import { Search, Plus, Mail, Phone, CheckCircle2, ShieldAlert, X, Trash2 } from 
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Library {
   id: string;
@@ -169,7 +170,9 @@ export default function LibrariesAdminPage() {
       </Card>
 
       {loading ? (
-        <div className="p-8 text-center text-gray-500 text-sm">Loading libraries…</div>
+        <Card className="p-8">
+          <LoadingState message="Loading libraries…" minHeight="160px" />
+        </Card>
       ) : filtered.length === 0 ? (
         <Card className="text-center py-14">
           <p className="text-base font-semibold text-gray-700">No libraries found.</p>

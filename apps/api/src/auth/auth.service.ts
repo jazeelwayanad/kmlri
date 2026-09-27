@@ -192,7 +192,12 @@ export class AuthService {
           include: { bibRecord: true },
         },
         fines: {
-          where: { status: 'UNPAID' },
+          include: {
+            loan: {
+              include: { copy: { include: { bibRecord: true } } },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
         },
       },
     });

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Search, CheckCircle2, AlertCircle, Paperclip, Download, XCircle } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 type ReproStatus = 'SUBMITTED' | 'IN_PROGRESS' | 'READY' | 'DELIVERED' | 'REJECTED';
 
@@ -114,7 +115,9 @@ export default function DocumentDeliveryPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-xs text-gray-500 font-semibold">Loading requests...</div>
+        <div className="bg-white border border-[#E2E0DB] rounded">
+          <LoadingState message="Loading requests…" minHeight="180px" />
+        </div>
       ) : (
         <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
           <table className="w-full border-collapse text-left text-xs font-sans">

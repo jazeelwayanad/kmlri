@@ -23,6 +23,7 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { LoadingTableRow } from '@/components/ui/LoadingSpinner';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import { RichTextEditor } from '@/components/content/RichTextEditor';
 import { confirmDialog } from '@/lib/dialog';
@@ -274,11 +275,7 @@ export default function WebsiteOpportunitiesPage() {
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
             {loading ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
-                  Loading opportunities...
-                </td>
-              </tr>
+              <LoadingTableRow colSpan={7} message="Loading opportunities…" />
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">

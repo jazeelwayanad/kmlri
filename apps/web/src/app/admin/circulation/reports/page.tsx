@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Download, Printer, Inbox, FileSpreadsheet } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 export default function AdminReportsPage() {
   const [loans, setLoans] = useState<any[]>([]);
@@ -79,9 +80,7 @@ export default function AdminReportsPage() {
 
       <Card className="overflow-x-auto p-0">
         {loading ? (
-          <div className="py-16 text-center text-xs text-gray-500 font-sans">
-            Loading circulation audit data...
-          </div>
+          <LoadingState message="Loading circulation audit data…" minHeight="160px" />
         ) : loans.length === 0 ? (
           <div className="py-16 text-center p-8">
             <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3 stroke-[1.5]" />

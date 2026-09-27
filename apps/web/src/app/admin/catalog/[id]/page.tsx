@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/admin/ui';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 type CopyStatus = 'AVAILABLE' | 'ON_LOAN' | 'RESERVED' | 'IN_CONSERVATION' | 'LOST' | 'WITHDRAWN';
 
@@ -229,7 +230,7 @@ export default function RecordDetailsPage() {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-gray-500 text-sm font-sans">Loading record...</div>;
+    return <LoadingState message="Loading record…" minHeight="240px" />;
   }
 
   if (notFound || !record) {

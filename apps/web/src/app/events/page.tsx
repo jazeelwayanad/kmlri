@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Clock, MapPin, Search } from 'lucide-react';
 
 export default function EventsPage() {
@@ -65,7 +66,14 @@ export default function EventsPage() {
         <div className="double-rule mb-8 sm:mb-12"></div>
 
         {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        {loading ? (
+          <LoadingState message="Loading upcoming events…" minHeight="240px" />
+        ) : items.length === 0 ? (
+          <div className="border border-black p-8 text-center text-heritage-subtle font-sans">
+            No events found.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {items.map((event) => {
             const capacity = event.capacity || 100;
             const registered = event.registered || 0;
@@ -77,6 +85,19 @@ export default function EventsPage() {
                 className="bg-white border border-black/10 p-5 sm:p-6 flex flex-col justify-between hover:shadow-lg transition-all group"
               >
                 <div>
+                  {event.imageUrl && (
+                    <Link
+                      prefetch
+                      href={`/events/${event.slug || event.id}`}
+                      className="aspect-[16/10] -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 mb-4 bg-gray-100 border-b border-black/10 overflow-hidden block"
+                    >
+                      <img
+                        src={event.imageUrl}
+                        alt={event.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </Link>
+                  )}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <span className="font-averia text-[12px] tracking-[0.06em] uppercase text-heritage-red font-bold">
                       {event.kicker || 'Event'}
@@ -127,6 +148,7 @@ export default function EventsPage() {
             );
           })}
         </div>
+        )}
       </section>
 
       <Footer />

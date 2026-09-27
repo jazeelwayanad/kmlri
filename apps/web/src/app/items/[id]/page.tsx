@@ -8,6 +8,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, BibliographicRecord, ItemCopy } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
   BookOpen,
   Eye,
@@ -183,11 +184,8 @@ export default function ItemDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9F6F0] text-stone-900 font-serif flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-stone-800 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-base text-stone-700 tracking-wide font-amiri">Retrieving repository record...</p>
-        </div>
+      <div className="min-h-screen bg-[#F9F6F0] flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

@@ -40,9 +40,6 @@ export default function MyReservationsPage() {
         <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
           Hold Reservations
         </h2>
-        <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-          Archival materials retrieved from locked storage vaults and reserved for your physical consultation.
-        </p>
       </div>
 
       <div className="double-rule"></div>

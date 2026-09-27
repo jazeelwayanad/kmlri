@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Re
 import { CirculationService } from './circulation.service';
 import { IssueBookDto } from './dto/issue-book.dto';
 import { ReturnBookDto } from './dto/return-book.dto';
+import { CreateFineDto } from './dto/create-fine.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -81,9 +82,16 @@ export class CirculationController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
+  @Post('fines')
+  createManualFine(@Body() dto: CreateFineDto) {
+    return this.circulationService.createManualFine(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'LIBRARIAN')
   @Post('fines/:fineId/settle')
-  settleFine(@Param('fineId') fineId: string) {
-    return this.circulationService.settleFine(fineId);
+  settleFine(@Param('fineId') fineId: string, @Body() body: any) {
+    return this.circulationService.settleFine(fineId, body);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

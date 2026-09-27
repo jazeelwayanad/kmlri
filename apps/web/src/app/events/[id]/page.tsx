@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { PublicRegistrationForm } from '@/components/content/PublicRegistrationForm';
 import {
   ArrowLeft,
@@ -87,8 +88,8 @@ export default function EventDetailPage() {
       <div className="min-h-screen bg-paper text-black font-amiri">
         <TopBar />
         <Navbar />
-        <section className="max-w-[1100px] mx-auto py-24 px-5 text-center text-2xl">
-          Loading event details...
+        <section className="max-w-[1100px] mx-auto py-24 px-5">
+          <LoadingState message="Loading event details…" minHeight="240px" />
         </section>
         <Footer />
       </div>

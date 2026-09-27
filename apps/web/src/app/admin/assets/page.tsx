@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 export default function AssetsRedirectPage() {
   const router = useRouter();
 
@@ -10,5 +12,9 @@ export default function AssetsRedirectPage() {
     router.replace('/admin/acquisitions/assets');
   }, [router]);
 
-  return <div className="p-8 text-center text-gray-500 text-sm font-sans">Redirecting to Asset Registry \&amp; Equipment…</div>;
+  return (
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }

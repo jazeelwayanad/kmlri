@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, GripVertical, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface FieldDraft {
   id: string; // client-only key
@@ -92,7 +93,11 @@ export function RegistrationFieldsBuilder({ contentItemId }: { contentItemId: st
     }
   };
 
-  if (loading) return <div className="text-xs text-gray-500 py-4">Loading registration form…</div>;
+  if (loading) return (
+    <div className="py-6 flex justify-center">
+      <LoadingSpinner size="sm" label="Loading registration form…" />
+    </div>
+  );
 
   return (
     <div className="space-y-3">

@@ -4,6 +4,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { SettingsService } from '../settings/settings.service';
 import { IssueBookDto } from './dto/issue-book.dto';
 import { ReturnBookDto } from './dto/return-book.dto';
+import { CreateFineDto } from './dto/create-fine.dto';
 
 const DEFAULT_RENEWAL_SETTINGS = {
   defaultRenewalDays: 14,
@@ -424,17 +425,111 @@ export class CirculationService {
     });
   }
 
-  async settleFine(fineId: string) {
-    const fine = await this.prisma.fine.findUnique({ where: { id: fineId } });
-    if (!fine) throw new NotFoundException('Fine not found.');
-
-    return this.prisma.fine.update({
+  async settleFine(fineId: string, body?: { amount?: number; paymentMode?: string; paymentNote?: string }) {
+    const fine = await this.prisma.fine.findUnique({
       where: { id: fineId },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
+      include: {
+        user: { select: { id: true, fullName: true, membershipNumber: true } },
       },
     });
+    if (!fine) throw new NotFoundException('Fine not found.');
+
+    const settleAmount = body?.amount !== undefined ? Number(body.amount) : fine.amount;
+    if (settleAmount <= 0) {
+      throw new BadRequestException('Settling amount must be greater than zero.');
+    }
+
+    const mode = body?.paymentMode ? `via ${body.paymentMode}` : '';
+    const noteSuffix = body?.paymentNote ? `(${body.paymentNote})` : '';
+    const paymentDetail = [mode, noteSuffix].filter(Boolean).join(' ');
+
+    const now = new Date();
+
+    // If paying the full amount or more
+    if (settleAmount >= fine.amount) {
+      const updatedNote = fine.note
+        ? `${fine.note}${paymentDetail ? ` · Paid ${paymentDetail}` : ''}`
+        : paymentDetail
+        ? `Paid ${paymentDetail}`
+        : null;
+
+      const updated = await this.prisma.fine.update({
+        where: { id: fineId },
+        data: {
+          status: 'PAID',
+          paidAt: now,
+          note: updatedNote,
+        },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          userId: fine.userId,
+          action: 'FINE_SETTLED',
+          entity: 'FINE',
+          entityId: fine.id,
+          details: `Settled fine of ₹${fine.amount} for ${fine.user.fullName} (${fine.user.membershipNumber}). ${paymentDetail}`,
+        },
+      });
+
+      await this.notifications.create(
+        fine.userId,
+        'FINE_SETTLED',
+        'Fine payment received',
+        `Payment of ₹${fine.amount} for "${fine.reason}" has been recorded. ${paymentDetail}`,
+        '/account/fines',
+      );
+
+      return { ...updated, settledAmount: fine.amount, remainingAmount: 0 };
+    }
+
+    // Partial settlement: reduce existing fine, create paid record for settled portion
+    const remainingAmount = fine.amount - settleAmount;
+
+    const [paidRecord] = await this.prisma.$transaction([
+      this.prisma.fine.create({
+        data: {
+          userId: fine.userId,
+          loanId: fine.loanId,
+          amount: settleAmount,
+          reason: fine.reason,
+          note: `Partial payment of ₹${settleAmount} (Remaining balance: ₹${remainingAmount}). ${paymentDetail}`.trim(),
+          status: 'PAID',
+          paidAt: now,
+        },
+      }),
+      this.prisma.fine.update({
+        where: { id: fineId },
+        data: {
+          amount: remainingAmount,
+          note: `${fine.note ? fine.note + ' · ' : ''}Partial payment of ₹${settleAmount} received on ${now.toLocaleDateString('en-GB')}`,
+        },
+      }),
+    ]);
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: fine.userId,
+        action: 'FINE_PARTIALLY_SETTLED',
+        entity: 'FINE',
+        entityId: fine.id,
+        details: `Partially settled fine of ₹${settleAmount} (remaining: ₹${remainingAmount}) for ${fine.user.fullName}. ${paymentDetail}`,
+      },
+    });
+
+    await this.notifications.create(
+      fine.userId,
+      'FINE_SETTLED',
+      'Partial fine payment received',
+      `Partial payment of ₹${settleAmount} for "${fine.reason}" recorded. Remaining balance: ₹${remainingAmount}.`,
+      '/account/fines',
+    );
+
+    return {
+      ...paidRecord,
+      settledAmount: settleAmount,
+      remainingAmount,
+    };
   }
 
   async waiveFine(fineId: string) {
@@ -456,5 +551,71 @@ export class CirculationService {
         loan: { include: { copy: { include: { bibRecord: { select: { titleLatin: true, shelfmark: true } } } } } },
       },
     });
+  }
+
+  async createManualFine(dto: CreateFineDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    });
+    if (!user) {
+      throw new NotFoundException('Member not found.');
+    }
+
+    if (dto.amount <= 0) {
+      throw new BadRequestException('Fine amount must be greater than zero.');
+    }
+
+    if (dto.loanId) {
+      const loan = await this.prisma.circulationLoan.findUnique({
+        where: { id: dto.loanId },
+      });
+      if (!loan) {
+        throw new NotFoundException('Specified loan record not found.');
+      }
+    }
+
+    const isPaid = Boolean(dto.markPaid);
+    const fine = await this.prisma.fine.create({
+      data: {
+        userId: dto.userId,
+        amount: Number(dto.amount),
+        reason: dto.reason?.trim() || 'MANUAL',
+        note: dto.note?.trim() || null,
+        loanId: dto.loanId?.trim() || null,
+        status: isPaid ? 'PAID' : 'UNPAID',
+        paidAt: isPaid ? new Date() : null,
+      },
+      include: {
+        loan: {
+          include: {
+            copy: {
+              include: { bibRecord: true },
+            },
+          },
+        },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: dto.userId,
+        action: 'FINE_ASSESSED',
+        entity: 'FINE',
+        entityId: fine.id,
+        details: `Manual fine of ₹${dto.amount} (${dto.reason || 'MANUAL'}) assessed for ${user.fullName} (${user.membershipNumber}). Note: ${dto.note || 'None'}. Status: ${fine.status}`,
+      },
+    });
+
+    await this.notifications.create(
+      dto.userId,
+      'FINE_ASSESSED',
+      isPaid ? 'Fine assessment paid' : 'New fine assessed',
+      isPaid
+        ? `A fine of ₹${dto.amount} (${dto.reason || 'Manual Assessment'}) was recorded and settled. Note: ${dto.note || 'None'}.`
+        : `A fine of ₹${dto.amount} (${dto.reason || 'Manual Assessment'}) has been assessed to your account. Note: ${dto.note || 'None'}.`,
+      '/account/fines',
+    );
+
+    return fine;
   }
 }

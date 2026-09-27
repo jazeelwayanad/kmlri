@@ -21,6 +21,7 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { ImageUploadField } from '@/components/content/ImageUploadField';
 import { RichTextEditor } from '@/components/content/RichTextEditor';
 import { RegistrationFieldsBuilder } from '@/components/content/RegistrationFieldsBuilder';
@@ -151,8 +152,8 @@ export default function ManageEventDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
-        <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-8 text-center text-gray-500 font-mono text-xs">
-          Loading event...
+        <div className="bg-white border border-[#E2E0DB] rounded-[2px]">
+          <LoadingState message="Loading event…" minHeight="200px" />
         </div>
       </div>
     );

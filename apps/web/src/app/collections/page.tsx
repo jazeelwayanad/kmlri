@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api } from '@/lib/api';
+import { LoadingSpinner, LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Collection {
   id: string;
@@ -48,9 +49,13 @@ export default function CollectionsPage() {
         <div className="pt-6 sm:pt-[34px]">
           <div className="flex justify-between items-baseline mb-4 sm:mb-5 text-[15px] sm:text-[17px] text-heritage-subtle flex-wrap gap-2">
             <span>
-              {loading
-                ? 'Loading collections…'
-                : `${totalItems.toLocaleString()} items across ${collections.length} collection${collections.length === 1 ? '' : 's'}`}
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <LoadingSpinner size="xs" />
+                </span>
+              ) : (
+                `${totalItems.toLocaleString()} items across ${collections.length} collection${collections.length === 1 ? '' : 's'}`
+              )}
             </span>
             <span>Sort: A&ndash;Z</span>
           </div>
@@ -59,6 +64,10 @@ export default function CollectionsPage() {
             <div className="border border-heritage-red text-heritage-red p-4 mb-4 text-[15px] font-sans">
               {error}
             </div>
+          )}
+
+          {loading && (
+            <LoadingState message="Loading collections…" minHeight="200px" />
           )}
 
           {!loading && !error && collections.length === 0 && (

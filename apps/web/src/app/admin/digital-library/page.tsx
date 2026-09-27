@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Eye } from 'lucide-react';
 import { PageHeader, Card, StatCard, Badge } from '@/components/admin/ui';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { api, BibliographicRecord } from '@/lib/api';
 import { getRecordSlug } from '@/lib/slugs';
 
@@ -81,7 +82,7 @@ export default function DigitalLibraryAdminPage() {
       {/* Digital Assets Table */}
       <Card className="overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading digitised records…</div>
+          <LoadingState minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No digitised records found.</div>
         ) : (

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Bell, CheckCheck, BookmarkCheck, BookOpen, Sparkles, Inbox } from 'lucide-react';
 
 interface PatronNotification {
@@ -77,9 +78,6 @@ export default function NotificationsPage() {
           <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
             Notices &amp; Notifications Inbox
           </h2>
-          <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-            Official communications regarding hold arrivals, circulation renewal deadlines, and repository accessions.
-          </p>
         </div>
 
         {notifications.some((n) => !n.read) && (
@@ -126,7 +124,7 @@ export default function NotificationsPage() {
       {/* Notices Feed */}
       <div className="space-y-3">
         {loading ? (
-          <div className="py-16 text-center text-xs text-gray-500">Loading notifications…</div>
+          <LoadingState message="Loading notifications…" minHeight="160px" />
         ) : filteredNotifs.length === 0 ? (
           <div className="py-16 text-center border border-dashed border-gray-300 rounded bg-[#FAF8F5] p-8">
             <Inbox className="w-10 h-10 text-gray-400 mx-auto mb-3 stroke-[1.5]" />
@@ -143,7 +141,7 @@ export default function NotificationsPage() {
                 key={n.id}
                 type="button"
                 onClick={() => handleOpen(n)}
-                className={`w-full text-left p-4 sm:p-5 border-2 rounded transition-all flex items-start justify-between gap-4 cursor-pointer ${
+                className={`w-full text-left p-4 sm:p-5 border transition-all flex items-start justify-between gap-4 cursor-pointer ${
                   n.read ? 'bg-white border-gray-200' : 'bg-[#FAF8F5] border-black shadow-sm'
                 }`}
               >

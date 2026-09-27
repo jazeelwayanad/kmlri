@@ -4,31 +4,18 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { DEFAULT_NAV_ITEMS, type NavItem } from '@/lib/site-config-defaults';
+import { usePublicWebsiteSettings } from '@/lib/website-settings';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, isStaff } = useAuth();
+  const { navItems: navLinks } = usePublicWebsiteSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [navLinks, setNavLinks] = useState<NavItem[]>(DEFAULT_NAV_ITEMS);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getPublicWebsiteSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        const items = settings?.navItems as NavItem[] | undefined;
-        if (Array.isArray(items) && items.length > 0) setNavLinks(items);
-      })
-      .catch(() => {
-        // Keep the default nav links if the settings service is unreachable.
-      });
-    return () => {
-      cancelled = true;
-    };
+    setMounted(true);
   }, []);
 
   const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href));
@@ -38,7 +25,7 @@ export function Navbar() {
       <div className="flex items-center justify-between gap-4 min-h-[36px]">
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex gap-6 lg:gap-[34px] font-averia text-[16px] lg:text-[17px] leading-none flex-wrap">
-          {navLinks.map((item) => {
+          {mounted && navLinks.map((item) => {
             const active = isActive(item.href);
             const hasChildren = Boolean(item.children && item.children.length > 0);
             return (
@@ -84,19 +71,19 @@ export function Navbar() {
 
         {/* Right CTA Actions: Admin Desk + My Account */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {isStaff && (
+          {mounted && isStaff && (
             <Link prefetch
               href="/admin"
-              className="bg-heritage-red text-white h-[32px] sm:h-[36px] px-2.5 sm:px-4 flex items-center justify-center rounded-[5px] font-amiri font-bold text-[14px] sm:text-[17px] leading-none hover:bg-black transition-colors"
+              className="bg-heritage-red text-white h-[32px] sm:h-[36px] px-2.5 sm:px-4 flex items-center justify-center font-amiri font-bold text-[14px] sm:text-[17px] leading-none hover:bg-black transition-colors"
             >
               Admin Desk
             </Link>
           )}
           <Link prefetch
-            href={user ? `/${user.username || user.id}` : '/login'}
+            href={mounted && user ? `/${user.username || user.id}` : '/login'}
             className="h-[32px] sm:h-[36px] px-2.5 sm:px-4 border-[1.5px] border-black flex items-center gap-2 justify-center font-amiri text-[14px] sm:text-[17px] font-semibold leading-none hover:bg-black hover:text-paper transition-colors group"
           >
-            {user && (
+            {mounted && user && (
               user.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
@@ -109,7 +96,7 @@ export function Navbar() {
                 </span>
               )
             )}
-            <span>My Account</span>
+            <span>{mounted && user ? 'My Account' : 'My Account'}</span>
           </Link>
         </div>
       </div>

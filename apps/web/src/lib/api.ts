@@ -4,7 +4,7 @@ export const getApiBaseUrl = (): string => {
     return envUrl.replace(/\/$/, '');
   }
   if (typeof window !== 'undefined') {
-    return '/api';
+    return 'http://localhost:4000/api';
   }
   return 'http://localhost:4000/api';
 };
@@ -169,8 +169,22 @@ export const FALLBACK_CONTENT: Record<string, ContentItem[]> = {
   Opportunities: [],
 };
 
+interface CacheEntry {
+  data: any;
+  expiry: number;
+}
+
+const apiGetCache = new Map<string, CacheEntry>();
+const inFlightRequests = new Map<string, Promise<any>>();
+const DEFAULT_CACHE_TTL = 20 * 1000; // 20 seconds for fast navigation and instant tab switches
+
 export const api = {
-  async fetchWithAuth(url: string, options: RequestInit = {}) {
+  clearCache() {
+    apiGetCache.clear();
+    inFlightRequests.clear();
+  },
+
+  async fetchWithAuth(url: string, options: RequestInit & { skipCache?: boolean } = {}) {
     let token: string | null = null;
     if (typeof window !== 'undefined') {
       token = getCookie('kmlri_token') || localStorage.getItem('kmlri_token');
@@ -186,25 +200,71 @@ export const api = {
 
     const baseUrl = getApiBaseUrl();
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    const response = await fetch(`${baseUrl}${cleanUrl}`, {
-      ...options,
-      headers,
-    });
+    const fullUrl = `${baseUrl}${cleanUrl}`;
+    const method = (options.method || 'GET').toUpperCase();
 
-    let data: any = {};
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
+    // Cache invalidation on mutating operations
+    if (method !== 'GET') {
+      apiGetCache.clear();
     }
 
-    if (!response.ok) {
-      const err: any = new Error(data.message || `API request failed with status ${response.status}`);
-      err.status = response.status;
-      throw err;
+    const isGet = method === 'GET';
+    const cacheKey = `${token || 'anon'}:${fullUrl}`;
+
+    // Return cached response if valid
+    if (isGet && !options.skipCache) {
+      const cached = apiGetCache.get(cacheKey);
+      if (cached && Date.now() < cached.expiry) {
+        return cached.data;
+      }
+
+      // Deduplicate concurrent in-flight requests
+      const inFlight = inFlightRequests.get(cacheKey);
+      if (inFlight) {
+        return inFlight;
+      }
     }
 
-    return data;
+    const executeFetch = async () => {
+      try {
+        const response = await fetch(fullUrl, {
+          ...options,
+          headers,
+        });
+
+        let data: any = {};
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
+
+        if (!response.ok) {
+          const err: any = new Error(data.message || `API request failed with status ${response.status}`);
+          err.status = response.status;
+          throw err;
+        }
+
+        if (isGet && !options.skipCache) {
+          apiGetCache.set(cacheKey, {
+            data,
+            expiry: Date.now() + DEFAULT_CACHE_TTL,
+          });
+        }
+
+        return data;
+      } finally {
+        inFlightRequests.delete(cacheKey);
+      }
+    };
+
+    if (isGet && !options.skipCache) {
+      const fetchPromise = executeFetch();
+      inFlightRequests.set(cacheKey, fetchPromise);
+      return fetchPromise;
+    }
+
+    return executeFetch();
   },
 
   // Like fetchWithAuth but for multipart/form-data bodies (file uploads) — the
@@ -513,9 +573,10 @@ export const api = {
     return this.fetchWithAuth(`/circulation/hold/${reservationId}/ready`, { method: 'PATCH' });
   },
 
-  async settleFine(fineId: string) {
+  async settleFine(fineId: string, data?: { amount?: number; paymentMode?: string; paymentNote?: string }) {
     return this.fetchWithAuth(`/circulation/fines/${fineId}/settle`, {
       method: 'POST',
+      body: JSON.stringify(data || {}),
     });
   },
 
@@ -528,6 +589,20 @@ export const api = {
   async getAllFines(status?: string) {
     const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return this.fetchWithAuth(`/circulation/fines${query}`);
+  },
+
+  async createFine(data: {
+    userId: string;
+    amount: number;
+    reason?: string;
+    note?: string;
+    loanId?: string;
+    markPaid?: boolean;
+  }) {
+    return this.fetchWithAuth('/circulation/fines', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   // Users & Members

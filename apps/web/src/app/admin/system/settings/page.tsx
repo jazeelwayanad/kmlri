@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Sliders, Save, CheckCircle2, AlertTriangle, Database, Search, HardDrive, RefreshCw } from 'lucide-react';
 import { PageHeader, Button, Card } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 const PREFIX = 'system.';
 
@@ -94,7 +95,9 @@ export default function SystemSettingsAdminPage() {
       )}
 
       {loading && (
-        <div className="p-4 text-sm text-gray-500">Loading system settings…</div>
+        <Card className="max-w-3xl p-8">
+          <LoadingState message="Loading system settings…" minHeight="160px" />
+        </Card>
       )}
 
       {/* Settings Form */}

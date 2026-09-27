@@ -129,7 +129,7 @@ export default function AccountDashboardPage() {
       {/* KPI Metric Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Loans */}
-        <div className="border-2 border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs min-h-[175px]">
+        <div className="border border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold">
@@ -139,15 +139,10 @@ export default function AccountDashboardPage() {
             </div>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="font-serif text-3xl sm:text-4xl font-bold text-black">{totalLoans}</span>
-              <span className="text-xs text-stone-500 font-mono">/ {maxLimit} allowed</span>
+             
             </div>
             {/* Progress bar */}
-            <div className="w-full bg-[#E5DFD4] h-1.5 rounded-full overflow-hidden mt-3">
-              <div
-                className="bg-black h-full transition-all"
-                style={{ width: `${usagePercent}%` }}
-              ></div>
-            </div>
+            
           </div>
           <div>
             <div className="border-t border-stone-300 my-3" />
@@ -163,7 +158,7 @@ export default function AccountDashboardPage() {
         </div>
 
         {/* Card 2: Holds */}
-        <div className="border-2 border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs min-h-[175px]">
+        <div className="border border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold">
@@ -179,13 +174,6 @@ export default function AccountDashboardPage() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-              {readyHolds.length > 0
-                ? `${readyHolds.length} requested item(s) ready at circulation desk.`
-                : activeHolds.length > 0
-                  ? `${activeHolds.length} hold request(s) queued for vault retrieval.`
-                  : 'No active holds or vault reservations pending.'}
-            </p>
           </div>
           <div>
             <div className="border-t border-stone-300 my-3" />
@@ -201,7 +189,7 @@ export default function AccountDashboardPage() {
         </div>
 
         {/* Card 3: Fines */}
-        <div className="border-2 border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs min-h-[175px]">
+        <div className="border border-black bg-[#F8F5EF] p-5 rounded-xs flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold">
@@ -214,11 +202,6 @@ export default function AccountDashboardPage() {
                 ₹{totalFineAmount}.00
               </span>
             </div>
-            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-              {totalFineAmount === 0
-                ? 'No overdue fines on your institutional account.'
-                : 'Unpaid overdue penalties pending settlement at circulation desk.'}
-            </p>
           </div>
           <div>
             <div className="border-t border-stone-300 my-3" />
@@ -235,11 +218,10 @@ export default function AccountDashboardPage() {
       </div>
 
       {/* Active Borrowed Items Panel */}
-      <div className="border-2 border-black bg-[#F8F5EF] rounded-xs p-5 sm:p-6 shadow-xs space-y-4">
+      <div className=" bg-[#F8F5EF] rounded-xs shadow-xs space-y-4">
         <div className="flex justify-between items-center flex-wrap gap-3">
           <div>
             <h3 className="font-amiri text-2xl font-bold text-black m-0">Currently Checked Out</h3>
-            <p className="text-xs text-heritage-muted">Renewal extends return deadline by +14 days</p>
           </div>
           {activeLoans.length > 0 && (
             <div className="flex items-center gap-2">
@@ -276,13 +258,10 @@ export default function AccountDashboardPage() {
           <div className="py-12 text-center border border-dashed border-gray-300 rounded bg-[#FAF8F5] p-6">
             <Inbox className="w-10 h-10 text-gray-400 mx-auto mb-2 stroke-[1.5]" />
             <h4 className="font-bold text-gray-800 text-sm">No items currently on loan</h4>
-            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-              You do not have any borrowed volumes at this time. Search the catalogue to discover manuscripts, rare books, and prints.
-            </p>
             <Link
               prefetch
               href="/search"
-              className="mt-4 px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-heritage-red transition-colors inline-flex items-center gap-1.5"
+              className="mt-4 px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-heritage-red hover:text-white transition-colors inline-flex items-center gap-1.5"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search Catalogue</span>
@@ -353,59 +332,6 @@ export default function AccountDashboardPage() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Quick Research Actions Grid */}
-      <div>
-        <p className="font-averia text-[11px] uppercase tracking-widest text-heritage-muted font-bold mb-3">
-          Quick Research Actions
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          <Link
-            prefetch
-            href="/search"
-            className="p-4 border border-black bg-white hover:bg-[#F7F4EF] transition-colors rounded flex items-center justify-between group shadow-sm"
-          >
-            <div className="flex items-center gap-3">
-              <Search className="w-5 h-5 text-heritage-red" />
-              <div>
-                <p className="font-amiri text-lg font-bold text-black leading-tight">Search Stacks</p>
-                <p className="text-xs text-heritage-muted">Browse digital catalogue &amp; archives</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
-          </Link>
-
-          <Link
-            prefetch
-            href={`${basePath}/reading-lists`}
-            className="p-4 border border-black bg-white hover:bg-[#F7F4EF] transition-colors rounded flex items-center justify-between group shadow-sm"
-          >
-            <div className="flex items-center gap-3">
-              <FolderPlus className="w-5 h-5 text-heritage-red" />
-              <div>
-                <p className="font-amiri text-lg font-bold text-black leading-tight">Reading Lists</p>
-                <p className="text-xs text-heritage-muted">Saved research bibliographies</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
-          </Link>
-
-          <Link
-            prefetch
-            href={`${basePath}/requests`}
-            className="p-4 border border-black bg-white hover:bg-[#F7F4EF] transition-colors rounded flex items-center justify-between group shadow-sm"
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-heritage-red" />
-              <div>
-                <p className="font-amiri text-lg font-bold text-black leading-tight">Acquisition Requests</p>
-                <p className="text-xs text-heritage-muted">Recommend titles for acquisition</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
       </div>
     </div>
   );

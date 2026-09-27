@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
 function formatDate(d?: string) {
@@ -92,9 +93,6 @@ export default function MyLoansPage() {
           <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
             Circulation Loans
           </h2>
-          <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-            Checked out volumes from stacks, return due dates, and 1-click renewal manager.
-          </p>
         </div>
 
         {activeTab === 'current' && activeLoans.length > 0 && (
@@ -105,7 +103,7 @@ export default function MyLoansPage() {
             className="px-4 py-2 border-2 border-black bg-black text-white rounded text-xs font-bold hover:bg-heritage-red hover:text-white  transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${renewingId === 'all' ? 'animate-spin' : ''}`} />
-            <span>Renew All (Where Eligible)</span>
+            <span>Renew All</span>
           </button>
         )}
       </div>
@@ -150,7 +148,7 @@ export default function MyLoansPage() {
               You have no active loans right now.
             </div>
           ) : (
-            <div className="overflow-x-auto border border-black bg-white rounded">
+            <div className="overflow-x-auto border border-black bg-white ">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-black bg-[#F7F4EF] text-left text-xs uppercase font-averia font-bold text-heritage-muted">
@@ -205,7 +203,9 @@ export default function MyLoansPage() {
       
         </div>
       ) : historyLoading ? (
-        <div className="border border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading loan history…</div>
+        <div className="border border-black bg-white rounded">
+          <LoadingState message="Loading loan history…" minHeight="160px" />
+        </div>
       ) : historyError ? (
         <div className="border border-heritage-red bg-red-50 rounded p-8 text-center text-heritage-red text-sm">
           Could not load loan history. Please try again shortly.

@@ -19,6 +19,7 @@ import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { CollectionRecordPicker } from '@/components/content/CollectionRecordPicker';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Collection {
   id: string;
@@ -158,7 +159,9 @@ export default function CatalogueCollectionsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-xs text-gray-500 font-semibold">Loading collections...</div>
+        <div className="bg-white border border-[#E2E0DB] rounded">
+          <LoadingState message="Loading collections…" minHeight="200px" />
+        </div>
       ) : (
         <>
           {/* Collections Grid */}

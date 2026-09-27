@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/lib/auth-context';
 import { MemberForm } from '@/components/members/MemberForm';
 import { CheckCircle2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function SignupPage() {
   const { user, loading: authLoading, refreshUser } = useAuth();
@@ -31,14 +32,10 @@ export default function SignupPage() {
     }
   };
 
-  // Prevent logged-in users from seeing the signup form
   if (authLoading || user) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center font-amiri text-lg text-black">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto" />
-          <p>{user ? 'Redirecting to your account dashboard...' : 'Verifying patron session...'}</p>
-        </div>
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

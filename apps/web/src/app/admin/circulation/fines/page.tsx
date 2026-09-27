@@ -5,6 +5,7 @@ import { CreditCard, Search, CheckCircle2, AlertCircle, ShieldOff } from 'lucide
 import { PageHeader } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Fine {
   id: string;
@@ -152,7 +153,7 @@ export default function CirculationFinesPage() {
       {/* Fines Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-xs">Loading fines…</div>
+          <LoadingState message="Loading fines…" minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-xs">No fine records found.</div>
         ) : (

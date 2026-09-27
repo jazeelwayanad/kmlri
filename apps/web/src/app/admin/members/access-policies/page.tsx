@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, AlertTriangle, Save } from 'lucide-react';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 const PREFIX = 'access-policy.';
 
@@ -81,7 +82,11 @@ export default function AccessPoliciesAdminPage() {
         </div>
       )}
 
-      {loading && <div className="text-sm text-gray-500">Loading access policies…</div>}
+      {loading && (
+        <Card className="max-w-2xl p-8">
+          <LoadingState message="Loading access policies…" minHeight="140px" />
+        </Card>
+      )}
 
       {/* Policy Rules Form */}
       {!loading && (

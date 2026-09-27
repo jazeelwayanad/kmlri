@@ -5,6 +5,7 @@ import { Search, Plus, Phone, Mail, CheckCircle2, ShieldAlert, X, Trash2 } from 
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Vendor {
   id: string;
@@ -162,7 +163,9 @@ export default function VendorsAdminPage() {
 
       {/* Vendors Grid */}
       {loading ? (
-        <div className="p-8 text-center text-gray-500 text-sm">Loading vendors…</div>
+        <Card className="p-8">
+          <LoadingState message="Loading vendors…" minHeight="160px" />
+        </Card>
       ) : filtered.length === 0 ? (
         <Card className="text-center py-14">
           <p className="text-base font-semibold text-gray-700">No vendors found.</p>

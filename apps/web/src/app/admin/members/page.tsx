@@ -23,6 +23,7 @@ import {
   Save
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { LoadingTableRow } from '@/components/ui/LoadingSpinner';
 import { getMemberIdentifier } from '@/lib/slugs';
 import { confirmDialog } from '@/lib/dialog';
 import { MemberForm } from '@/components/members/MemberForm';
@@ -214,7 +215,10 @@ export default function MembersManagementPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEECE7]">
-            {filteredUsers.map((u) => (
+            {loading ? (
+              <LoadingTableRow colSpan={6} />
+            ) : (
+              filteredUsers.map((u) => (
               <tr key={u.id} className="hover:bg-[#FAF8F5] transition-colors group">
                 <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
                   <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="hover:text-[#A52307] underline">
@@ -286,11 +290,11 @@ export default function MembersManagementPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
 
-        {filteredUsers.length === 0 && (
+        {!loading && filteredUsers.length === 0 && (
           <div className="p-12 text-center text-gray-500 text-sm">
             No library members found matching your search and filter criteria.
           </div>

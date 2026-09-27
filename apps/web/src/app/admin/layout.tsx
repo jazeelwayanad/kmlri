@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Shield, ShieldAlert, ArrowLeft, LogOut, UserCircle, AlertCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, login, logout, isStaff, loading } = useAuth();
@@ -36,8 +37,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F7F9] font-sans text-lg text-gray-500">
-        Verifying staff credentials...
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F7F9]">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

@@ -5,7 +5,43 @@ import { SearchQueryDto } from './dto/search-query.dto';
 
 @Injectable()
 export class CatalogService {
+  private facetCache: any = null;
+  private facetCacheTime = 0;
+  private readonly FACET_TTL_MS = 60 * 1000;
+
   constructor(private prisma: PrismaService) {}
+
+  private async getCachedFacets() {
+    const now = Date.now();
+    if (this.facetCache && now - this.facetCacheTime < this.FACET_TTL_MS) {
+      return this.facetCache;
+    }
+
+    const [formatAgg, accessAgg, languageAgg] = await Promise.all([
+      this.prisma.bibliographicRecord.groupBy({
+        by: ['format'],
+        _count: { format: true },
+      }),
+      this.prisma.bibliographicRecord.groupBy({
+        by: ['accessLevel'],
+        _count: { accessLevel: true },
+      }),
+      this.prisma.bibliographicRecord.groupBy({
+        by: ['language'],
+        _count: { language: true },
+      }),
+    ]);
+
+    const facets = {
+      formats: formatAgg.map((f) => ({ key: f.format, count: f._count.format })),
+      accessLevels: accessAgg.map((a) => ({ key: a.accessLevel, count: a._count.accessLevel })),
+      languages: languageAgg.map((l) => ({ key: l.language, count: l._count.language })),
+    };
+
+    this.facetCache = facets;
+    this.facetCacheTime = now;
+    return facets;
+  }
 
   async search(queryDto: SearchQueryDto) {
     const page = Math.max(1, Number(queryDto.page) || 1);
@@ -99,7 +135,7 @@ export class CatalogService {
         ? { publicationYear: 'desc' }
         : { createdAt: 'desc' };
 
-    const [items, total] = await Promise.all([
+    const [items, total, facets] = await Promise.all([
       this.prisma.bibliographicRecord.findMany({
         where,
         skip,
@@ -128,22 +164,7 @@ export class CatalogService {
         },
       }),
       this.prisma.bibliographicRecord.count({ where }),
-    ]);
-
-    // Facet aggregation summaries (computed over the whole collection, not just this page)
-    const [formatAgg, accessAgg, languageAgg] = await Promise.all([
-      this.prisma.bibliographicRecord.groupBy({
-        by: ['format'],
-        _count: { format: true },
-      }),
-      this.prisma.bibliographicRecord.groupBy({
-        by: ['accessLevel'],
-        _count: { accessLevel: true },
-      }),
-      this.prisma.bibliographicRecord.groupBy({
-        by: ['language'],
-        _count: { language: true },
-      }),
+      this.getCachedFacets(),
     ]);
 
     return {
@@ -161,11 +182,7 @@ export class CatalogService {
         totalPages: Math.ceil(total / limit),
       },
       collection: activeCollection,
-      facets: {
-        formats: formatAgg.map((f) => ({ key: f.format, count: f._count.format })),
-        accessLevels: accessAgg.map((a) => ({ key: a.accessLevel, count: a._count.accessLevel })),
-        languages: languageAgg.map((l) => ({ key: l.language, count: l._count.language })),
-      },
+      facets,
     };
   }
 

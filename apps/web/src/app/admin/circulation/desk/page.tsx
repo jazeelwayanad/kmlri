@@ -4,11 +4,12 @@ import { Suspense } from 'react';
 import { PageHeader, Button } from '@/components/admin/ui';
 import { CirculationDesk } from '@/components/admin/circulation/CirculationDesk';
 import { Settings2, Bookmark, Clock, CreditCard } from 'lucide-react';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 function DeskFallback() {
   return (
-    <div className="p-12 text-center text-gray-500 font-mono text-xs">
-      Loading Circulation Desk workbench…
+    <div className="bg-white border border-gray-200 rounded">
+      <LoadingState message="Loading Circulation Desk workbench…" minHeight="200px" />
     </div>
   );
 }

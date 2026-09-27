@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Plus, Download, Copy, Check, Folder, Trash2, X } from 'lucide-react';
 
 interface ReadingListItem {
@@ -58,7 +59,7 @@ export default function MyReadingListsPage() {
     setLoading(true);
     try {
       const data = await api.getReadingLists();
-      setReadingLists(data || []);
+      setReadingLists(Array.isArray(data) ? data : []);
     } catch {
       // leave list empty; page will show empty state
     } finally {
@@ -122,9 +123,7 @@ export default function MyReadingListsPage() {
           <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
             Curated Reading Lists &amp; Bibliographies
           </h2>
-          <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-            Organize catalogue items into folders and export formatted academic bibliographies.
-          </p>
+
         </div>
 
         <button
@@ -139,9 +138,11 @@ export default function MyReadingListsPage() {
       <div className="double-rule"></div>
 
       {loading ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading your reading lists…</div>
+        <div className="border border-black bg-white rounded">
+          <LoadingState message="Loading your reading lists…" minHeight="160px" />
+        </div>
       ) : readingLists.length === 0 ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+        <div className="border border-black bg-white p-8 text-center text-heritage-muted text-sm">
           You haven&apos;t created any reading lists yet.
         </div>
       ) : (

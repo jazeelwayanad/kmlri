@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface AcquisitionRequest {
@@ -79,9 +80,6 @@ export default function MyRequestsPage() {
           <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
             Acquisition Recommendations
           </h2>
-          <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-            Recommend titles for the collection development committee to review.
-          </p>
         </div>
 
         <button
@@ -108,9 +106,11 @@ export default function MyRequestsPage() {
       )}
 
       {loading ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading your requests…</div>
+        <div className="border border-black bg-white rounded">
+          <LoadingState message="Loading your requests…" minHeight="160px" />
+        </div>
       ) : requests.length === 0 ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+        <div className="border border-black p-8 text-center text-heritage-muted text-sm">
           You haven&apos;t submitted any acquisition recommendations yet.
         </div>
       ) : (

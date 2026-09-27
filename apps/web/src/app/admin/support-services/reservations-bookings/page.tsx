@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface DynamicBookingField {
   id: string;
@@ -490,7 +491,7 @@ export default function ReservationsAndBookingsPage() {
           {/* Bookings Table */}
           <div className="bg-white border border-[#E2E0DB] rounded overflow-x-auto shadow-sm">
             {loading ? (
-              <div className="p-10 text-center text-gray-500 text-xs">Loading bookings…</div>
+              <LoadingState message="Loading bookings…" minHeight="180px" />
             ) : filtered.length === 0 ? (
               <div className="p-10 text-center text-gray-500 text-xs">
                 No facility reservations found matching your criteria.
@@ -606,11 +607,11 @@ export default function ReservationsAndBookingsPage() {
                             }`}
                           >
                             {isPending
-                              ? '⏳ Pending Review'
+                              ? 'Pending Review'
                               : isApproved
-                              ? '✓ Approved'
+                              ? 'Approved'
                               : isRejected
-                              ? '✕ Declined'
+                              ? 'Declined'
                               : 'Cancelled'}
                           </span>
                         </td>

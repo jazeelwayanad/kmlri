@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer';
 import { api, BibliographicRecord } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { getRecordSlug } from '@/lib/slugs';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Filter, ChevronDown, Check, BookmarkPlus } from 'lucide-react';
 
 const ACCESS_LABELS: Record<string, string> = {
@@ -41,8 +42,8 @@ export default function SearchPage() {
       <div className="min-h-screen bg-paper text-black">
         <TopBar />
         <Navbar />
-        <div className="max-w-[1100px] mx-auto py-20 px-5 text-center font-amiri text-2xl">
-          Loading catalogue search...
+        <div className="max-w-[1100px] mx-auto py-20 px-5">
+          <LoadingState message="Loading catalogue search…" minHeight="240px" />
         </div>
       </div>
     }>
@@ -292,6 +293,10 @@ function SearchContent() {
               <div className="py-8 text-center font-sans text-heritage-red border border-heritage-red bg-red-50">
                 Couldn&apos;t reach the catalogue service. Please try again shortly.
               </div>
+            )}
+
+            {loading && (
+              <LoadingState message="Searching catalogue…" minHeight="240px" />
             )}
 
             {!error && !loading && results.length === 0 && (

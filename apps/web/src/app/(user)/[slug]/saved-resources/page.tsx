@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 export default function SavedResourcesRedirectPage() {
   const router = useRouter();
   const params = useParams();
@@ -12,5 +14,9 @@ export default function SavedResourcesRedirectPage() {
     router.replace(`/${slug}/reading-lists`);
   }, [router, slug]);
 
-  return <div className="p-8 text-center text-heritage-muted text-sm font-sans">Redirecting to your reading lists…</div>;
+  return (
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }

@@ -53,7 +53,7 @@ export function AccountNav() {
   const activeItem = allItems.find((i) => (i as any).exact ? pathname === i.href : pathname.startsWith(i.href)) || mainCirculation[0];
 
   return (
-    <aside className="border-2 border-black bg-[#F8F5EF] p-3 sm:p-4 rounded-xs shadow-xs font-sans text-xs">
+    <aside className="border border-black bg-[#F8F5EF] p-3 sm:p-4 rounded-xs shadow-xs font-sans text-xs">
 
       {/* Mobile Accordion Toggle Header */}
       <div className="lg:hidden mb-2">

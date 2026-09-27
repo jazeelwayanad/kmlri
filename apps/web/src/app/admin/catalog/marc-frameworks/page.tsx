@@ -5,6 +5,7 @@ import { Plus, CheckCircle2, ShieldAlert, X, Trash2, Star, FileCode2 } from 'luc
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface MarcFrameworkField {
   id: string;
@@ -244,7 +245,7 @@ export default function MarcFrameworksAdminPage() {
             <h3 className="font-bold text-gray-900 text-sm">Frameworks</h3>
           </div>
           {loadingFrameworks ? (
-            <div className="p-6 text-center text-gray-500 text-xs">Loading…</div>
+            <LoadingState message="Loading frameworks…" minHeight="120px" size="sm" />
           ) : frameworks.length === 0 ? (
             <div className="p-6 text-center text-gray-500 text-xs">No frameworks yet.</div>
           ) : (
@@ -306,7 +307,7 @@ export default function MarcFrameworksAdminPage() {
           {!selectedFramework ? (
             <div className="p-10 text-center text-gray-500 text-xs">Select a framework on the left to manage its fields.</div>
           ) : loadingFramework ? (
-            <div className="p-10 text-center text-gray-500 text-xs">Loading fields…</div>
+            <LoadingState message="Loading fields…" minHeight="140px" size="md" />
           ) : (selectedFramework.fields || []).length === 0 ? (
             <div className="p-10 text-center text-gray-500 text-xs">No fields defined on this framework yet.</div>
           ) : (

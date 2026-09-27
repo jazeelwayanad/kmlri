@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import {
   Calendar,
   Clock,
@@ -123,8 +124,8 @@ export default function NewsEventDetailPage() {
       <div className="min-h-screen bg-paper text-black font-amiri">
         <TopBar />
         <Navbar />
-        <section className="max-w-[1100px] mx-auto py-24 px-5 text-center text-2xl">
-          Loading article details...
+        <section className="max-w-[1100px] mx-auto py-24 px-5">
+          <LoadingState message="Loading article details…" minHeight="240px" />
         </section>
         <Footer />
       </div>
@@ -254,19 +255,25 @@ export default function NewsEventDetailPage() {
           {/* Main Body */}
           <article className="space-y-6 font-sans text-heritage-body text-[16px] sm:text-[18px] leading-[1.7]">
             {/* Visual Feature Plate Box */}
-            <div className="w-full bg-[#EAE4D9] border border-black/20 p-8 sm:p-12 text-center relative overflow-hidden">
-              <span className="font-averia text-[11px] uppercase tracking-[0.15em] text-[#7E7365] block mb-2 font-bold">
-                Kunhīn Musliyār Library &amp; Research Institute · Bulletin &amp; Proceedings
-              </span>
-              <p className="font-amiri text-2xl sm:text-3xl font-bold text-black/85 max-w-xl mx-auto leading-snug">
-                "{item.title}"
-              </p>
-              {item.author && (
-                <p className="font-averia text-xs text-gray-600 uppercase tracking-wider mt-4">
-                  Curated &amp; Communicated by {item.author}
+            {item.imageUrl ? (
+              <div className="w-full aspect-[16/9] max-h-[460px] bg-black/5 border border-black/20 overflow-hidden relative shadow-sm">
+                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-full bg-[#EAE4D9] border border-black/20 p-8 sm:p-12 text-center relative overflow-hidden">
+                <span className="font-averia text-[11px] uppercase tracking-[0.15em] text-[#7E7365] block mb-2 font-bold">
+                  Kunhīn Musliyār Library &amp; Research Institute · Bulletin &amp; Proceedings
+                </span>
+                <p className="font-amiri text-2xl sm:text-3xl font-bold text-black/85 max-w-xl mx-auto leading-snug">
+                  "{item.title}"
                 </p>
-              )}
-            </div>
+                {item.author && (
+                  <p className="font-averia text-xs text-gray-600 uppercase tracking-wider mt-4">
+                    Curated &amp; Communicated by {item.author}
+                  </p>
+                )}
+              </div>
+            )}
 
             {item.content ? (
               <div

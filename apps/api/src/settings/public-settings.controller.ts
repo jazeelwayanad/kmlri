@@ -13,11 +13,6 @@ export class PublicSettingsController {
 
   @Get('website')
   async getWebsiteSettings() {
-    const settings = await this.settingsService.findAll('website.');
-    const map: Record<string, any> = {};
-    for (const s of settings) {
-      map[s.key.replace(/^website\./, '')] = s.value;
-    }
-    return map;
+    return this.settingsService.getPublicWebsiteSettings();
   }
 }

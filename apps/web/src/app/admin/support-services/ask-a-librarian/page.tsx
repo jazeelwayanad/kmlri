@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function AskALibrarianRedirectPage() {
   const router = useRouter();
@@ -11,8 +12,8 @@ export default function AskALibrarianRedirectPage() {
   }, [router]);
 
   return (
-    <div className="p-12 text-center text-gray-500 font-sans text-sm">
-      Redirecting to the Ask-a-Librarian helpdesk…
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
     </div>
   );
 }

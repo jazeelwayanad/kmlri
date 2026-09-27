@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, CheckCircle2, ShieldAlert, X, Trash2 } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
 
@@ -161,7 +162,7 @@ export default function ItemTypesAdminPage() {
       </Card>
 
       {loading ? (
-        <div className="p-8 text-center text-gray-500 text-sm">Loading item types…</div>
+        <LoadingState minHeight="160px" />
       ) : filtered.length === 0 ? (
         <Card className="text-center py-14">
           <p className="text-base font-semibold text-gray-700">No item types found.</p>

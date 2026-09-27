@@ -30,9 +30,6 @@ export default function ProfilePage() {
           <h2 className="font-amiri text-3xl sm:text-[34px] font-bold text-black m-0 leading-tight">
             Profile &amp; Identity
           </h2>
-          <p className="text-xs text-stone-600 mt-1 font-sans">
-            Personal identity, institutional affiliation, and account details.
-          </p>
         </div>
 
         {!editing ? (
@@ -121,28 +118,18 @@ export default function ProfilePage() {
             {/* Username */}
             <div className="flex flex-col sm:flex-row sm:items-baseline">
               <span className="text-stone-500 font-sans text-xs w-44 sm:w-56 flex-shrink-0 font-normal">
-                Username / Slug
+                Username
               </span>
               <div className="flex items-center gap-2 font-mono text-xs sm:text-sm text-stone-900 flex-wrap">
                 <span>@{user.username || 'unassigned'}</span>
-                <span className="text-stone-400">·</span>
-                <span className="text-stone-600 text-xs">/user/{user.username || user.id}</span>
-                <button
-                  type="button"
-                  onClick={copyPublicUrl}
-                  title="Copy Profile URL"
-                  className="text-stone-500 hover:text-black cursor-pointer inline-flex items-center gap-1 font-sans text-xs"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>{copiedSlug ? 'Copied!' : 'Copy link'}</span>
-                </button>
+             
               </div>
             </div>
 
             {/* Institutional Email */}
             <div className="flex flex-col sm:flex-row sm:items-baseline">
               <span className="text-stone-500 font-sans text-xs w-44 sm:w-56 flex-shrink-0 font-normal">
-                Institutional Email
+                Email
               </span>
               <span className="text-stone-900 font-mono text-xs sm:text-sm">
                 {user.email}

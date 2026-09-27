@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, CheckCircle2 } from 'lucide-react';
 import { PageHeader } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Loan {
   id: string;
@@ -81,7 +82,7 @@ export default function CirculationOverduesPage() {
       {/* Overdues Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-xs">Loading overdue loans…</div>
+          <LoadingState message="Loading overdue loans…" minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-xs flex items-center justify-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" /> No overdue items right now.

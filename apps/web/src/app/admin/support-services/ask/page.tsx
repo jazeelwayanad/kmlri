@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, Plus, Search, CheckCircle2, Clock, User, Send, HelpCircle } from 'lucide-react';
 import { Badge, Card, PageHeader, Button, StatCard } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Question {
   id: string;
@@ -173,7 +174,9 @@ export default function AdminAskLibrarianPage() {
       {/* Tickets List */}
       <div className="space-y-3">
         {loading ? (
-          <div className="p-12 text-center text-gray-500 bg-white border border-gray-200 rounded-lg">Loading inquiries…</div>
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <LoadingState message="Loading inquiries…" minHeight="180px" />
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-gray-500 bg-white border border-gray-200 rounded-lg">
             <HelpCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />

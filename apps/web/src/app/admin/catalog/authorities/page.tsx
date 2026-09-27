@@ -5,6 +5,7 @@ import { Search, Plus, CheckCircle2, ShieldAlert, X, Trash2, BookOpenCheck, Link
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const HEADING_TYPES = ['PERSONAL_NAME', 'CORPORATE_NAME', 'SUBJECT', 'SERIES', 'UNIFORM_TITLE'];
 
@@ -222,7 +223,9 @@ export default function AuthoritiesAdminPage() {
       </Card>
 
       {loading ? (
-        <div className="p-8 text-center text-gray-500 text-sm">Loading authority records…</div>
+        <Card className="p-8">
+          <LoadingState message="Loading authority records…" minHeight="160px" />
+        </Card>
       ) : records.length === 0 ? (
         <Card className="text-center py-14">
           <p className="text-base font-semibold text-gray-700">No authority records found.</p>
@@ -409,7 +412,7 @@ export default function AuthoritiesAdminPage() {
             </div>
             <div className="p-6 text-xs font-sans max-h-[60vh] overflow-y-auto">
               {loadingUsage ? (
-                <div className="text-center text-gray-500 py-6">Loading…</div>
+                <LoadingState message="Loading usage records…" minHeight="120px" size="md" />
               ) : usageRows.length === 0 ? (
                 <div className="text-center text-gray-500 py-6">Not linked to any bibliographic records yet.</div>
               ) : (

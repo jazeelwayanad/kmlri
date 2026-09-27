@@ -5,6 +5,7 @@ import { Building2, Plus, CheckCircle2, ShieldAlert, X, Trash2 } from 'lucide-re
 import { PageHeader, Button, Card } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Department {
   id: string;
@@ -144,7 +145,9 @@ export default function DepartmentsAdminPage() {
 
       {/* Grid of Departments */}
       {loading ? (
-        <div className="p-8 text-center text-gray-500 text-sm">Loading departments…</div>
+        <Card className="p-8">
+          <LoadingState message="Loading departments…" minHeight="160px" />
+        </Card>
       ) : departments.length === 0 ? (
         <Card className="text-center py-14">
           <p className="text-base font-semibold text-gray-700">No departments found.</p>

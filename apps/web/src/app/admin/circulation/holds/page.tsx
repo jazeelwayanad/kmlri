@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, CheckCircle2, Clock, BellRing, Trash2 } from 'lucide-react';
 import { Badge, Card, PageHeader, StatCard } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Hold {
   id: string;
@@ -131,7 +132,7 @@ export default function ReservationsAdminPage() {
       {/* Holds Queue Table */}
       <Card className="overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading reservations…</div>
+          <LoadingState message="Loading reservations…" minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No reservations found.</div>
         ) : (

@@ -5,7 +5,16 @@ const nextConfig = {
     unoptimized: true,
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+  },
+  async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiUrl.replace(/\/$/, '')}/:path*`,
+      },
+    ];
   },
   async redirects() {
     return [
@@ -29,3 +38,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+

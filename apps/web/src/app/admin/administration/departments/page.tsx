@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function AdministrationDepartmentsRedirectPage() {
   const router = useRouter();
@@ -10,5 +11,9 @@ export default function AdministrationDepartmentsRedirectPage() {
     router.replace('/admin/system/departments');
   }, [router]);
 
-  return <div className="p-8 text-center text-gray-500 text-sm font-sans">Redirecting to Departments \&amp; Programs…</div>;
+  return (
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }

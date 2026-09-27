@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Download } from 'lucide-react';
 import { PageHeader, Card, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface AuditLog {
   id: string;
@@ -96,7 +97,7 @@ export default function AuditLogsAdminPage() {
       {/* Audit Log Table */}
       <Card className="overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Loading audit log…</div>
+          <LoadingState message="Loading audit log…" minHeight="160px" />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">No audit events recorded yet.</div>
         ) : (

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api, Role } from '@/lib/api';
+import { LoadingSpinner, LoadingState } from '@/components/ui/LoadingSpinner';
 import { confirmDialog, alertDialog } from '@/lib/dialog';
 
 const PREFIX = 'circulation.';
@@ -264,7 +265,9 @@ export default function CirculationConfigurationPage() {
       )}
 
       {loadingSettings && (
-        <div className="p-4 text-xs text-gray-500">Loading circulation configuration…</div>
+        <div className="p-4 flex items-center gap-2">
+          <LoadingSpinner size="sm" label="Loading circulation configuration…" />
+        </div>
       )}
 
       {/* Tabs */}
@@ -328,7 +331,7 @@ export default function CirculationConfigurationPage() {
           </div>
 
           {loadingRoles ? (
-            <div className="p-6 text-center text-gray-400 text-xs">Loading member roles from system/roles…</div>
+            <LoadingState message="Loading member roles from system/roles…" minHeight="140px" size="md" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs font-sans">

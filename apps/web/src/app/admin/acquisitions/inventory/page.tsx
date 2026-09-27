@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Boxes, Search, CheckCircle2, AlertTriangle, AlertCircle, RefreshCw, Edit3, Save, X } from 'lucide-react';
 import { Badge, Card, PageHeader, Button, StatCard } from '@/components/admin/ui';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 type CopyStatus = 'AVAILABLE' | 'ON_LOAN' | 'RESERVED' | 'IN_CONSERVATION' | 'LOST' | 'WITHDRAWN';
 
@@ -189,7 +190,9 @@ export default function InventoryAdminPage() {
       </Card>
 
       {loading ? (
-        <div className="text-center py-16 text-sm text-gray-500 font-semibold">Loading catalogue holdings...</div>
+        <Card className="p-8">
+          <LoadingState message="Loading catalogue holdings…" minHeight="180px" />
+        </Card>
       ) : (
         <Card className="overflow-x-auto" padded={false}>
           <table className="w-full border-collapse text-left text-xs">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Download, Paperclip } from 'lucide-react';
 import { api } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface Submission {
   id: string;
@@ -29,7 +30,11 @@ export function RegistrationSubmissionsList({ contentItemId }: { contentItemId: 
       .finally(() => setLoading(false));
   }, [contentItemId]);
 
-  if (loading) return <div className="text-xs text-gray-500 py-4">Loading submissions…</div>;
+  if (loading) return (
+    <div className="py-6 flex justify-center">
+      <LoadingSpinner size="sm" label="Loading submissions…" />
+    </div>
+  );
   if (submissions.length === 0) return <div className="p-6 text-center text-gray-400 text-xs border border-dashed border-gray-300 rounded-lg">No registrations submitted yet.</div>;
 
   return (

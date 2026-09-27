@@ -15,19 +15,23 @@ import {
   Edit3,
   Link as LinkIcon,
   Tag,
-  X
+  X,
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
+  type NavItem,
+  type NavChild,
+  type HomepageSection,
+  type FooterContact,
+  type SocialLinks,
+  DEFAULT_HOMEPAGE_SECTIONS,
   DEFAULT_NAV_ITEMS,
   DEFAULT_FOOTER_CONTACT,
   DEFAULT_SOCIAL_LINKS,
-  DEFAULT_HOMEPAGE_SECTIONS,
   resolveHomepageSections,
-  type NavItem,
-  type NavChild,
 } from '@/lib/site-config-defaults';
 
 const PREFIX = 'website.';
@@ -42,11 +46,10 @@ export default function WebsiteConfigurationPage() {
   const [saving, setSaving] = useState(false);
 
   // Homepage Sections Config
-  const [homepageSections, setHomepageSections] = useState(DEFAULT_HOMEPAGE_SECTIONS);
+  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(DEFAULT_HOMEPAGE_SECTIONS);
 
-  // Navbar Items Config — persisted to the settings store under
-  // `website.navItems` and served live to the public site's Navbar.
-  const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV_ITEMS);
+  // Navbar Items Config
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [editingNavId, setEditingNavId] = useState<string | null>(null);
   const [navForm, setNavForm] = useState<{ label: string; href: string; children: NavChild[] }>({
@@ -56,15 +59,34 @@ export default function WebsiteConfigurationPage() {
   });
 
   // Footer Config
-  const [footerContact, setFooterContact] = useState(DEFAULT_FOOTER_CONTACT);
+  const [footerContact, setFooterContact] = useState<FooterContact>(DEFAULT_FOOTER_CONTACT);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>(DEFAULT_SOCIAL_LINKS);
 
-  const [socialLinks, setSocialLinks] = useState(DEFAULT_SOCIAL_LINKS);
-
-  // Content Types Configuration — persisted to the settings store under `website.*Categories`/`*Types`.
-  const [storyCategories, setStoryCategories] = useState(['Conservation & Archives', 'Literary History', 'Maritime Studies', 'Oral Traditions']);
-  const [newsCategories, setNewsCategories] = useState(['Institutional Announcement', 'Fellowships & Grants', 'Symposium & Lectures', 'Archival Acquisitions']);
-  const [eventTypes, setEventTypes] = useState(['International Symposium', 'Scholarly Workshop', 'Public Lecture', 'Archival Exhibition']);
-  const [oppTypes, setOppTypes] = useState(['Residential Fellowship', 'Archival Internship', 'Travel Grant', 'Call for Papers']);
+  // Content Types Configuration
+  const [storyCategories, setStoryCategories] = useState([
+    'Conservation & Archives',
+    'Literary History',
+    'Maritime Studies',
+    'Oral Traditions',
+  ]);
+  const [newsCategories, setNewsCategories] = useState([
+    'Institutional Announcement',
+    'Fellowships & Grants',
+    'Symposium & Lectures',
+    'Archival Acquisitions',
+  ]);
+  const [eventTypes, setEventTypes] = useState([
+    'International Symposium',
+    'Scholarly Workshop',
+    'Public Lecture',
+    'Archival Exhibition',
+  ]);
+  const [oppTypes, setOppTypes] = useState([
+    'Residential Fellowship',
+    'Archival Internship',
+    'Travel Grant',
+    'Call for Papers',
+  ]);
   const [newStoryCategory, setNewStoryCategory] = useState('');
   const [newNewsCategory, setNewNewsCategory] = useState('');
   const [newEventType, setNewEventType] = useState('');
@@ -77,20 +99,47 @@ export default function WebsiteConfigurationPage() {
         const settings = await api.getSettings(PREFIX);
         const map = new Map<string, any>(settings.map((s: any) => [s.key, s.value]));
         if (cancelled) return;
-        const savedSections = map.get(`${PREFIX}homepageSections`) as Array<{ id: string; visible: boolean }> | undefined;
+
+        // Hydrate homepage sections using master defaults to resolve missing names and descriptions
+        const savedSections = map.get(`${PREFIX}homepageSections`);
         setHomepageSections(resolveHomepageSections(savedSections));
-        setFooterContact({ ...DEFAULT_FOOTER_CONTACT, ...(map.get(`${PREFIX}footerContact`) ?? {}) });
-        setSocialLinks({ ...DEFAULT_SOCIAL_LINKS, ...(map.get(`${PREFIX}socialLinks`) ?? {}) });
-        const savedNavItems = map.get(`${PREFIX}navItems`) as NavItem[] | undefined;
-        if (Array.isArray(savedNavItems) && savedNavItems.length > 0) setNavItems(savedNavItems);
+
+        const savedFooterContact = map.get(`${PREFIX}footerContact`);
+        if (savedFooterContact && typeof savedFooterContact === 'object') {
+          setFooterContact({ ...DEFAULT_FOOTER_CONTACT, ...savedFooterContact });
+        }
+
+        const savedSocialLinks = map.get(`${PREFIX}socialLinks`);
+        if (savedSocialLinks && typeof savedSocialLinks === 'object') {
+          setSocialLinks({ ...DEFAULT_SOCIAL_LINKS, ...savedSocialLinks });
+        }
+
+        const savedNavItems = map.get(`${PREFIX}navItems`);
+        if (Array.isArray(savedNavItems) && savedNavItems.length > 0) {
+          setNavItems(savedNavItems);
+        } else {
+          setNavItems(DEFAULT_NAV_ITEMS);
+        }
+
         const savedStoryCategories = map.get(`${PREFIX}storyCategories`);
-        if (Array.isArray(savedStoryCategories)) setStoryCategories(savedStoryCategories);
+        if (Array.isArray(savedStoryCategories) && savedStoryCategories.length > 0) {
+          setStoryCategories(savedStoryCategories);
+        }
+
         const savedNewsCategories = map.get(`${PREFIX}newsCategories`);
-        if (Array.isArray(savedNewsCategories)) setNewsCategories(savedNewsCategories);
+        if (Array.isArray(savedNewsCategories) && savedNewsCategories.length > 0) {
+          setNewsCategories(savedNewsCategories);
+        }
+
         const savedEventTypes = map.get(`${PREFIX}eventTypes`);
-        if (Array.isArray(savedEventTypes)) setEventTypes(savedEventTypes);
+        if (Array.isArray(savedEventTypes) && savedEventTypes.length > 0) {
+          setEventTypes(savedEventTypes);
+        }
+
         const savedOppTypes = map.get(`${PREFIX}oppTypes`);
-        if (Array.isArray(savedOppTypes)) setOppTypes(savedOppTypes);
+        if (Array.isArray(savedOppTypes) && savedOppTypes.length > 0) {
+          setOppTypes(savedOppTypes);
+        }
       } catch (err: any) {
         if (!cancelled) setNotification({ type: 'error', text: err.message || 'Failed to load website configuration.' });
       } finally {
@@ -120,25 +169,35 @@ export default function WebsiteConfigurationPage() {
   });
 
   const toggleSection = (id: string) => {
-    setHomepageSections(
-      homepageSections.map((s) => s.id === id ? { ...s, visible: !s.visible } : s)
+    setHomepageSections((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, visible: !s.visible } : s))
     );
   };
 
   const moveSection = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= homepageSections.length) return;
-    const items = [...homepageSections];
-    const [moved] = items.splice(index, 1);
-    items.splice(targetIndex, 0, moved);
-    setHomepageSections(items);
+    setHomepageSections((prev) => {
+      const items = [...prev];
+      const [moved] = items.splice(index, 1);
+      items.splice(targetIndex, 0, moved);
+      return items;
+    });
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await api.setSettings([
-        { key: `${PREFIX}homepageSections`, value: homepageSections.map((s) => ({ id: s.id, visible: s.visible })) },
+        {
+          key: `${PREFIX}homepageSections`,
+          value: homepageSections.map((s) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            visible: s.visible,
+          })),
+        },
         { key: `${PREFIX}footerContact`, value: footerContact },
         { key: `${PREFIX}socialLinks`, value: socialLinks },
         { key: `${PREFIX}navItems`, value: navItems },
@@ -253,7 +312,9 @@ export default function WebsiteConfigurationPage() {
       )}
 
       {loading && (
-        <div className="p-4 text-xs text-gray-500">Loading website configuration…</div>
+        <div className="p-4 bg-white border border-[#E2E0DB] rounded flex items-center gap-2">
+          <LoadingSpinner size="sm" label="Loading website configuration…" />
+        </div>
       )}
 
       {/* Tabs */}
@@ -289,7 +350,7 @@ export default function WebsiteConfigurationPage() {
           <div>
             <h3 className="text-base font-bold text-gray-900">Homepage Section Order &amp; Visibility</h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Reorder or toggle modules rendered on the public front page (`kmlri.in`).
+              Reorder or toggle modules rendered on the public front page (<code className="font-mono text-[11px] bg-gray-100 px-1 py-0.5 rounded text-gray-700">kmlri.in</code>).
             </p>
           </div>
 
@@ -297,18 +358,23 @@ export default function WebsiteConfigurationPage() {
             {homepageSections.map((sec, idx) => (
               <div
                 key={sec.id}
-                className="flex items-center justify-between p-3.5 bg-[#FAF8F5] border border-[#E2E0DB] rounded text-xs"
+                className="flex items-center justify-between p-3.5 sm:p-4 bg-[#FAF8F5] border border-[#E2E0DB] rounded text-xs transition-colors hover:border-gray-300"
               >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-gray-400 text-[11px]">0{idx + 1}</span>
-                  <span className="font-bold text-gray-900 text-sm">{sec.name}</span>
+                <div className="flex items-center gap-3.5">
+                  <span className="font-mono font-bold text-gray-400 text-xs w-6">0{idx + 1}</span>
+                  <div>
+                    <span className="font-bold text-gray-900 text-sm block">{sec.name}</span>
+                    {sec.description && (
+                      <span className="text-gray-500 text-[11px] block mt-0.5">{sec.description}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => toggleSection(sec.id)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-bold uppercase transition-colors ${
-                      sec.visible ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'
+                    className={`px-3 py-1 rounded text-[11px] font-bold uppercase transition-colors cursor-pointer ${
+                      sec.visible ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
                   >
                     {sec.visible ? 'Visible' : 'Hidden'}
@@ -318,7 +384,7 @@ export default function WebsiteConfigurationPage() {
                       type="button"
                       disabled={idx === 0}
                       onClick={() => moveSection(idx, 'up')}
-                      className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                      className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                       title="Move Up"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
@@ -327,7 +393,7 @@ export default function WebsiteConfigurationPage() {
                       type="button"
                       disabled={idx === homepageSections.length - 1}
                       onClick={() => moveSection(idx, 'down')}
-                      className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                      className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                       title="Move Down"
                     >
                       <ArrowDown className="w-3.5 h-3.5" />
@@ -351,7 +417,7 @@ export default function WebsiteConfigurationPage() {
             <button
               type="button"
               onClick={openAddNavModal}
-              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1"
+              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Nav Item</span>
@@ -384,7 +450,7 @@ export default function WebsiteConfigurationPage() {
                         type="button"
                         disabled={idx === 0}
                         onClick={() => moveNavItem(idx, 'up')}
-                        className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                        className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                         title="Move up"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
@@ -393,7 +459,7 @@ export default function WebsiteConfigurationPage() {
                         type="button"
                         disabled={idx === navItems.length - 1}
                         onClick={() => moveNavItem(idx, 'down')}
-                        className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                        className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                         title="Move down"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
@@ -410,10 +476,10 @@ export default function WebsiteConfigurationPage() {
                     )}
                   </td>
                   <td className="py-3.5 px-4 text-right space-x-2">
-                    <button type="button" onClick={() => openEditNavModal(item)} className="p-1 text-gray-400 hover:text-black">
+                    <button type="button" onClick={() => openEditNavModal(item)} className="p-1 text-gray-400 hover:text-black cursor-pointer" title="Edit">
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
-                    <button type="button" onClick={() => deleteNavItem(item)} className="p-1 text-gray-400 hover:text-[#A52307]">
+                    <button type="button" onClick={() => deleteNavItem(item)} className="p-1 text-gray-400 hover:text-[#A52307] cursor-pointer" title="Delete">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </td>
@@ -434,7 +500,7 @@ export default function WebsiteConfigurationPage() {
               <label className="block font-bold text-gray-700 uppercase mb-1">Physical Address</label>
               <textarea
                 rows={2}
-                value={footerContact.address}
+                value={footerContact.address || ''}
                 onChange={(e) => setFooterContact({ ...footerContact, address: e.target.value })}
                 className="w-full p-2.5 border border-gray-200 rounded outline-none focus:border-[#A52307] text-xs"
               />
@@ -444,7 +510,7 @@ export default function WebsiteConfigurationPage() {
               <label className="block font-bold text-gray-700 uppercase mb-1">Curatorial Email</label>
               <input
                 type="email"
-                value={footerContact.email}
+                value={footerContact.email || ''}
                 onChange={(e) => setFooterContact({ ...footerContact, email: e.target.value })}
                 className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-mono"
               />
@@ -454,7 +520,7 @@ export default function WebsiteConfigurationPage() {
               <label className="block font-bold text-gray-700 uppercase mb-1">Helpline Phone</label>
               <input
                 type="text"
-                value={footerContact.phone}
+                value={footerContact.phone || ''}
                 onChange={(e) => setFooterContact({ ...footerContact, phone: e.target.value })}
                 className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-mono"
               />
@@ -464,7 +530,7 @@ export default function WebsiteConfigurationPage() {
               <label className="block font-bold text-gray-700 uppercase mb-1">Reading Room Hours</label>
               <input
                 type="text"
-                value={footerContact.hours}
+                value={footerContact.hours || ''}
                 onChange={(e) => setFooterContact({ ...footerContact, hours: e.target.value })}
                 className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs"
               />
@@ -474,18 +540,31 @@ export default function WebsiteConfigurationPage() {
               <label className="block font-bold text-gray-700 uppercase mb-1">Institutional Twitter / X</label>
               <input
                 type="text"
-                value={socialLinks.twitter}
+                value={socialLinks.twitter || ''}
                 onChange={(e) => setSocialLinks({ ...socialLinks, twitter: e.target.value })}
+                placeholder="https://twitter.com/..."
                 className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-mono"
               />
             </div>
 
             <div>
+              <label className="block font-bold text-gray-700 uppercase mb-1">GitHub / Digital Repository</label>
+              <input
+                type="text"
+                value={socialLinks.github || ''}
+                onChange={(e) => setSocialLinks({ ...socialLinks, github: e.target.value })}
+                placeholder="https://github.com/..."
+                className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-mono"
+              />
+            </div>
+
+            <div className="col-span-full sm:col-span-1">
               <label className="block font-bold text-gray-700 uppercase mb-1">ORCID Institutional Registry</label>
               <input
                 type="text"
-                value={socialLinks.orcid}
+                value={socialLinks.orcid || ''}
                 onChange={(e) => setSocialLinks({ ...socialLinks, orcid: e.target.value })}
+                placeholder="https://orcid.org/..."
                 className="w-full border border-gray-200 h-10 px-3 rounded outline-none focus:border-[#A52307] text-xs font-mono"
               />
             </div>
@@ -511,7 +590,7 @@ export default function WebsiteConfigurationPage() {
                     <button
                       type="button"
                       onClick={() => section.remove(i)}
-                      className="text-gray-400 hover:text-heritage-red flex-shrink-0"
+                      className="text-gray-400 hover:text-heritage-red flex-shrink-0 cursor-pointer"
                       title={`Remove ${c}`}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -539,7 +618,7 @@ export default function WebsiteConfigurationPage() {
                 <button
                   type="button"
                   onClick={section.add}
-                  className="px-2.5 py-1.5 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] flex items-center gap-1 flex-shrink-0"
+                  className="px-2.5 py-1.5 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] flex items-center gap-1 flex-shrink-0 cursor-pointer transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>
@@ -550,6 +629,7 @@ export default function WebsiteConfigurationPage() {
         </div>
       )}
 
+      {/* Nav Item Modal */}
       {navModalOpen && (
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]"
@@ -563,7 +643,7 @@ export default function WebsiteConfigurationPage() {
               <h3 className="text-base font-bold text-gray-900">
                 {editingNavId ? 'Edit Navigation Item' : 'Add Navigation Item'}
               </h3>
-              <button type="button" onClick={closeNavModal} className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100">
+              <button type="button" onClick={closeNavModal} className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -597,7 +677,7 @@ export default function WebsiteConfigurationPage() {
                   <button
                     type="button"
                     onClick={addNavChildRow}
-                    className="text-[11px] font-bold text-heritage-red hover:underline flex items-center gap-1"
+                    className="text-[11px] font-bold text-heritage-red hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add sub-link
                   </button>
@@ -625,7 +705,7 @@ export default function WebsiteConfigurationPage() {
                       <button
                         type="button"
                         onClick={() => removeNavChildRow(child.id)}
-                        className="p-1.5 text-gray-400 hover:text-heritage-red"
+                        className="p-1.5 text-gray-400 hover:text-heritage-red cursor-pointer"
                         title="Remove sub-link"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -640,7 +720,7 @@ export default function WebsiteConfigurationPage() {
               <button
                 type="button"
                 onClick={closeNavModal}
-                className="text-xs font-semibold px-3.5 py-2 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50"
+                className="text-xs font-semibold px-3.5 py-2 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -648,7 +728,7 @@ export default function WebsiteConfigurationPage() {
                 type="button"
                 onClick={saveNavItem}
                 disabled={!navForm.label.trim() || !navForm.href.trim()}
-                className="text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+                className="text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
               >
                 {editingNavId ? 'Save Changes' : 'Add Item'}
               </button>

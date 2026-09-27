@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { api, ContentItem, FALLBACK_CONTENT } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import {
   ArrowLeft,
   Share2,
@@ -87,8 +88,8 @@ export default function StoryDetailPage() {
       <div className="min-h-screen bg-paper text-black font-amiri">
         <TopBar />
         <Navbar />
-        <section className="max-w-[1100px] mx-auto py-24 px-5 text-center text-2xl">
-          Loading archival story...
+        <section className="max-w-[1100px] mx-auto py-24 px-5">
+          <LoadingState message="Loading archival story…" minHeight="240px" />
         </section>
         <Footer />
       </div>
@@ -170,19 +171,25 @@ export default function StoryDetailPage() {
         <div className="double-rule mb-10"></div>
 
         {/* Archival Codex Plate / Exhibit Banner */}
-        <div className="w-full bg-[#EAE4D9] border-2 border-black p-8 sm:p-14 text-center my-8 shadow-inner relative overflow-hidden">
-          <span className="font-averia text-[11px] uppercase tracking-[0.2em] text-[#7E7365] block mb-3 font-bold">
-            Kunhīn Musliyār Library Manuscript Collection · Exhibit Plate
-          </span>
-          <p className="font-amiri text-2xl sm:text-3xl italic text-black/85 max-w-2xl mx-auto leading-snug">
-            "{story.summary}"
-          </p>
-          <div className="mt-6 flex justify-center gap-3 flex-wrap text-xs font-sans text-gray-700">
-            <span className="bg-white/80 px-3 py-1 border border-black/15">Shelfmark: KMLRI-{story.id || 'MSS-01'}</span>
-            <span className="bg-white/80 px-3 py-1 border border-black/15">Script: Arabic &amp; Arabi-Malayalam</span>
-            <span className="bg-white/80 px-3 py-1 border border-black/15">Conservation Level: High-Res Folio Digitized</span>
+        {story.imageUrl ? (
+          <div className="w-full aspect-[21/9] max-h-[480px] border-2 border-black overflow-hidden my-8 shadow-sm">
+            <img src={story.imageUrl} alt={story.title} className="w-full h-full object-cover" />
           </div>
-        </div>
+        ) : (
+          <div className="w-full bg-[#EAE4D9] border-2 border-black p-8 sm:p-14 text-center my-8 shadow-inner relative overflow-hidden">
+            <span className="font-averia text-[11px] uppercase tracking-[0.2em] text-[#7E7365] block mb-3 font-bold">
+              Kunhīn Musliyār Library Manuscript Collection · Exhibit Plate
+            </span>
+            <p className="font-amiri text-2xl sm:text-3xl italic text-black/85 max-w-2xl mx-auto leading-snug">
+              "{story.summary}"
+            </p>
+            <div className="mt-6 flex justify-center gap-3 flex-wrap text-xs font-sans text-gray-700">
+              <span className="bg-white/80 px-3 py-1 border border-black/15">Shelfmark: KMLRI-{story.id || 'MSS-01'}</span>
+              <span className="bg-white/80 px-3 py-1 border border-black/15">Script: Arabic &amp; Arabi-Malayalam</span>
+              <span className="bg-white/80 px-3 py-1 border border-black/15">Conservation Level: High-Res Folio Digitized</span>
+            </div>
+          </div>
+        )}
 
         {/* Story Narrative Article */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 items-start mt-10">

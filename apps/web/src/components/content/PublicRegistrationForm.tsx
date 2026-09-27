@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/lib/auth-context';
 
 interface RegField {
@@ -55,7 +56,11 @@ export function PublicRegistrationForm({ contentItemId, title }: { contentItemId
     }
   };
 
-  if (loading) return <div className="text-sm text-heritage-muted py-4">Loading registration form…</div>;
+  if (loading) return (
+    <div className="py-6 flex justify-center">
+      <LoadingSpinner size="sm" label="Loading registration form…" />
+    </div>
+  );
 
   if (result?.type === 'success') {
     return (

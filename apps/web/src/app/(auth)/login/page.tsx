@@ -8,6 +8,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/lib/auth-context';
 import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { LoadingState, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 function LoginForm() {
   const { user, login, loading: authLoading } = useAuth();
@@ -55,11 +56,8 @@ function LoginForm() {
   // Prevent logged-in users from seeing the sign-in form
   if (authLoading || user) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center font-amiri text-lg text-black">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto" />
-          <p>{user ? 'Redirecting to your account dashboard...' : 'Verifying patron session...'}</p>
-        </div>
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -176,8 +174,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-paper flex items-center justify-center font-amiri text-lg">
-          Loading sign-in...
+        <div className="min-h-screen bg-paper flex items-center justify-center font-amiri">
+          <LoadingState message="Loading sign-in…" minHeight="200px" />
         </div>
       }
     >

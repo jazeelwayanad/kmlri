@@ -20,6 +20,7 @@ import {
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 const PERIODICITY_CODES = [
   'DAILY',
@@ -510,7 +511,9 @@ export default function CatalogueSerialsPage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-16 text-xs text-gray-500 font-semibold">Loading subscriptions...</div>
+            <div className="bg-white border border-[#E2E0DB] rounded">
+              <LoadingState message="Loading subscriptions…" minHeight="180px" />
+            </div>
           ) : (
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
               <table className="w-full border-collapse text-left text-xs font-sans">
@@ -583,7 +586,9 @@ export default function CatalogueSerialsPage() {
       {tab === 'detail' && (
         <div className="space-y-4">
           {detailLoading || !selectedSerial ? (
-            <div className="text-center py-16 text-xs text-gray-500 font-semibold">Loading subscription...</div>
+            <div className="bg-white border border-[#E2E0DB] rounded">
+              <LoadingState message="Loading subscription…" minHeight="180px" />
+            </div>
           ) : (
             <>
               <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-4">
@@ -725,7 +730,9 @@ export default function CatalogueSerialsPage() {
           </div>
 
           {claimsLoading ? (
-            <div className="text-center py-16 text-xs text-gray-500 font-semibold">Loading claim candidates...</div>
+            <div className="bg-white border border-[#E2E0DB] rounded">
+              <LoadingState message="Loading claim candidates…" minHeight="180px" />
+            </div>
           ) : (
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
               <table className="w-full border-collapse text-left text-xs font-sans">

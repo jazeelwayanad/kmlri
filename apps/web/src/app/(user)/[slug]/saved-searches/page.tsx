@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { Search, Trash2, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface SavedSearch {
@@ -29,7 +30,7 @@ export default function SavedSearchesPage() {
     setError(false);
     try {
       const data = await api.getSavedSearches();
-      setSearches(data || []);
+      setSearches(Array.isArray(data) ? data : []);
     } catch {
       setError(true);
     } finally {
@@ -45,7 +46,7 @@ export default function SavedSearchesPage() {
     setRemovingId(id);
     try {
       await api.deleteSavedSearch(id);
-      setSearches(searches.filter((s) => s.id !== id));
+      setSearches((prev) => (Array.isArray(prev) ? prev.filter((s) => s.id !== id) : []));
     } catch {
       // leave the row; user can retry
     } finally {
@@ -62,9 +63,6 @@ export default function SavedSearchesPage() {
           <h2 className="font-amiri text-[28px] sm:text-[34px] font-bold text-black m-0 leading-tight">
             Saved OPAC Searches
           </h2>
-          <p className="text-xs sm:text-sm text-heritage-muted mt-1">
-            Search queries you&apos;ve saved for quick reuse. Save one from any catalogue search results page.
-          </p>
         </div>
 
         <Link prefetch href="/search" className="text-xs font-bold text-heritage-red hover:underline">
@@ -75,13 +73,15 @@ export default function SavedSearchesPage() {
       <div className="double-rule"></div>
 
       {loading ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">Loading saved searches…</div>
+        <div className="border border-black bg-white rounded">
+          <LoadingState message="Loading saved searches…" minHeight="160px" />
+        </div>
       ) : error ? (
-        <div className="border border-heritage-red bg-red-50 rounded p-8 text-center text-heritage-red text-sm flex items-center justify-center gap-2">
+        <div className="border border-heritage-red bg-red-50 p-8 text-center text-heritage-red text-sm flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4" /> Could not load your saved searches.
         </div>
       ) : searches.length === 0 ? (
-        <div className="border-2 border-black bg-white rounded p-8 text-center text-heritage-muted text-sm">
+        <div className="border border-black p-8 text-center text-heritage-muted text-sm">
           You haven&apos;t saved any searches yet.
         </div>
       ) : (

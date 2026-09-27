@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 export default function AssetsMaintenanceRedirectPage() {
   const router = useRouter();
 
@@ -10,5 +12,9 @@ export default function AssetsMaintenanceRedirectPage() {
     router.replace('/admin/acquisitions/assets/maintenance');
   }, [router]);
 
-  return <div className="p-8 text-center text-gray-500 text-sm font-sans">Redirecting to Maintenance Logs…</div>;
+  return (
+    <div className="py-20 flex justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 }

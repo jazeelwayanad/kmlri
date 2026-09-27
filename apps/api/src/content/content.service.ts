@@ -15,9 +15,21 @@ function parseTagsSafely(tags: string | null | undefined): string[] {
 
 @Injectable()
 export class ContentService {
+  private cache = new Map<string, { data: any; expiry: number }>();
+  private readonly CACHE_TTL_MS = 30 * 1000;
+
   constructor(private prisma: PrismaService) {}
 
+  invalidateCache() {
+    this.cache.clear();
+  }
+
   async findAll(query?: { category?: string; featured?: boolean; search?: string; limit?: number; page?: number }) {
+    const cacheKey = JSON.stringify(query || {});
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() < cached.expiry) {
+      return cached.data;
+    }
     const where: any = {};
 
     if (query?.category && query.category !== 'ALL') {
@@ -61,7 +73,7 @@ export class ContentService {
       this.prisma.contentItem.count({ where }),
     ]);
 
-    return {
+    const result = {
       items: items.map((item) => ({
         ...item,
         tags: parseTagsSafely(item.tags),
@@ -71,6 +83,13 @@ export class ContentService {
       limit: take,
       totalPages: Math.ceil(total / take),
     };
+
+    this.cache.set(cacheKey, {
+      data: result,
+      expiry: Date.now() + this.CACHE_TTL_MS,
+    });
+
+    return result;
   }
 
   async findOne(idOrSlug: string) {
@@ -108,6 +127,7 @@ export class ContentService {
     featured?: boolean;
     tags?: string[];
   }) {
+    this.invalidateCache();
     const slug =
       data.slug ||
       data.title
@@ -128,6 +148,7 @@ export class ContentService {
   }
 
   async update(id: string, data: any) {
+    this.invalidateCache();
     const updateData = { ...data };
     if (updateData.category) {
       updateData.category = updateData.category.toUpperCase();
@@ -143,12 +164,14 @@ export class ContentService {
   }
 
   async remove(id: string) {
+    this.invalidateCache();
     return this.prisma.contentItem.delete({
       where: { id },
     });
   }
 
   async register(id: string, attendeeData?: { name?: string; email?: string }) {
+    this.invalidateCache();
     const item = await this.findOne(id);
     const registered = (item.registered || 0) + 1;
 

@@ -5,6 +5,7 @@ import { Plus, CheckCircle2, ShieldAlert, X, Trash2, Tag } from 'lucide-react';
 import { PageHeader, Button, Card, Badge } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface AuthorisedValueCategory {
   id: string;
@@ -201,7 +202,7 @@ export default function AuthorisedValuesAdminPage() {
             </Button>
           </div>
           {loadingCategories ? (
-            <div className="p-6 text-center text-gray-500 text-xs">Loading…</div>
+            <LoadingState message="Loading categories…" minHeight="120px" size="sm" />
           ) : categories.length === 0 ? (
             <div className="p-6 text-center text-gray-500 text-xs">No categories yet.</div>
           ) : (
@@ -258,7 +259,7 @@ export default function AuthorisedValuesAdminPage() {
           {!selectedCategory ? (
             <div className="p-10 text-center text-gray-500 text-xs">Select a category on the left to manage its values.</div>
           ) : loadingValues ? (
-            <div className="p-10 text-center text-gray-500 text-xs">Loading values…</div>
+            <LoadingState message="Loading values…" minHeight="140px" size="md" />
           ) : values.length === 0 ? (
             <div className="p-10 text-center text-gray-500 text-xs">No values in this category yet.</div>
           ) : (

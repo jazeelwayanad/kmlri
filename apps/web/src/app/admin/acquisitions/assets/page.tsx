@@ -20,6 +20,7 @@ import {
 import { PageHeader, Button } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { confirmDialog, alertDialog } from '@/lib/dialog';
+import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Department {
   id: string;
@@ -359,10 +360,7 @@ export default function AssetManagementPage() {
       {/* Assets Table */}
       <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
         {loading ? (
-          <div className="py-16 flex items-center justify-center text-gray-400 text-xs gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Loading assets...
-          </div>
+          <LoadingState message="Loading assets…" minHeight="180px" />
         ) : (
           <table className="w-full border-collapse text-left text-xs font-sans">
             <thead>
@@ -695,10 +693,7 @@ export default function AssetManagementPage() {
               </div>
 
               {viewingLoading ? (
-                <div className="py-6 flex items-center justify-center text-gray-400 gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading history...
-                </div>
+                <LoadingState message="Loading history…" minHeight="120px" size="md" />
               ) : (
                 <>
                   <div>
