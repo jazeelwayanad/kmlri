@@ -423,7 +423,7 @@ export default function MemberDetailsPage() {
                               type="button"
                               disabled={actingId === l.id}
                               onClick={() => handleRenew(l.id, l.copy.bibRecord.titleLatin)}
-                              className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors disabled:opacity-50"
+                              className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] hover:text-white transition-colors disabled:opacity-50"
                             >
                               {actingId === l.id ? 'Renewing…' : 'Renew Loan'}
                             </button>
@@ -815,7 +815,7 @@ export default function MemberDetailsPage() {
                 <button
                   type="button"
                   onClick={handleOpenEditModal}
-                  className="px-3 py-1 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit Profile</span>

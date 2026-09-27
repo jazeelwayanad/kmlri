@@ -589,7 +589,7 @@ export function CirculationDesk() {
                     <button
                       type="submit"
                       disabled={patronLoading}
-                      className="px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-4 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] hover:text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
                     >
                       {patronLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                       Lookup

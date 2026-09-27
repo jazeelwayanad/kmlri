@@ -547,7 +547,7 @@ export default function CatalogueSerialsPage() {
                           <button
                             type="button"
                             onClick={() => openDetail(s.id)}
-                            className="px-3 py-1.5 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1"
+                            className="px-3 py-1.5 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] hover:text-white transition-colors inline-flex items-center gap-1"
                           >
                             <Layers className="w-3.5 h-3.5" />
                             <span>Manage Issues ({s.issues.length})</span>

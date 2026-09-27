@@ -704,7 +704,7 @@ export default function ReservationsAndBookingsPage() {
               type="button"
               onClick={handleSaveConfig}
               disabled={savingConfig}
-              className="px-5 py-2.5 bg-black text-white text-xs font-bold rounded hover:bg-[#A52307] transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 bg-black text-white text-xs font-bold rounded hover:bg-[#A52307] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>{savingConfig ? 'Saving Settings…' : 'Save All Booking Config'}</span>
@@ -826,7 +826,7 @@ export default function ReservationsAndBookingsPage() {
               <button
                 type="button"
                 onClick={handleAddCustomField}
-                className="px-3 py-1.5 bg-black text-white text-xs font-bold rounded hover:bg-[#A52307] flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 bg-black text-white text-xs font-bold rounded hover:bg-[#A52307] hover:text-white flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Custom Dropdown / Field</span>
@@ -1188,7 +1188,7 @@ export default function ReservationsAndBookingsPage() {
               <button
                 type="submit"
                 disabled={actionLoading}
-                className="px-5 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1.5 shadow-sm"
+                className="px-5 py-2 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] hover:text-white flex items-center gap-1.5 shadow-sm"
               >
                 <Save className="w-4 h-4" />
                 <span>{actionLoading ? 'Saving…' : 'Save Changes'}</span>

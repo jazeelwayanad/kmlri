@@ -320,7 +320,7 @@ export default function WebsiteOpportunitiesPage() {
                 <td className="py-3.5 px-4 text-right space-x-2">
                   <Link prefetch
                     href={`/admin/website/opportunities/${opp.slug}`}
-                    className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1 shadow-sm"
+                    className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] hover:text-white transition-colors inline-flex items-center gap-1 shadow-sm"
                   >
                     <Settings2 className="w-3.5 h-3.5" />
                     <span>Manage Pipeline</span>

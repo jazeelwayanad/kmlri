@@ -759,7 +759,7 @@ export default function AssetManagementPage() {
                 <button
                   type="button"
                   onClick={() => setViewingAsset(null)}
-                  className="px-4 py-1.5 bg-black text-white rounded font-bold hover:bg-[#A52307]"
+                  className="px-4 py-1.5 bg-black text-white rounded font-bold hover:bg-[#A52307] hover:text-white"
                 >
                   Close
                 </button>

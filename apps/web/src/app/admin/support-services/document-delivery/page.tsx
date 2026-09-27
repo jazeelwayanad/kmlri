@@ -182,7 +182,7 @@ export default function DocumentDeliveryPage() {
                             type="button"
                             disabled={updatingId === doc.id}
                             onClick={() => handleStatusChange(doc.id, next.status, next.label)}
-                            className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors disabled:opacity-50"
+                            className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] hover:text-white transition-colors disabled:opacity-50"
                           >
                             {next.label}
                           </button>

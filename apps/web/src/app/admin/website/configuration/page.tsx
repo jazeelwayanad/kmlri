@@ -417,7 +417,7 @@ export default function WebsiteConfigurationPage() {
             <button
               type="button"
               onClick={openAddNavModal}
-              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold hover:bg-[#A52307] hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Nav Item</span>
@@ -618,7 +618,7 @@ export default function WebsiteConfigurationPage() {
                 <button
                   type="button"
                   onClick={section.add}
-                  className="px-2.5 py-1.5 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] flex items-center gap-1 flex-shrink-0 cursor-pointer transition-colors"
+                  className="px-2.5 py-1.5 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] hover:text-white flex items-center gap-1 flex-shrink-0 cursor-pointer transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>

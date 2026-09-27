@@ -360,7 +360,7 @@ export default function CatalogueConfigurationPage() {
                   <button
                     type="button"
                     onClick={() => setShowOdsModal(true)}
-                    className="px-4 py-1.5 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] transition-colors"
+                    className="px-4 py-1.5 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] hover:text-white transition-colors"
                   >
                     Select &amp; Parse File
                   </button>

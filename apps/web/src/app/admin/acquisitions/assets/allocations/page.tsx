@@ -218,7 +218,7 @@ export default function AssetAllocationsPage() {
                     <button
                       type="button"
                       onClick={() => openReassignModal(a)}
-                      className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] transition-colors inline-flex items-center gap-1"
+                      className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-semibold hover:bg-[#A52307] hover:text-white transition-colors inline-flex items-center gap-1"
                     >
                       <Users className="w-3 h-3" />
                       <span>Reassign</span>
