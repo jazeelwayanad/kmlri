@@ -55,7 +55,7 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
       <div>
         <TopBar />
         <Navbar />
-        <main className="max-w-[1100px] mx-auto px-4 sm:px-5 py-6 sm:py-9">
+        <main className="max-w-[1100px] mx-auto px-4 sm:px-5 pt-6 sm:pt-9 pb-24 lg:pb-9">
           <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
             <div className="w-full lg:w-64 flex-shrink-0">
               <AccountNav />
