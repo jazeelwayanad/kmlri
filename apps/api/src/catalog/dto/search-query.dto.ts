@@ -67,4 +67,20 @@ export class SearchQueryDto {
   @IsOptional()
   @IsString()
   accessionNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  shelfmark?: string;
+
+  @IsOptional()
+  @IsString()
+  publisher?: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  frameworkCode?: string;
 }

@@ -142,7 +142,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                           <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.desc}</p>
                         </div>
                       </Link>
-                      {/* Dismiss ✕ */}
+                      {/* Dismiss button */}
                       <button type="button" onClick={() => dismissNotif(n.id)}
                         className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-gray-700 cursor-pointer"
                         aria-label="Dismiss">

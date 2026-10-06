@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Plus, Search, CheckCircle2, Clock, User, Send, HelpCircle } from 'lucide-react';
+import { MessageSquare, Plus, Search, CheckCircle2, Clock, User, Send, HelpCircle, X } from 'lucide-react';
 import { Badge, Card, PageHeader, Button, StatCard } from '@/components/admin/ui';
 import { api } from '@/lib/api';
 import { LoadingState } from '@/components/ui/LoadingSpinner';
@@ -257,8 +257,13 @@ export default function AdminAskLibrarianPage() {
                 <h2 className="text-lg font-bold text-gray-900 mt-0.5">{selectedTicket.subject || 'General Inquiry'}</h2>
                 <p className="text-xs text-gray-500">Patron: {selectedTicket.name} ({selectedTicket.email})</p>
               </div>
-              <button type="button" onClick={() => setSelectedTicket(null)} className="text-gray-400 hover:text-gray-700 text-lg font-bold">
-                ✕
+              <button
+                type="button"
+                onClick={() => setSelectedTicket(null)}
+                className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -300,8 +305,13 @@ export default function AdminAskLibrarianPage() {
           <div className="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
               <h2 className="text-lg font-bold text-gray-900">Log In-Person or Phone Reference Inquiry</h2>
-              <button type="button" onClick={() => setIsNewModalOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg font-bold">
-                ✕
+              <button
+                type="button"
+                onClick={() => setIsNewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 

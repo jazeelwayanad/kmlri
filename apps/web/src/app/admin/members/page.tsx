@@ -1,32 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/lib/api';
 import {
-  Users,
-  Search,
-  Plus,
-  Filter,
   MoreVertical,
   Edit3,
   Eye,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  X,
   UserCheck,
   UserX,
-  CreditCard,
-  BookOpen,
   Trash2,
-  Save
+  Plus,
 } from 'lucide-react';
-import { PageHeader, Badge, Button } from '@/components/admin/ui';
-import { LoadingTableRow } from '@/components/ui/LoadingSpinner';
+import { PageHeader } from '@/components/admin/ui';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import { getMemberIdentifier } from '@/lib/slugs';
 import { confirmDialog } from '@/lib/dialog';
-import { MemberForm } from '@/components/members/MemberForm';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export default function MembersManagementPage() {
@@ -37,10 +39,6 @@ export default function MembersManagementPage() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Member Modal State
-  const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -62,18 +60,8 @@ export default function MembersManagementPage() {
     loadData();
   }, [search]);
 
-  const openCreateModal = () => {
-    setEditingUser(null);
-    setShowModal(true);
-  };
-
-  const openEditModal = (u: any) => {
-    setEditingUser(u);
-    setShowModal(true);
-  };
-
   const handleDeleteMember = async (userId: string, name: string) => {
-    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete member "${name}"? This is only possible for members with no circulation history.`, variant: 'danger' }))) return;
+    if (!(await confirmDialog({ message: `Are you sure you want to permanently delete member "${name}"? This is only possible for members with no circulation history.`, tone: 'danger' }))) return;
     try {
       await api.deleteUser(userId);
       setNotification({ type: 'success', text: `Member "${name}" deleted successfully.` });
@@ -98,11 +86,142 @@ export default function MembersManagementPage() {
     }
   };
 
-  const filteredUsers = users.filter((u) => {
-    const matchesStatus = statusFilter === 'ALL' || u.status === statusFilter;
-    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-    return matchesStatus && matchesRole;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesStatus = statusFilter === 'ALL' || u.status === statusFilter;
+      const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+      return matchesStatus && matchesRole;
+    });
+  }, [users, statusFilter, roleFilter]);
+
+  const columns = useMemo<ColumnDef<any>[]>(() => [
+    {
+      accessorKey: 'membershipNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Membership #" />,
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <Link
+            prefetch
+            href={`/admin/members/${getMemberIdentifier(u)}`}
+            className="font-mono font-bold text-gray-900 hover:text-heritage-red underline"
+          >
+            {u.membershipNumber}
+          </Link>
+        );
+      },
+    },
+    {
+      accessorKey: 'fullName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Member Name & Contact" />,
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <UserAvatar src={u.avatarUrl} name={u.fullName} size="sm" />
+            <div>
+              <Link
+                prefetch
+                href={`/admin/members/${getMemberIdentifier(u)}`}
+                className="font-semibold text-gray-900 text-sm hover:text-heritage-red block"
+              >
+                {u.fullName}
+              </Link>
+              <span className="text-[11px] text-gray-500 font-mono">{u.email}</span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'role',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Assigned Role" />,
+      cell: ({ row }) => (
+        <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+          {row.original.role}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'maxBorrowLimit',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Borrow Quota" />,
+      cell: ({ row }) => (
+        <span className="font-mono text-gray-700 font-semibold">
+          {row.original.maxBorrowLimit || 5} Books
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const status = row.original.status;
+        return (
+          <Badge variant={status === 'ACTIVE' ? 'success' : 'destructive'}>
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
+                  <span className="sr-only">Open menu</span>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Member Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="cursor-pointer">
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span>View Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}/edit`} className="cursor-pointer">
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    <span>Edit Details</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleStatusToggle(u.id, u.status, u.fullName)}
+                  className="cursor-pointer"
+                >
+                  {u.status === 'ACTIVE' ? (
+                    <>
+                      <UserX className="mr-2 h-4 w-4 text-amber-600" />
+                      <span className="text-amber-600">Suspend Member</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="mr-2 h-4 w-4 text-emerald-600" />
+                      <span className="text-emerald-600">Activate Member</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDeleteMember(u.id, u.fullName)}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete Member</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ], []);
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
@@ -110,8 +229,11 @@ export default function MembersManagementPage() {
         eyebrow="Library Operations · Members"
         title="Member Management"
         actions={
-          <Button variant="primary" icon={Plus} onClick={openCreateModal}>
-            Create New Member
+          <Button variant="default" asChild>
+            <Link href="/admin/members/create">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create New Member
+            </Link>
           </Button>
         }
       />
@@ -134,26 +256,26 @@ export default function MembersManagementPage() {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Members</span>
           <span className="text-2xl font-bold text-gray-900 mt-1 block">{users.length}</span>
           <span className="text-[11px] text-gray-500">Registered in directory</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Active Status</span>
           <span className="text-2xl font-bold text-emerald-700 mt-1 block">
             {users.filter((u) => u.status === 'ACTIVE').length}
           </span>
           <span className="text-[11px] text-emerald-600">Eligible to borrow</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Suspended</span>
-          <span className="text-2xl font-bold text-[#A52307] mt-1 block">
+          <span className="text-2xl font-bold text-heritage-red mt-1 block">
             {users.filter((u) => u.status === 'SUSPENDED').length}
           </span>
-          <span className="text-[11px] text-[#A52307]">Hold on circulation</span>
+          <span className="text-[11px] text-heritage-red">Hold on circulation</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Faculty &amp; Fellows</span>
           <span className="text-2xl font-bold text-gray-900 mt-1 block">
             {users.filter((u) => u.role === 'FACULTY' || u.role === 'RESEARCHER').length}
@@ -162,181 +284,53 @@ export default function MembersManagementPage() {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by name, membership #, or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="SUSPENDED">Suspended</option>
-          </select>
-
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
-          >
-            <option value="ALL">All Roles</option>
-            <option value="STUDENT">Student</option>
-            <option value="FACULTY">Faculty</option>
-            <option value="RESEARCHER">Researcher</option>
-            <option value="LIBRARIAN">Librarian</option>
-            <option value="SUPER_ADMIN">Admin</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Members Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase tracking-wider font-bold">
-              <th className="py-3 px-4">Membership #</th>
-              <th className="py-3 px-4">Member Name &amp; Contact</th>
-              <th className="py-3 px-4">Assigned Role</th>
-              <th className="py-3 px-4">Borrow Quota</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {loading ? (
-              <LoadingTableRow colSpan={6} />
-            ) : (
-              filteredUsers.map((u) => (
-              <tr key={u.id} className="hover:bg-[#FAF8F5] transition-colors group">
-                <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                  <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="hover:text-[#A52307] underline">
-                    {u.membershipNumber}
-                  </Link>
-                </td>
-                <td className="py-3.5 px-4">
-                  <div className="flex items-center gap-3">
-                    <UserAvatar src={u.avatarUrl} name={u.fullName} size="sm" />
-                    <div>
-                      <Link prefetch href={`/admin/members/${getMemberIdentifier(u)}`} className="font-semibold text-gray-900 text-sm hover:text-[#A52307] block">
-                        {u.fullName}
-                      </Link>
-                      <span className="text-[11px] text-gray-500 font-mono">{u.email}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                    {u.role}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-mono text-gray-700 font-semibold">
-                  {u.maxBorrowLimit || 5} Books
-                </td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.status === 'ACTIVE'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}
-                  >
-                    {u.status}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right space-x-1.5">
-                  <Link prefetch
-                    href={`/admin/members/${getMemberIdentifier(u)}`}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>View Details</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(u)}
-                    className="px-2 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors inline-flex items-center gap-1"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusToggle(u.id, u.status, u.fullName)}
-                    className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${u.status === 'ACTIVE'
-                      ? 'border-amber-400 text-amber-800 hover:bg-amber-100'
-                      : 'border-emerald-400 text-emerald-800 hover:bg-emerald-100'
-                      }`}
-                  >
-                    {u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMember(u.id, u.fullName)}
-                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded inline-block align-middle"
-                    title="Delete Member"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </td>
-              </tr>
-            )))}
-          </tbody>
-        </table>
-
-        {!loading && filteredUsers.length === 0 && (
-          <div className="p-12 text-center text-gray-500 text-sm">
-            No library members found matching your search and filter criteria.
-          </div>
-        )}
-      </div>
-
-      {/* POPUP MODAL: Unified Member Form */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl max-w-2xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Member Registry</p>
-                <h3 className="text-xl font-bold text-gray-900 mt-0.5">
-                  {editingUser ? 'Edit Member Profile' : 'Create New Member'}
-                </h3>
-              </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-900 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <MemberForm
-              mode={editingUser ? 'admin-edit' : 'admin-create'}
-              initialData={editingUser}
-              rolesList={roles}
-              onCancel={() => setShowModal(false)}
-              onSuccess={async (u) => {
-                setNotification({
-                  type: 'success',
-                  text: editingUser
-                    ? `Member "${u?.fullName || editingUser.fullName}" updated successfully.`
-                    : `Member "${u?.fullName || 'New member'}" created successfully.`,
-                });
-                setShowModal(false);
-                await loadData();
-                setTimeout(() => setNotification(null), 4000);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* TanStack Members Data Table */}
+      <DataTable
+        columns={columns}
+        data={filteredUsers}
+        loading={loading}
+        enableRowSelection
+        searchKey="fullName"
+        searchPlaceholder="Filter members by name or membership #..."
+        emptyTitle="No members found"
+        emptyMessage="Try adjusting your search criteria or register a new member."
+        facetedFilters={[
+          {
+            columnId: 'status',
+            title: 'Status',
+            options: [
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Suspended', value: 'SUSPENDED' },
+            ],
+          },
+          {
+            columnId: 'role',
+            title: 'Role',
+            options: [
+              { label: 'Student', value: 'STUDENT' },
+              { label: 'Faculty', value: 'FACULTY' },
+              { label: 'Researcher', value: 'RESEARCHER' },
+              { label: 'Librarian', value: 'LIBRARIAN' },
+              { label: 'Admin', value: 'SUPER_ADMIN' },
+            ],
+          },
+        ]}
+        bulkActions={[
+          {
+            label: "Export Selected",
+            variant: "outline",
+            onClick: (selected) => {
+              const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selected, null, 2));
+              const downloadAnchor = document.createElement('a');
+              downloadAnchor.setAttribute("href", dataStr);
+              downloadAnchor.setAttribute("download", `members_export_${new Date().toISOString().slice(0, 10)}.json`);
+              document.body.appendChild(downloadAnchor);
+              downloadAnchor.click();
+              downloadAnchor.remove();
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

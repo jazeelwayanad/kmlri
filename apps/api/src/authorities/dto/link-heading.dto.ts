@@ -1,19 +1,19 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class LinkHeadingDto {
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   bibRecordId: string;
 
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   authorityId: string;
 
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   tag: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   subfield?: string;
 }

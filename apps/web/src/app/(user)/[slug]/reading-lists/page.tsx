@@ -220,8 +220,13 @@ export default function MyReadingListsPage() {
                 <p className="font-averia text-xs uppercase tracking-wider text-heritage-red font-bold">Citation Exporter</p>
                 <h3 className="font-amiri text-2xl font-bold text-black">{exportModalList.name}</h3>
               </div>
-              <button type="button" onClick={() => setExportModalList(null)} className="text-gray-400 hover:text-black text-sm font-bold">
-                ✕
+              <button
+                type="button"
+                onClick={() => setExportModalList(null)}
+                className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 

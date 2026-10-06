@@ -1,30 +1,31 @@
-import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-
-export const HEADING_TYPES = ['PERSONAL_NAME', 'CORPORATE_NAME', 'SUBJECT', 'SERIES', 'UNIFORM_TITLE'];
+import { IsString, IsNotEmpty, IsOptional, IsArray, IsBoolean } from 'class-validator';
 
 export class CreateAuthorityDto {
-  @IsNotEmpty()
-  @IsIn(HEADING_TYPES)
-  headingType: string;
-
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
+  headingType: string; // PERSONAL_NAME, CORPORATE_NAME, PUBLISHER, SUBJECT, SERIES, UNIFORM_TITLE
+
+  @IsString()
+  @IsNotEmpty()
   heading: string;
 
-  @IsOptional()
   @IsArray()
+  @IsOptional()
   seeAlso?: string[];
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   notes?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   marcXml?: string;
 
-  // When true, bypass the duplicate-heading check and create anyway.
+  @IsString()
   @IsOptional()
+  customFields?: string;
+
   @IsBoolean()
+  @IsOptional()
   force?: boolean;
 }

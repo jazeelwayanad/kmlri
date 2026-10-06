@@ -33,7 +33,18 @@ async function main() {
   await prisma.acquisitionRequest.deleteMany();
   await prisma.digitalFolio.deleteMany();
   await prisma.itemCopy.deleteMany();
+  await prisma.bibliographicHeading.deleteMany();
   await prisma.bibliographicRecord.deleteMany();
+  await prisma.serialClaim.deleteMany();
+  await prisma.serialIssue.deleteMany();
+  await prisma.serial.deleteMany();
+  await prisma.authorityRecord.deleteMany();
+  await prisma.formField.deleteMany();
+  await prisma.formFramework.deleteMany();
+  await prisma.marcFrameworkField.deleteMany();
+  await prisma.marcFramework.deleteMany();
+  await prisma.contentItem.deleteMany();
+  await prisma.collection.deleteMany();
   await prisma.user.deleteMany();
   await prisma.role.deleteMany();
   await prisma.newsletterSubscriber.deleteMany();

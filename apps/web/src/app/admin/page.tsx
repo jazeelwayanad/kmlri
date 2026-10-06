@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <span className="text-[#A52307] font-bold">✦</span> Website &amp; Editorial Management
+              <Sparkles className="w-4 h-4 text-[#A52307]" /> Website &amp; Editorial Management
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">Publish stories, news, events, and grant opportunities.</p>
           </div>

@@ -17,9 +17,20 @@ import {
   Calendar,
   X,
   Upload,
-  Globe
+  Globe,
+  MoreHorizontal
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ColumnDef } from '@tanstack/react-table';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
 import { LoadingTableRow } from '@/components/ui/LoadingSpinner';
@@ -163,15 +174,115 @@ export default function WebsiteNewsPage() {
     }
   };
 
-  const filtered = news.filter((n) => {
-    const matchesSearch =
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      (n.author || '').toLowerCase().includes(search.toLowerCase()) ||
-      n.slug.toLowerCase().includes(search.toLowerCase()) ||
-      n.summary.toLowerCase().includes(search.toLowerCase());
-
-    return matchesSearch;
-  });
+  const columns: ColumnDef<ContentItem>[] = [
+    {
+      accessorKey: 'title',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="News Title & Slug" />,
+      cell: ({ row }) => {
+        const n = row.original;
+        return (
+          <div className="max-w-sm">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {n.featured && (
+                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
+                  Featured
+                </span>
+              )}
+              <span className="font-bold text-gray-900 text-sm block line-clamp-1">{n.title}</span>
+            </div>
+            <span className="font-mono text-gray-400 text-[11px] block">/{n.slug}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'kicker',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Kicker" />,
+      cell: ({ row }) => (
+        <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
+          {row.original.kicker || '—'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'author',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Author Desk" />,
+      cell: ({ row }) => <span className="font-semibold text-gray-800">{row.original.author}</span>,
+    },
+    {
+      accessorKey: 'tags',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {(row.original.tags || []).map((t: string, idx: number) => (
+            <span key={idx} className="bg-[#FAF8F5] text-gray-600 border border-[#E2E0DB] px-1.5 py-0.5 rounded text-[10px]">
+              #{t}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'date',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+      cell: ({ row }) => <span className="text-gray-600 font-mono text-xs">{row.original.date}</span>,
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <Badge variant={s === 'ACTIVE' ? 'success' : s === 'DRAFT' ? 'warning' : 'neutral'}>
+            {s}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const n = row.original;
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                >
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Article Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link prefetch href={`/news/${n.slug}`} target="_blank" className="cursor-pointer">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span>View Public Page</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEditModal(n)} className="cursor-pointer">
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  <span>Edit Bulletin</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDelete(n.id, n.title)}
+                  className="text-red-600 focus:text-red-600 cursor-pointer"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete Bulletin</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
@@ -209,17 +320,17 @@ export default function WebsiteNewsPage() {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Total News Bulletins</span>
           <span className="text-2xl font-bold text-gray-900 mt-1 block">{news.length} Bulletins</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Featured Announcements</span>
-          <span className="text-2xl font-bold text-[#A52307] mt-1 block">
+          <span className="text-2xl font-bold text-heritage-red mt-1 block">
             {news.filter((n) => n.featured).length} Featured
           </span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Draft Bulletins</span>
           <span className="text-2xl font-bold text-gray-900 mt-1 block">
             {news.filter((n) => n.status === 'DRAFT').length} Drafts
@@ -227,109 +338,28 @@ export default function WebsiteNewsPage() {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search news by title, author, slug..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
-        </div>
-      </div>
-
-      {/* News Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">News Title &amp; Slug</th>
-              <th className="py-3 px-4">Kicker</th>
-              <th className="py-3 px-4">Author Desk</th>
-              <th className="py-3 px-4">Tags</th>
-              <th className="py-3 px-4">Date</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {loading ? (
-              <LoadingTableRow colSpan={7} message="Loading news bulletins…" />
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
-                  No news bulletins found.
-                </td>
-              </tr>
-            ) : filtered.map((n) => (
-              <tr key={n.id} className="hover:bg-[#FAF8F5] transition-colors">
-                <td className="py-3.5 px-4 max-w-sm">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    {n.featured && (
-                      <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
-                        Featured
-                      </span>
-                    )}
-                    <span className="font-bold text-gray-900 text-sm block line-clamp-1">{n.title}</span>
-                  </div>
-                  <span className="font-mono text-gray-400 text-[11px] block">/{n.slug}</span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                    {n.kicker || '—'}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-semibold text-gray-800">{n.author}</td>
-                <td className="py-3.5 px-4">
-                  <div className="flex flex-wrap gap-1">
-                    {(n.tags || []).map((t, idx) => (
-                      <span key={idx} className="bg-[#FAF8F5] text-gray-600 border border-[#E2E0DB] px-1.5 py-0.5 rounded text-[10px]">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="py-3.5 px-4 text-gray-600 font-mono">{n.date}</td>
-                <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${n.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                    {n.status}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right space-x-2">
-                  <Link prefetch
-                    href={`/news/${n.slug}`}
-                    target="_blank"
-                    className="p-1 text-gray-400 hover:text-black inline-block"
-                    title="View Public Page"
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(n)}
-                    className="px-2.5 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors inline-flex items-center gap-1"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(n.id, n.title)}
-                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                    title="Delete News Bulletin"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* TanStack News Data Table */}
+      <DataTable
+        columns={columns}
+        data={news}
+        loading={loading}
+        enableRowSelection
+        searchKey="title"
+        searchPlaceholder="Filter news by title..."
+        emptyTitle="No news bulletins found"
+        emptyMessage="No institutional news published yet. Create one with the button above."
+        facetedFilters={[
+          {
+            columnId: 'status',
+            title: 'Status',
+            options: [
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Draft', value: 'DRAFT' },
+              { label: 'Archived', value: 'ARCHIVED' },
+            ],
+          },
+        ]}
+      />
 
       {/* POPUP MODAL: Create / Edit News */}
       {showModal && (

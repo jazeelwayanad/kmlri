@@ -35,6 +35,7 @@ export default function ItemDetailPage() {
   const { user, isStaff, hasPermission } = useAuth();
 
   const [record, setRecord] = useState<BibliographicRecord | null>(null);
+  const [frameworks, setFrameworks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [folioIndex, setFolioIndex] = useState(0);
@@ -75,8 +76,12 @@ export default function ItemDetailPage() {
       setLoading(true);
       setNotFound(false);
       try {
-        const data = await api.getCatalogItem(id);
+        const [data, fwList] = await Promise.all([
+          api.getCatalogItem(id),
+          api.getFormFrameworks('ITEM').catch(() => []),
+        ]);
         setRecord(data);
+        setFrameworks(Array.isArray(fwList) ? fwList : []);
         setFolioIndex(0);
       } catch {
         setRecord(null);
@@ -511,6 +516,62 @@ export default function ItemDetailPage() {
                     : 'Physical reading room only; appointment required'}
                 </span>
               </div>
+
+              {/* Dynamic Custom Framework Fields (Filtered strictly by Public Visibility) */}
+              {(() => {
+                const customData = (() => {
+                  try {
+                    return record.customFields ? JSON.parse(record.customFields) : {};
+                  } catch {
+                    return {};
+                  }
+                })();
+
+                const matchingFramework =
+                  frameworks.find((f) => f.code === record.frameworkCode) || frameworks[0];
+
+                const dynamicFields = (matchingFramework?.fields || []).filter((field: any) => {
+                  const isStandard = [
+                    'shelfmark',
+                    'title',
+                    'titleLatin',
+                    'titleArabic',
+                    'uniformTitle',
+                    'language',
+                    'extent',
+                    'material',
+                    'binding',
+                    'provenance',
+                    'accessLevel',
+                  ].includes(field.name);
+                  if (isStandard) return false;
+
+                  const val = customData[field.name];
+                  if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+                    return false;
+                  }
+
+                  // Visibility gate: strictly hide ADMIN from public, require user for MEMBERS
+                  if (field.visibility === 'ADMIN') return isStaff;
+                  if (field.visibility === 'MEMBERS') return !!user || isStaff;
+                  return true;
+                });
+
+                return dynamicFields.map((field: any) => {
+                  const rawVal = customData[field.name];
+                  const displayVal = Array.isArray(rawVal) ? rawVal.join(', ') : String(rawVal);
+                  return (
+                    <div key={field.name} className="flex flex-col sm:flex-row sm:items-baseline">
+                      <span className="text-stone-500 font-sans text-xs w-36 sm:w-44 flex-shrink-0 font-normal">
+                        {field.label}
+                      </span>
+                      <span className="text-stone-900 font-serif text-xs sm:text-[13px]">
+                        {displayVal}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

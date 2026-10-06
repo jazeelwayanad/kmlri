@@ -18,15 +18,19 @@ export interface ConfirmOptions {
   title?: string;
   message: string;
   confirmText?: string;
+  confirmLabel?: string;
   cancelText?: string;
   variant?: DialogVariant;
+  tone?: DialogVariant;
 }
 
 export interface AlertOptions {
   title?: string;
   message: string;
   buttonText?: string;
+  buttonLabel?: string;
   variant?: DialogVariant;
+  tone?: DialogVariant;
 }
 
 export interface PromptOptions {

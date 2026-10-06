@@ -63,24 +63,6 @@ export default function RecordDetailsPage() {
   const [editStatus, setEditStatus] = useState<CopyStatus>('AVAILABLE');
   const [editImageUrl, setEditImageUrl] = useState<string | undefined>(undefined);
 
-  // Edit Record Modal
-  const [showEditRecordModal, setShowEditRecordModal] = useState(false);
-  const [editTitleLatin, setEditTitleLatin] = useState('');
-  const [editTitleArabic, setEditTitleArabic] = useState('');
-  const [editSubtitle, setEditSubtitle] = useState('');
-  const [editAuthors, setEditAuthors] = useState('');
-  const [editShelfmark, setEditShelfmark] = useState('');
-  const [editFormat, setEditFormat] = useState('MANUSCRIPT');
-  const [editLanguage, setEditLanguage] = useState('Arabic');
-  const [editMaterial, setEditMaterial] = useState('');
-  const [editExtent, setEditExtent] = useState('');
-  const [editPublicationYear, setEditPublicationYear] = useState('');
-  const [editProvenance, setEditProvenance] = useState('');
-  const [editSummary, setEditSummary] = useState('');
-  const [editSubjects, setEditSubjects] = useState('');
-  const [editAccessLevel, setEditAccessLevel] = useState('DIGITISED_FULL');
-  const [savingRecord, setSavingRecord] = useState(false);
-
   const loadRecord = async () => {
     setLoading(true);
     setNotFound(false);
@@ -99,57 +81,6 @@ export default function RecordDetailsPage() {
     if (recordId) loadRecord();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordId]);
-
-  // Open Edit Record Modal
-  const handleOpenEditRecord = () => {
-    if (!record) return;
-    setEditTitleLatin(record.titleLatin || '');
-    setEditTitleArabic(record.titleArabic || '');
-    setEditSubtitle(record.subtitle || '');
-    setEditAuthors(Array.isArray(record.authors) ? record.authors.join(', ') : record.authors || '');
-    setEditShelfmark(record.shelfmark || '');
-    setEditFormat(record.format || 'MANUSCRIPT');
-    setEditLanguage(record.language || 'Arabic');
-    setEditMaterial(record.material || '');
-    setEditExtent(record.extent || '');
-    setEditPublicationYear(record.publicationYear || '');
-    setEditProvenance(record.provenance || '');
-    setEditSummary(record.summary || '');
-    setEditSubjects((record.subjects || []).join(', '));
-    setEditAccessLevel(record.accessLevel || 'DIGITISED_FULL');
-    setShowEditRecordModal(true);
-  };
-
-  const handleSaveRecordEdits = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingRecord(true);
-    try {
-      await api.updateCatalogItem(record.id, {
-        titleLatin: editTitleLatin,
-        titleArabic: editTitleArabic || undefined,
-        subtitle: editSubtitle || undefined,
-        authors: editAuthors.split(',').map((a) => a.trim()).filter(Boolean),
-        shelfmark: editShelfmark,
-        format: editFormat,
-        language: editLanguage,
-        material: editMaterial || undefined,
-        extent: editExtent || undefined,
-        publicationYear: editPublicationYear || undefined,
-        provenance: editProvenance || undefined,
-        summary: editSummary || undefined,
-        subjects: editSubjects.split(',').map((s) => s.trim()).filter(Boolean),
-        accessLevel: editAccessLevel,
-      });
-      setShowEditRecordModal(false);
-      setNotification({ type: 'success', text: 'Bibliographic master record updated successfully.' });
-      await loadRecord();
-    } catch (err: any) {
-      setNotification({ type: 'error', text: err.message || 'Could not update the record.' });
-    } finally {
-      setSavingRecord(false);
-      setTimeout(() => setNotification(null), 4000);
-    }
-  };
 
   const handleDeleteRecord = async () => {
     if (!(await confirmDialog({ message: `Are you sure you want to permanently delete catalogue record "${record.titleLatin}" and all associated item copies?`, variant: 'danger' }))) return;
@@ -263,18 +194,18 @@ export default function RecordDetailsPage() {
           <span>Back to Catalogue Holdings</span>
         </Link>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleOpenEditRecord}
-            className="px-3.5 py-1.5 bg-white border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
+          <Link
+            prefetch
+            href={`/admin/catalog/${record.id}/edit`}
+            className="px-3.5 py-1.5 bg-white border border-[#E2E0DB] rounded-lg text-xs font-semibold hover:bg-[#FAF8F5] text-gray-700 hover:text-[#A52307] transition-colors flex items-center gap-1.5 shadow-xs"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Edit Record</span>
-          </button>
+          </Link>
           <button
             type="button"
             onClick={() => window.print()}
-            className="px-3.5 py-1.5 border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-1.5 border border-[#E2E0DB] rounded-lg text-xs font-semibold hover:bg-[#FAF8F5] text-gray-700 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Slip</span>
@@ -370,10 +301,14 @@ export default function RecordDetailsPage() {
               <FileText className="w-4 h-4 text-[#A52307]" />
               <span>Bibliographic Metadata</span>
             </h3>
-            <button type="button" onClick={handleOpenEditRecord} className="text-[#A52307] hover:underline font-bold text-[11px] flex items-center gap-1">
+            <Link
+              prefetch
+              href={`/admin/catalog/${record.id}/edit`}
+              className="text-[#A52307] hover:underline font-bold text-[11px] flex items-center gap-1"
+            >
               <Edit3 className="w-3 h-3" />
               <span>Edit</span>
-            </button>
+            </Link>
           </div>
 
           <div>
@@ -661,142 +596,6 @@ export default function RecordDetailsPage() {
                 </button>
                 <button type="submit" className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800">
                   Save Item Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* POPUP MODAL: Edit Bibliographic Master Record */}
-      {showEditRecordModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl max-w-3xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs max-h-[92vh] flex flex-col">
-            <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
-              <div>
-                <span className="text-[10px] text-[#A52307] font-bold uppercase tracking-wider">Catalogue Management</span>
-                <h3 className="text-lg font-bold text-gray-900">Edit Bibliographic Master Record</h3>
-              </div>
-              <button type="button" onClick={() => setShowEditRecordModal(false)} className="text-gray-400 hover:text-gray-900 p-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveRecordEdits} className="flex-1 overflow-y-auto pr-2 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Title Proper (Latin)*</label>
-                  <input
-                    type="text"
-                    required
-                    value={editTitleLatin}
-                    onChange={(e) => setEditTitleLatin(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-bold text-gray-900 outline-none focus:border-[#A52307]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Title (Arabic Script)</label>
-                  <input
-                    type="text"
-                    dir="rtl"
-                    value={editTitleArabic}
-                    onChange={(e) => setEditTitleArabic(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-sm font-amiri text-gray-900 outline-none focus:border-[#A52307]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Authors (Comma separated)</label>
-                  <input
-                    type="text"
-                    value={editAuthors}
-                    onChange={(e) => setEditAuthors(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Shelfmark</label>
-                  <input
-                    type="text"
-                    value={editShelfmark}
-                    onChange={(e) => setEditShelfmark(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs font-mono font-bold text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Language</label>
-                  <input
-                    type="text"
-                    value={editLanguage}
-                    onChange={(e) => setEditLanguage(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Physical Extent</label>
-                  <input
-                    type="text"
-                    value={editExtent}
-                    onChange={(e) => setEditExtent(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Publication Year</label>
-                  <input
-                    type="text"
-                    value={editPublicationYear}
-                    onChange={(e) => setEditPublicationYear(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Provenance</label>
-                  <input
-                    type="text"
-                    value={editProvenance}
-                    onChange={(e) => setEditProvenance(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Subjects (Comma separated)</label>
-                  <input
-                    type="text"
-                    value={editSubjects}
-                    onChange={(e) => setEditSubjects(e.target.value)}
-                    className="w-full border border-gray-300 h-10 px-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-gray-700 uppercase mb-1">Summary &amp; Historical Context</label>
-                  <textarea
-                    rows={4}
-                    value={editSummary}
-                    onChange={(e) => setEditSummary(e.target.value)}
-                    className="w-full border border-gray-300 p-3 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowEditRecordModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={savingRecord} className="px-6 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 transition-colors shadow-md disabled:opacity-50">
-                  {savingRecord ? 'Saving…' : 'Save Record Changes'}
                 </button>
               </div>
             </form>

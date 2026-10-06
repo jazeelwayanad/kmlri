@@ -128,6 +128,8 @@ export interface BibliographicRecord {
   iiifManifestUrl?: string;
   copies?: ItemCopy[];
   digitalFolios?: any[];
+  frameworkCode?: string;
+  customFields?: string;
   citations?: {
     apa: string;
     mla: string;
@@ -391,15 +393,18 @@ export const api = {
     });
   },
 
-  // Catalog
   async searchCatalog(params: {
     q?: string;
+    title?: string;
+    author?: string;
+    shelfmark?: string;
+    publisher?: string;
+    frameworkCode?: string;
     format?: string;
     accessLevel?: string;
     access?: string;
     script?: string;
     subject?: string;
-    author?: string;
     yearFrom?: string;
     yearTo?: string;
     sortBy?: string;
@@ -409,13 +414,17 @@ export const api = {
   }) {
     const query = new URLSearchParams();
     if (params.q) query.append('q', params.q);
+    if (params.title) query.append('title', params.title);
+    if (params.author) query.append('author', params.author);
+    if (params.shelfmark) query.append('shelfmark', params.shelfmark);
+    if (params.publisher) query.append('publisher', params.publisher);
+    if (params.frameworkCode) query.append('frameworkCode', params.frameworkCode);
     if (params.format) query.append('format', params.format);
     const accessVal = params.accessLevel || params.access;
     if (accessVal) query.append('access', accessVal);
     if (params.script) query.append('script', params.script);
     if (params.collection) query.append('collection', params.collection);
     if (params.subject) query.append('subject', params.subject);
-    if (params.author) query.append('author', params.author);
     if (params.yearFrom) query.append('yearFrom', params.yearFrom);
     if (params.yearTo) query.append('yearTo', params.yearTo);
     if (params.sortBy) query.append('sortBy', params.sortBy);
@@ -1180,7 +1189,7 @@ export const api = {
     });
   },
 
-  // Authorities
+  // Authorities (Authors & Publications)
   async searchAuthorities(q?: string, headingType?: string) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
@@ -1194,14 +1203,13 @@ export const api = {
   async getAuthorityUsage(id: string) {
     return this.fetchWithAuth(`/authorities/${id}/usage`);
   },
-  // Returns { duplicate: true, existing } on a 409 possible-duplicate response
-  // instead of throwing, so the caller can surface the duplicate-warning flow.
   async createAuthority(data: {
     headingType: string;
     heading: string;
     seeAlso?: string[];
     notes?: string;
     marcXml?: string;
+    customFields?: string;
     force?: boolean;
   }): Promise<{ duplicate: false; record: any } | { duplicate: true; existing: any }> {
     let token: string | null = null;
@@ -1239,57 +1247,27 @@ export const api = {
     return this.fetchWithAuth(`/authorities/link/${id}`, { method: 'DELETE' });
   },
 
-  // Libraries (branches)
-  async getLibraries() {
-    return this.fetchWithAuth('/libraries');
+  // Form Frameworks & Form Builder
+  async getFormFrameworks(recordType?: string) {
+    const params = new URLSearchParams();
+    if (recordType) params.set('recordType', recordType);
+    const qs = params.toString();
+    return this.fetchWithAuth(`/form-frameworks${qs ? `?${qs}` : ''}`);
   },
-  async createLibrary(data: { code: string; name: string; address?: string; phone?: string; email?: string; isActive?: boolean }) {
-    return this.fetchWithAuth('/libraries', { method: 'POST', body: JSON.stringify(data) });
+  async getFormFramework(idOrCode: string) {
+    return this.fetchWithAuth(`/form-frameworks/${encodeURIComponent(idOrCode)}`);
   },
-  async updateLibrary(id: string, data: any) {
-    return this.fetchWithAuth(`/libraries/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  async getDefaultFormFramework(recordType: string) {
+    return this.fetchWithAuth(`/form-frameworks/default/${encodeURIComponent(recordType)}`);
   },
-  async deleteLibrary(id: string) {
-    return this.fetchWithAuth(`/libraries/${id}`, { method: 'DELETE' });
+  async createFormFramework(data: any) {
+    return this.fetchWithAuth('/form-frameworks', { method: 'POST', body: JSON.stringify(data) });
   },
-
-  // Item Types
-  async getItemTypes() {
-    return this.fetchWithAuth('/item-types');
+  async updateFormFramework(idOrCode: string, data: any) {
+    return this.fetchWithAuth(`/form-frameworks/${encodeURIComponent(idOrCode)}`, { method: 'PATCH', body: JSON.stringify(data) });
   },
-  async createItemType(data: { code: string; description: string; isSerial?: boolean; loanDurationDays?: number }) {
-    return this.fetchWithAuth('/item-types', { method: 'POST', body: JSON.stringify(data) });
-  },
-  async updateItemType(id: string, data: any) {
-    return this.fetchWithAuth(`/item-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-  },
-  async deleteItemType(id: string) {
-    return this.fetchWithAuth(`/item-types/${id}`, { method: 'DELETE' });
-  },
-
-  // Authorised Values
-  async getAuthorisedValueCategories() {
-    return this.fetchWithAuth('/authorised-values/categories');
-  },
-  async createAuthorisedValueCategory(data: { category: string; description?: string }) {
-    return this.fetchWithAuth('/authorised-values/categories', { method: 'POST', body: JSON.stringify(data) });
-  },
-  async updateAuthorisedValueCategory(id: string, data: any) {
-    return this.fetchWithAuth(`/authorised-values/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-  },
-  async deleteAuthorisedValueCategory(id: string) {
-    return this.fetchWithAuth(`/authorised-values/categories/${id}`, { method: 'DELETE' });
-  },
-  async getAuthorisedValues(category: string) {
-    return this.fetchWithAuth(`/authorised-values/${encodeURIComponent(category)}`);
-  },
-  async createAuthorisedValue(categoryId: string, data: { code: string; description: string; sortOrder?: number }) {
-    return this.fetchWithAuth(`/authorised-values/categories/${categoryId}/values`, { method: 'POST', body: JSON.stringify(data) });
-  },
-  async updateAuthorisedValue(id: string, data: any) {
-    return this.fetchWithAuth(`/authorised-values/values/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-  },
-  async deleteAuthorisedValue(id: string) {
-    return this.fetchWithAuth(`/authorised-values/values/${id}`, { method: 'DELETE' });
+  async deleteFormFramework(idOrCode: string) {
+    return this.fetchWithAuth(`/form-frameworks/${encodeURIComponent(idOrCode)}`, { method: 'DELETE' });
   },
 };
+

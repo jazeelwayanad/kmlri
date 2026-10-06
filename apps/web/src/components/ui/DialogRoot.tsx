@@ -69,7 +69,9 @@ export function DialogRoot() {
   if (!state) return null;
 
   const variant: DialogVariant =
-    state.kind === 'prompt' ? 'default' : (state.options.variant as DialogVariant) || 'default';
+    state.kind === 'prompt'
+      ? 'default'
+      : ((state.options.variant || state.options.tone) as DialogVariant) || 'default';
   const Icon = ICONS[variant];
   const title = state.options.title || (state.kind === 'confirm' ? 'Please confirm' : state.kind === 'prompt' ? 'Input required' : 'Notice');
 
@@ -132,16 +134,16 @@ export function DialogRoot() {
                 ref={cancelRef}
                 type="button"
                 onClick={() => state.resolve(false)}
-                className="text-xs font-semibold px-3.5 py-2 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                className="text-xs font-semibold px-3.5 py-2 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 {state.options.cancelText || 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={() => state.resolve(true)}
-                className={`text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition-colors ${CONFIRM_BUTTON_STYLES[variant]}`}
+                className={`text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition-colors cursor-pointer ${CONFIRM_BUTTON_STYLES[variant]}`}
               >
-                {state.options.confirmText || 'Confirm'}
+                {state.options.confirmText || state.options.confirmLabel || 'Confirm'}
               </button>
             </>
           )}

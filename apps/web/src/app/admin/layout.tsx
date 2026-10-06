@@ -9,6 +9,8 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Shield, ShieldAlert, ArrowLeft, LogOut, UserCircle, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
+import { Toaster } from '@/components/ui/sonner';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, login, logout, isStaff, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -178,6 +180,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <AdminHeader onMenuClick={() => setMobileNavOpen(true)} />
           <main className="p-6 sm:p-10 flex-1 overflow-y-auto">{children}</main>
         </div>
+        <Toaster position="top-right" richColors />
       </div>
     </NotificationProvider>
   );

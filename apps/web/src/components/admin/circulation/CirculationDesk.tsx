@@ -19,6 +19,7 @@ import {
   Layers,
   AlertTriangle,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -483,9 +484,10 @@ export function CirculationDesk() {
           <button
             type="button"
             onClick={() => setNotification(null)}
-            className="text-gray-400 hover:text-gray-700 ml-4 font-bold text-xs"
+            className="text-gray-400 hover:text-gray-700 ml-4 p-1 rounded hover:bg-black/5 transition-colors cursor-pointer"
+            aria-label="Dismiss notification"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}

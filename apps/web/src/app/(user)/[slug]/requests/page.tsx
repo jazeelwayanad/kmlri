@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { LoadingState } from '@/components/ui/LoadingSpinner';
-import { Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 interface AcquisitionRequest {
   id: string;
@@ -166,8 +166,13 @@ export default function MyRequestsPage() {
                 <p className="font-averia text-xs uppercase tracking-wider text-heritage-red font-bold">Collection Development</p>
                 <h3 className="font-amiri text-2xl font-bold text-black">Recommend a Title</h3>
               </div>
-              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-black text-sm font-bold">
-                ✕
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 

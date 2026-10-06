@@ -21,9 +21,20 @@ import {
   Settings2,
   Edit3,
   Globe,
-  ArrowRight
+  ArrowRight,
+  MoreHorizontal
 } from 'lucide-react';
 import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ColumnDef } from '@tanstack/react-table';
 import { api, ContentItem } from '@/lib/api';
 import { slugify } from '@/lib/slugs';
 import { LoadingTableRow } from '@/components/ui/LoadingSpinner';
@@ -178,13 +189,144 @@ export default function WebsiteEventsPage() {
     }
   };
 
-  const filtered = events.filter(
-    (e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      (e.venue || '').toLowerCase().includes(search.toLowerCase()) ||
-      (e.kicker || '').toLowerCase().includes(search.toLowerCase()) ||
-      e.slug.toLowerCase().includes(search.toLowerCase())
-  );
+  const columns: ColumnDef<ContentItem>[] = [
+    {
+      accessorKey: 'title',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Event Title & Slug" />,
+      cell: ({ row }) => {
+        const ev = row.original;
+        return (
+          <div className="max-w-xs">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {ev.featured && (
+                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
+                  Featured
+                </span>
+              )}
+              <Link
+                prefetch
+                href={`/admin/website/events/${ev.slug}`}
+                className="font-bold text-gray-900 text-sm hover:text-heritage-red transition-colors block line-clamp-1"
+              >
+                {ev.title}
+              </Link>
+            </div>
+            <span className="font-mono text-gray-400 text-[11px] block">/{ev.slug}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'kicker',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Kicker" />,
+      cell: ({ row }) => (
+        <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
+          {row.original.kicker || '—'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'date',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Date & Timing" />,
+      cell: ({ row }) => {
+        const ev = row.original;
+        return (
+          <div>
+            <span className="font-semibold text-gray-900 block">{ev.date}</span>
+            <span className="text-gray-500 text-[11px]">{ev.time}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'venue',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Venue" />,
+      cell: ({ row }) => <span className="text-gray-700 text-xs">{row.original.venue}</span>,
+    },
+    {
+      id: 'capacity',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Capacity & Registrations" />,
+      cell: ({ row }) => {
+        const ev = row.original;
+        const reg = ev.registered || 0;
+        const cap = ev.capacity || 0;
+        return (
+          <div>
+            <span className="font-mono font-bold text-gray-900 text-xs">
+              {reg} / {cap}
+            </span>
+            <div className="w-24 bg-gray-200 h-1.5 rounded-full mt-1 overflow-hidden">
+              <div
+                className={`h-full ${reg >= cap ? 'bg-heritage-red' : 'bg-emerald-600'}`}
+                style={{ width: `${Math.min(100, (reg / (cap || 1)) * 100)}%` }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <Badge variant={s === 'ACTIVE' ? 'success' : s === 'DRAFT' ? 'warning' : 'neutral'}>
+            {s}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const ev = row.original;
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                >
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Event Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link prefetch href={`/admin/website/events/${ev.slug}`} className="cursor-pointer font-medium">
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    <span>Manage Event &amp; Attendees</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link prefetch href={`/events/${ev.slug}`} target="_blank" className="cursor-pointer">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span>View Public Page</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEditModal(ev)} className="cursor-pointer">
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  <span>Edit Event Details</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDelete(ev.id, ev.title)}
+                  className="text-red-600 focus:text-red-600 cursor-pointer"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete Event</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
@@ -240,119 +382,28 @@ export default function WebsiteEventsPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex justify-between items-center">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search events by title, venue, kicker..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
-        </div>
-      </div>
-
-      {/* Events Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        <table className="w-full border-collapse text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-              <th className="py-3 px-4">Event Title &amp; Slug</th>
-              <th className="py-3 px-4">Kicker</th>
-              <th className="py-3 px-4">Date &amp; Timing</th>
-              <th className="py-3 px-4">Venue</th>
-              <th className="py-3 px-4">Capacity &amp; Registrations</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#EEECE7]">
-            {loading ? (
-              <LoadingTableRow colSpan={7} message="Loading events…" />
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500 font-mono">
-                  No events found.
-                </td>
-              </tr>
-            ) : filtered.map((ev) => (
-              <tr key={ev.id} className="hover:bg-[#FAF8F5] transition-colors">
-                <td className="py-3.5 px-4 max-w-xs">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    {ev.featured && (
-                      <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
-                        Featured
-                      </span>
-                    )}
-                    <Link prefetch
-                      href={`/admin/website/events/${ev.slug}`}
-                      className="font-bold text-gray-900 text-sm hover:text-[#A52307] transition-colors block line-clamp-1"
-                    >
-                      {ev.title}
-                    </Link>
-                  </div>
-                  <span className="font-mono text-gray-400 text-[11px] block">/{ev.slug}</span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                    {ev.kicker || '—'}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="font-semibold text-gray-900 block">{ev.date}</span>
-                  <span className="text-gray-500 text-[11px]">{ev.time}</span>
-                </td>
-                <td className="py-3.5 px-4 text-gray-700">{ev.venue}</td>
-                <td className="py-3.5 px-4">
-                  <span className="font-mono font-bold text-gray-900">
-                    {ev.registered || 0} / {ev.capacity || 0}
-                  </span>
-                  <div className="w-24 bg-gray-200 h-1.5 rounded-full mt-1 overflow-hidden">
-                    <div
-                      className={`h-full ${(ev.registered || 0) >= (ev.capacity || 0) ? 'bg-[#A52307]' : 'bg-emerald-600'
-                        }`}
-                      style={{ width: `${Math.min(100, ((ev.registered || 0) / (ev.capacity || 1)) * 100)}%` }}
-                    />
-                  </div>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ev.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                    {ev.status}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right space-x-2">
-                  <Link prefetch
-                    href={`/admin/website/events/${ev.slug}`}
-                    className="px-2.5 py-1 bg-black text-white rounded text-[11px] font-bold hover:bg-[#A52307] hover:text-white transition-colors inline-flex items-center gap-1 shadow-sm"
-                  >
-                    <Settings2 className="w-3.5 h-3.5" />
-                    <span>Manage Event</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(ev)}
-                    className="px-2 py-1 bg-white border border-gray-300 rounded text-[11px] font-semibold text-gray-700 hover:bg-black hover:text-white transition-colors"
-                  >
-                    <Edit3 className="w-3 h-3 inline mr-1" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(ev.id, ev.title)}
-                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                    title="Delete Event"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* TanStack Events Data Table */}
+      <DataTable
+        columns={columns}
+        data={events}
+        loading={loading}
+        enableRowSelection
+        searchKey="title"
+        searchPlaceholder="Filter events by title..."
+        emptyTitle="No events found"
+        emptyMessage="No institutional events scheduled yet. Create one with the button above."
+        facetedFilters={[
+          {
+            columnId: 'status',
+            title: 'Status',
+            options: [
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Draft', value: 'DRAFT' },
+              { label: 'Archived', value: 'ARCHIVED' },
+            ],
+          },
+        ]}
+      />
 
       {/* POPUP MODAL: Create / Edit Event */}
       {showModal && (

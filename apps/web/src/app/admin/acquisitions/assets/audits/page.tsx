@@ -1,19 +1,31 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ColumnDef } from '@tanstack/react-table';
 import {
   ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
   Search,
   ArrowLeft,
   Plus,
-  X,
-  Loader2,
 } from 'lucide-react';
-import { PageHeader, Button } from '@/components/admin/ui';
+import { PageHeader } from '@/components/admin/ui';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { api } from '@/lib/api';
-import { LoadingState } from '@/components/ui/LoadingSpinner';
+import { toast } from 'sonner';
 
 interface LibraryAsset {
   id: string;
@@ -33,22 +45,10 @@ interface AssetAuditEntry {
   asset: { id: string; name: string; category?: string | null };
 }
 
-const CONDITION_STYLES: Record<AssetAuditEntry['condition'], string> = {
-  GOOD: 'bg-emerald-100 text-emerald-800',
-  FAIR: 'bg-blue-100 text-blue-800',
-  DAMAGED: 'bg-amber-100 text-amber-900 border border-amber-300',
-  MISSING: 'bg-red-100 text-red-800',
-};
-
 export default function AssetAuditsPage() {
   const [audits, setAudits] = useState<AssetAuditEntry[]>([]);
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [search, setSearch] = useState('');
-  const [notification, setNotification] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [showModal, setShowModal] = useState(false);
   const [assetSearch, setAssetSearch] = useState('');
@@ -60,13 +60,12 @@ export default function AssetAuditsPage() {
 
   const loadData = async () => {
     setLoading(true);
-    setLoadError(null);
     try {
       const [auditData, assetData] = await Promise.all([api.getAllAssetAudits(), api.getAssets()]);
       setAudits(Array.isArray(auditData) ? auditData : []);
       setAssets(Array.isArray(assetData) ? assetData : []);
     } catch (err: any) {
-      setLoadError(err.message || 'Failed to load audits.');
+      toast.error(err.message || 'Failed to load audits.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +98,6 @@ export default function AssetAuditsPage() {
     e.preventDefault();
     if (!selectedAssetId) return;
     setSaving(true);
-    setErrorMessage(null);
     try {
       await api.addAssetAudit(selectedAssetId, {
         condition,
@@ -107,242 +105,269 @@ export default function AssetAuditsPage() {
         auditedBy: auditedBy || undefined,
       });
       const assetName = assets.find((a) => a.id === selectedAssetId)?.name || 'Asset';
-      setNotification(`Audit logged for "${assetName}".`);
+      toast.success(`Audit logged for "${assetName}".`);
       setShowModal(false);
       await loadData();
-      setTimeout(() => setNotification(null), 4000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to log audit.');
+      toast.error(err.message || 'Failed to log audit.');
     } finally {
       setSaving(false);
     }
   };
 
-  const filtered = audits.filter(
-    (a) =>
-      a.asset.name.toLowerCase().includes(search.toLowerCase()) ||
-      (a.asset.category || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.auditedBy || '').toLowerCase().includes(search.toLowerCase())
+  const columns = useMemo<ColumnDef<AssetAuditEntry>[]>(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="translate-y-[2px]"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className="translate-y-[2px]"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        id: 'assetName',
+        accessorFn: (row) => row.asset?.name || '',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Asset" />,
+        cell: ({ row }) => {
+          const a = row.original;
+          return (
+            <div>
+              <span className="font-bold text-foreground block text-sm">{a.asset.name}</span>
+              {a.asset.category && (
+                <span className="text-muted-foreground text-xs">{a.asset.category}</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'condition',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Condition" />,
+        cell: ({ row }) => {
+          const cond = row.getValue('condition') as AssetAuditEntry['condition'];
+          return (
+            <Badge
+              variant={
+                cond === 'GOOD'
+                  ? 'success'
+                  : cond === 'FAIR'
+                  ? 'default'
+                  : cond === 'DAMAGED'
+                  ? 'warning'
+                  : 'destructive'
+              }
+            >
+              {cond}
+            </Badge>
+          );
+        },
+        filterFn: (row, id, value) => value.includes(row.getValue(id)),
+      },
+      {
+        accessorKey: 'notes',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs max-w-sm block truncate">
+            {row.getValue('notes') || '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'auditedBy',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Audited By" />,
+        cell: ({ row }) => (
+          <span className="text-foreground text-xs">{row.getValue('auditedBy') || 'Staff Inspector'}</span>
+        ),
+      },
+      {
+        accessorKey: 'auditedAt',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Audited At" />,
+        cell: ({ row }) => (
+          <span className="font-mono text-muted-foreground text-xs">
+            {new Date(row.getValue('auditedAt')).toLocaleString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        ),
+      },
+    ],
+    []
   );
 
   const goodCount = audits.filter((a) => a.condition === 'GOOD').length;
   const flaggedCount = audits.filter((a) => a.condition === 'DAMAGED' || a.condition === 'MISSING').length;
 
   return (
-    <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
+    <div className="space-y-6 font-sans pb-12 max-w-[1280px]">
       <PageHeader
         eyebrow="Asset Management · Condition Audits"
-        title="Physical Audits &amp; Condition Checks"
+        title="Physical Audits & Condition Checks"
         description="Log periodic condition checks for institutional assets and review the audit trail across the whole collection."
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" icon={ArrowLeft} href="/admin/acquisitions/assets">
-              All Assets
+            <Button variant="outline" asChild>
+              <Link href="/admin/acquisitions/assets">
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                All Assets
+              </Link>
             </Button>
-            <Button variant="primary" icon={Plus} onClick={openModal}>
+            <Button variant="default" onClick={openModal}>
+              <Plus className="w-4 h-4 mr-1.5" />
               Log Audit
             </Button>
           </div>
         }
       />
 
-      {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {loadError && (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-          <span>{loadError}</span>
-        </div>
-      )}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Audits Logged</span>
-          <span className="text-2xl font-bold text-gray-900 mt-1 block">{audits.length}</span>
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">Total Audits Logged</span>
+          <span className="text-2xl font-bold text-foreground mt-1 block">{audits.length}</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Good Condition</span>
-          <span className="text-2xl font-bold text-emerald-700 mt-1 block">{goodCount}</span>
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">Good Condition</span>
+          <span className="text-2xl font-bold text-emerald-600 mt-1 block">{goodCount}</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Damaged / Missing</span>
-          <span className="text-2xl font-bold text-red-700 mt-1 block">{flaggedCount}</span>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search audits by asset, category, auditor..."
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">Damaged / Missing</span>
+          <span className="text-2xl font-bold text-destructive mt-1 block">{flaggedCount}</span>
         </div>
       </div>
 
-      {/* Audit Reconciliation Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        {loading ? (
-          <LoadingState message="Loading audits…" minHeight="180px" />
-        ) : (
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Asset</th>
-                <th className="py-3 px-4">Condition</th>
-                <th className="py-3 px-4">Notes</th>
-                <th className="py-3 px-4">Audited By</th>
-                <th className="py-3 px-4 text-right">Audited At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-gray-400">
-                    No audits logged yet.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((a) => (
-                <tr key={a.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4 font-bold text-gray-900">
-                    {a.asset.name}
-                    {a.asset.category && <span className="block text-gray-400 text-[10px] font-normal">{a.asset.category}</span>}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${CONDITION_STYLES[a.condition]}`}>
-                      {a.condition}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-600 max-w-xs">{a.notes || '—'}</td>
-                  <td className="py-3.5 px-4 text-gray-600">{a.auditedBy || '—'}</td>
-                  <td className="py-3.5 px-4 text-right font-mono text-gray-500 text-[11px]">
-                    {new Date(a.auditedAt).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* TanStack Table */}
+      <DataTable
+        columns={columns}
+        data={audits}
+        searchKey="assetName"
+        searchPlaceholder="Filter by asset name or notes..."
+        isLoading={loading}
+        facetedFilters={[
+          {
+            columnId: 'condition',
+            title: 'Condition',
+            options: [
+              { label: 'Good', value: 'GOOD' },
+              { label: 'Fair', value: 'FAIR' },
+              { label: 'Damaged', value: 'DAMAGED' },
+              { label: 'Missing', value: 'MISSING' },
+            ],
+          },
+        ]}
+      />
 
-      {/* POPUP MODAL: Log Audit */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden border border-[#E2E0DB]">
-            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center">
-              <h3 className="font-bold text-gray-900 text-sm">Log Asset Condition Audit</h3>
-              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
+      {/* Dialog: Log Audit */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Log Asset Condition Audit</DialogTitle>
+            <DialogDescription>
+              Record physical condition status, damage observations, or missing inventory reports.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleLogAudit} className="space-y-4 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label htmlFor="audit-search">Search Asset</Label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+                <Input
+                  id="audit-search"
+                  value={assetSearch}
+                  onChange={(e) => setAssetSearch(e.target.value)}
+                  placeholder="Search by name or serial number..."
+                  className="pl-9"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleLogAudit} className="p-6 space-y-4 text-xs font-sans">
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Search Asset</label>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={assetSearch}
-                    onChange={(e) => setAssetSearch(e.target.value)}
-                    placeholder="Search by name or serial number..."
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="audit-asset">
+                Target Asset <span className="text-destructive">*</span>
+              </Label>
+              <select
+                id="audit-asset"
+                value={selectedAssetId}
+                onChange={(e) => setSelectedAssetId(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md text-xs bg-background text-foreground outline-none"
+                required
+              >
+                <option value="">Select an asset...</option>
+                {assetOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                    {a.serialNumber ? ` (${a.serialNumber})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Asset <span className="text-red-600">*</span></label>
-                <select
-                  value={selectedAssetId}
-                  onChange={(e) => setSelectedAssetId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                  required
-                >
-                  <option value="">Select an asset...</option>
-                  {assetOptions.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                      {a.serialNumber ? ` (${a.serialNumber})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="audit-condition">Condition Assessment</Label>
+              <select
+                id="audit-condition"
+                value={condition}
+                onChange={(e) => setCondition(e.target.value as AssetAuditEntry['condition'])}
+                className="w-full px-3 py-2 border border-input rounded-md text-xs bg-background text-foreground outline-none"
+              >
+                <option value="GOOD">Good</option>
+                <option value="FAIR">Fair</option>
+                <option value="DAMAGED">Damaged</option>
+                <option value="MISSING">Missing</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Condition</label>
-                <select
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value as AssetAuditEntry['condition'])}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                >
-                  <option value="GOOD">Good</option>
-                  <option value="FAIR">Fair</option>
-                  <option value="DAMAGED">Damaged</option>
-                  <option value="MISSING">Missing</option>
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="audit-by">Audited By</Label>
+              <Input
+                id="audit-by"
+                value={auditedBy}
+                onChange={(e) => setAuditedBy(e.target.value)}
+                placeholder="e.g. Aisha Rahmani"
+              />
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Audited By</label>
-                <input
-                  type="text"
-                  value={auditedBy}
-                  onChange={(e) => setAuditedBy(e.target.value)}
-                  placeholder="e.g. Aisha Rahmani"
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="audit-notes">Notes & Observations</Label>
+              <textarea
+                id="audit-notes"
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Observations about the asset's condition or location..."
+                className="w-full px-3 py-2 border border-input rounded-md text-xs bg-background text-foreground outline-none resize-none"
+              />
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Notes</label>
-                <textarea
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Observations about the asset's condition or location..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E2E0DB]">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !selectedAssetId}
-                  className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Log Audit'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="pt-3">
+              <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving || !selectedAssetId}>
+                {saving ? 'Saving...' : 'Log Audit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Ticket,
   Send,
+  X,
 } from 'lucide-react';
 
 // Minimal sanitization for admin-authored rich-text HTML: strips script tags,
@@ -420,10 +421,10 @@ export default function NewsEventDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowRegisterModal(false)}
-                className="text-2xl leading-none font-bold hover:text-heritage-red px-2 py-1 cursor-pointer"
+                className="p-1 rounded hover:bg-gray-100 hover:text-heritage-red transition-colors cursor-pointer text-gray-500"
                 aria-label="Close modal"
               >
-                ✕
+                <X className="w-6 h-6" />
               </button>
             </div>
 

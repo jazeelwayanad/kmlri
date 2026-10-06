@@ -10,7 +10,7 @@ import { api, BibliographicRecord } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { getRecordSlug } from '@/lib/slugs';
 import { LoadingState } from '@/components/ui/LoadingSpinner';
-import { Filter, ChevronDown, Check, BookmarkPlus } from 'lucide-react';
+import { Filter, ChevronDown, Check, BookmarkPlus, X } from 'lucide-react';
 
 const ACCESS_LABELS: Record<string, string> = {
   DIGITISED_FULL: 'Digitised in full',
@@ -249,9 +249,10 @@ function SearchContent() {
             </span>
             <Link prefetch
               href="/search"
-              className="text-heritage-muted hover:text-heritage-red font-semibold whitespace-nowrap"
+              className="text-heritage-muted hover:text-heritage-red font-semibold whitespace-nowrap inline-flex items-center gap-1 text-xs"
             >
-              Clear collection ✕
+              <span>Clear collection</span>
+              <X className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}

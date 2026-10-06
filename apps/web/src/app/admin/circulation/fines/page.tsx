@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CreditCard, Search, CheckCircle2, AlertCircle, ShieldOff } from 'lucide-react';
-import { PageHeader } from '@/components/admin/ui';
+import { useState, useEffect, useMemo } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import { CreditCard, Search, CheckCircle2, AlertCircle, ShieldOff, MoreHorizontal } from 'lucide-react';
+import { PageHeader, Badge, Button } from '@/components/admin/ui';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { api } from '@/lib/api';
 import { confirmDialog } from '@/lib/dialog';
-import { LoadingState } from '@/components/ui/LoadingSpinner';
 
 interface Fine {
   id: string;
@@ -26,8 +36,6 @@ function formatDate(d?: string) {
 export default function CirculationFinesPage() {
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -59,7 +67,7 @@ export default function CirculationFinesPage() {
   };
 
   const handleWaive = async (fine: Fine) => {
-    if (!(await confirmDialog({ message: `Waive the ₹${fine.amount} fine for ${fine.user.fullName}?`, variant: 'danger' }))) return;
+    if (!(await confirmDialog({ message: `Waive the ₹${fine.amount} fine for ${fine.user.fullName}?`, tone: 'danger' }))) return;
     setActingId(fine.id);
     try {
       await api.waiveFine(fine.id);
@@ -73,14 +81,100 @@ export default function CirculationFinesPage() {
     }
   };
 
-  const filtered = fines.filter((f) => {
-    const matchesSearch =
-      f.user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      f.user.membershipNumber.toLowerCase().includes(search.toLowerCase()) ||
-      (f.loan?.copy.bibRecord.titleLatin || '').toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || f.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const columns = useMemo<ColumnDef<Fine>[]>(() => [
+    {
+      accessorKey: 'user.fullName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Patron Details" />,
+      cell: ({ row }) => {
+        const u = row.original.user;
+        return (
+          <div className="flex items-center gap-2.5">
+            <UserAvatar src={u?.avatarUrl} name={u?.fullName} size="sm" />
+            <div>
+              <span className="font-bold text-gray-900 block">{u?.fullName}</span>
+              <span className="font-mono text-[11px] text-gray-500">{u?.membershipNumber}</span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'loan.copy.bibRecord.titleLatin',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Item & Reason" />,
+      cell: ({ row }) => {
+        const f = row.original;
+        return (
+          <div>
+            <span className="font-semibold text-gray-900 block">{f.loan?.copy.bibRecord.titleLatin || '—'}</span>
+            <span className="text-gray-500 text-[11px]">{f.reason} · {formatDate(f.createdAt)}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'amount',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
+      cell: ({ row }) => (
+        <span className="font-mono font-bold text-gray-900 text-sm">
+          ₹{row.original.amount}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <Badge variant={s === 'PAID' ? 'success' : s === 'WAIVED' ? 'neutral' : 'danger'}>
+            {s}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const f = row.original;
+        if (f.status !== 'UNPAID') {
+          return (
+            <div className="text-right text-xs text-muted-foreground font-medium">
+              {f.status === 'PAID' ? `Settled ${formatDate(f.paidAt)}` : 'Waived'}
+            </div>
+          );
+        }
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={actingId === f.id}
+                  className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Cashier Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleSettle(f)} className="cursor-pointer">
+                  <CreditCard className="mr-2 h-4 w-4 text-emerald-600" />
+                  <span>Settle Fine</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleWaive(f)} className="text-amber-700 focus:text-amber-700 cursor-pointer">
+                  <ShieldOff className="mr-2 h-4 w-4" />
+                  <span>Waive Fine</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ], [actingId]);
 
   const totalOutstanding = fines.filter((f) => f.status === 'UNPAID').reduce((acc, cur) => acc + cur.amount, 0);
   const totalCollected = fines.filter((f) => f.status === 'PAID').reduce((acc, cur) => acc + cur.amount, 0);
@@ -106,17 +200,17 @@ export default function CirculationFinesPage() {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Unpaid Balance</span>
-          <span className="text-2xl font-mono font-bold text-[#A52307] mt-1 block">₹{totalOutstanding}</span>
+          <span className="text-2xl font-mono font-bold text-heritage-red mt-1 block">₹{totalOutstanding}</span>
           <span className="text-[11px] text-gray-500">Across active members</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Collections Recorded</span>
           <span className="text-2xl font-mono font-bold text-emerald-700 mt-1 block">₹{totalCollected}</span>
           <span className="text-[11px] text-emerald-600">Settled via Cashier Desk</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
+        <div className="bg-white border border-[#E2E0DB] p-4 rounded-xl shadow-sm">
           <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Fine Records</span>
           <span className="text-2xl font-bold text-gray-900 mt-1 block">{fines.length}</span>
           <span className="text-[11px] text-gray-500">
@@ -125,118 +219,27 @@ export default function CirculationFinesPage() {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search fines by patron or item..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
-        </div>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-200 px-3 h-10 text-xs rounded bg-white text-gray-700 outline-none"
-        >
-          <option value="ALL">All Fine Statuses</option>
-          <option value="UNPAID">Unpaid Only</option>
-          <option value="PAID">Settled Only</option>
-          <option value="WAIVED">Waived Only</option>
-        </select>
-      </div>
-
-      {/* Fines Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        {loading ? (
-          <LoadingState message="Loading fines…" minHeight="160px" />
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 text-xs">No fine records found.</div>
-        ) : (
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Patron Details</th>
-                <th className="py-3 px-4">Item &amp; Assessment Reason</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Cashier Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {filtered.map((f) => (
-                <tr key={f.id} className="hover:bg-[#FAF8F5] transition-colors">
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2.5">
-                      {f.user.avatarUrl ? (
-                        <img
-                          src={f.user.avatarUrl}
-                          alt={f.user.fullName}
-                          className="w-7 h-7 rounded-full object-cover border border-gray-300 shadow-xs flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
-                          {f.user.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                        </div>
-                      )}
-                      <div>
-                        <span className="font-bold text-gray-900 block">{f.user.fullName}</span>
-                        <span className="font-mono text-[11px] text-gray-500">{f.user.membershipNumber}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="font-semibold text-gray-900 block">{f.loan?.copy.bibRecord.titleLatin || '—'}</span>
-                    <span className="text-gray-500 text-[11px]">{f.reason} · {formatDate(f.createdAt)}</span>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900 text-sm">₹{f.amount}</td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        f.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : f.status === 'WAIVED' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {f.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    {f.status === 'UNPAID' ? (
-                      <div className="flex justify-end gap-1.5">
-                        <button
-                          type="button"
-                          disabled={actingId === f.id}
-                          onClick={() => handleSettle(f)}
-                          className="px-3 py-1.5 bg-[#A52307] text-white rounded text-[11px] font-bold hover:bg-red-700 transition-colors inline-flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                        >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Settle</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actingId === f.id}
-                          onClick={() => handleWaive(f)}
-                          className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-[11px] font-bold hover:bg-gray-100 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          <ShieldOff className="w-3.5 h-3.5" />
-                          <span>Waive</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500 font-semibold text-[11px]">
-                        {f.status === 'PAID' ? `✓ Settled ${formatDate(f.paidAt)}` : '— Waived'}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* TanStack Fines Data Table */}
+      <DataTable
+        columns={columns}
+        data={fines}
+        loading={loading}
+        enableRowSelection
+        searchPlaceholder="Filter fines by patron, item, or reason..."
+        emptyTitle="No fine records found"
+        emptyMessage="No fines recorded matching your filter parameters."
+        facetedFilters={[
+          {
+            columnId: 'status',
+            title: 'Status',
+            options: [
+              { label: 'Unpaid', value: 'UNPAID' },
+              { label: 'Paid', value: 'PAID' },
+              { label: 'Waived', value: 'WAIVED' },
+            ],
+          },
+        ]}
+      />
     </div>
   );
 }

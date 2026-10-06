@@ -1,19 +1,30 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ColumnDef } from '@tanstack/react-table';
 import {
   Wrench,
   Plus,
   Search,
-  CheckCircle2,
-  AlertCircle,
-  X,
   ArrowLeft,
-  Loader2,
 } from 'lucide-react';
-import { PageHeader, Button } from '@/components/admin/ui';
+import { PageHeader } from '@/components/admin/ui';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { api } from '@/lib/api';
-import { LoadingState } from '@/components/ui/LoadingSpinner';
+import { toast } from 'sonner';
 
 interface LibraryAsset {
   id: string;
@@ -36,11 +47,6 @@ export default function AssetMaintenancePage() {
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [search, setSearch] = useState('');
-  const [notification, setNotification] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [showModal, setShowModal] = useState(false);
   const [assetSearch, setAssetSearch] = useState('');
@@ -53,13 +59,12 @@ export default function AssetMaintenancePage() {
 
   const loadData = async () => {
     setLoading(true);
-    setLoadError(null);
     try {
       const [logData, assetData] = await Promise.all([api.getAllAssetMaintenance(), api.getAssets()]);
       setLogs(Array.isArray(logData) ? logData : []);
       setAssets(Array.isArray(assetData) ? assetData : []);
     } catch (err: any) {
-      setLoadError(err.message || 'Failed to load maintenance logs.');
+      toast.error(err.message || 'Failed to load maintenance logs.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +98,6 @@ export default function AssetMaintenancePage() {
     e.preventDefault();
     if (!selectedAssetId || !description.trim()) return;
     setSaving(true);
-    setErrorMessage(null);
     try {
       await api.addAssetMaintenance(selectedAssetId, {
         description,
@@ -102,252 +106,258 @@ export default function AssetMaintenancePage() {
         performedAt: performedAt || undefined,
       });
       const assetName = assets.find((a) => a.id === selectedAssetId)?.name || 'Asset';
-      setNotification(`Maintenance logged for "${assetName}". Its status has been set to In Maintenance.`);
+      toast.success(`Maintenance logged for "${assetName}". Status set to In Maintenance.`);
       setShowModal(false);
       await loadData();
-      setTimeout(() => setNotification(null), 4000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to log maintenance.');
+      toast.error(err.message || 'Failed to log maintenance.');
     } finally {
       setSaving(false);
     }
   };
 
-  const filtered = logs.filter(
-    (l) =>
-      l.asset.name.toLowerCase().includes(search.toLowerCase()) ||
-      l.description.toLowerCase().includes(search.toLowerCase()) ||
-      (l.performedBy || '').toLowerCase().includes(search.toLowerCase())
+  const columns = useMemo<ColumnDef<MaintenanceLog>[]>(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="translate-y-[2px]"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className="translate-y-[2px]"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        id: 'assetName',
+        accessorFn: (row) => row.asset?.name || '',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Asset Name" />,
+        cell: ({ row }) => {
+          const l = row.original;
+          return (
+            <div>
+              <span className="font-bold text-foreground block text-sm">{l.asset.name}</span>
+              {l.asset.category && (
+                <span className="text-muted-foreground text-xs">{l.asset.category}</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'description',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Service Description" />,
+        cell: ({ row }) => (
+          <span className="text-foreground text-xs max-w-sm block">{row.getValue('description')}</span>
+        ),
+      },
+      {
+        accessorKey: 'performedBy',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Performed By / Vendor" />,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">{row.getValue('performedBy') || '—'}</span>
+        ),
+      },
+      {
+        accessorKey: 'cost',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Cost (₹)" />,
+        cell: ({ row }) => {
+          const cost = row.getValue('cost') as number | undefined;
+          return (
+            <span className="font-mono font-bold text-foreground text-xs">
+              {cost != null ? `₹${cost.toLocaleString('en-IN')}` : '—'}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'performedAt',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date Performed" />,
+        cell: ({ row }) => (
+          <span className="font-mono text-muted-foreground text-xs">
+            {new Date(row.getValue('performedAt')).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        ),
+      },
+    ],
+    []
   );
 
   const totalSpend = logs.reduce((acc, cur) => acc + (cur.cost || 0), 0);
 
   return (
-    <div className="space-y-6 font-sans pb-12 max-w-[1240px]">
+    <div className="space-y-6 font-sans pb-12 max-w-[1280px]">
       <PageHeader
         eyebrow="Asset Management · Service Logs"
         title="Maintenance Logs"
         description="Track service, repair, and calibration work performed on institutional assets. Logging an entry automatically marks the asset as In Maintenance."
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" icon={ArrowLeft} href="/admin/acquisitions/assets">
-              All Assets
+            <Button variant="outline" asChild>
+              <Link href="/admin/acquisitions/assets">
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                All Assets
+              </Link>
             </Button>
-            <Button variant="primary" icon={Plus} onClick={openModal}>
+            <Button variant="default" onClick={openModal}>
+              <Plus className="w-4 h-4 mr-1.5" />
               Log Maintenance
             </Button>
           </div>
         }
       />
 
-      {notification && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {loadError && (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-          <span>{loadError}</span>
-        </div>
-      )}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Maintenance Logs</span>
-          <span className="text-2xl font-bold text-gray-900 mt-1 block">{logs.length}</span>
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">Total Maintenance Logs</span>
+          <span className="text-2xl font-bold text-foreground mt-1 block">{logs.length}</span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Assets Currently in Maintenance</span>
-          <span className="text-2xl font-bold text-amber-700 mt-1 block">
-            {new Set(logs.map((l) => l.assetId)).size}
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">
+            Assets Serviced
+          </span>
+          <span className="text-2xl font-bold text-amber-600 mt-1 block">
+            {new Set(logs.map((l) => l.assetId)).size} Units
           </span>
         </div>
-        <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px]">
-          <span className="text-[11px] font-bold uppercase text-gray-500 block">Total Recorded Spend</span>
-          <span className="text-2xl font-mono font-bold text-gray-900 mt-1 block">
+        <div className="bg-card border border-border p-4 rounded-lg">
+          <span className="text-[11px] font-bold uppercase text-muted-foreground block">Total Recorded Spend</span>
+          <span className="text-2xl font-mono font-bold text-foreground mt-1 block">
             ₹{totalSpend.toLocaleString('en-IN')}
           </span>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border border-[#E2E0DB] p-4 rounded-[2px] flex gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search logs by asset, description, technician..."
-            className="w-full pl-9 pr-3 h-10 border border-gray-200 rounded text-xs outline-none focus:border-[#A52307] bg-white text-gray-900"
-          />
-        </div>
-      </div>
+      {/* TanStack Table */}
+      <DataTable
+        columns={columns}
+        data={logs}
+        searchKey="assetName"
+        searchPlaceholder="Filter maintenance logs by asset or description..."
+        isLoading={loading}
+      />
 
-      {/* Logs Table */}
-      <div className="bg-white border border-[#E2E0DB] rounded-[2px] overflow-x-auto shadow-sm">
-        {loading ? (
-          <LoadingState message="Loading maintenance logs…" minHeight="180px" />
-        ) : (
-          <table className="w-full border-collapse text-left text-xs font-sans">
-            <thead>
-              <tr className="border-b border-[#E2E0DB] bg-[#FAF8F5] text-gray-600 uppercase font-bold">
-                <th className="py-3 px-4">Asset</th>
-                <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4">Performed By</th>
-                <th className="py-3 px-4">Cost (₹)</th>
-                <th className="py-3 px-4 text-right">Performed At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEECE7]">
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-gray-400">
-                    No maintenance logged yet.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((l) => (
-                <tr key={l.id} className="hover:bg-[#FAF8F5]">
-                  <td className="py-3.5 px-4">
-                    <span className="font-bold text-gray-900 block">{l.asset.name}</span>
-                    {l.asset.category && <span className="text-gray-400 text-[10px]">{l.asset.category}</span>}
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-700 max-w-sm">{l.description}</td>
-                  <td className="py-3.5 px-4 text-gray-600">{l.performedBy || '—'}</td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-gray-900">
-                    {l.cost != null ? `₹${l.cost.toLocaleString('en-IN')}` : '—'}
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono text-gray-500 text-[11px]">
-                    {new Date(l.performedAt).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* Dialog: Log Maintenance */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Log Maintenance / Service Entry</DialogTitle>
+            <DialogDescription>
+              Record maintenance, calibration, replacement parts, or servicing details.
+            </DialogDescription>
+          </DialogHeader>
 
-      {/* POPUP MODAL: Log Maintenance */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden border border-[#E2E0DB]">
-            <div className="px-6 py-4 bg-[#FAF8F5] border-b border-[#E2E0DB] flex justify-between items-center">
-              <h3 className="font-bold text-gray-900 text-sm">Log Maintenance / Service Entry</h3>
-              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
+          <form onSubmit={handleLogMaintenance} className="space-y-4 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label htmlFor="maint-search">Search Asset</Label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+                <Input
+                  id="maint-search"
+                  value={assetSearch}
+                  onChange={(e) => setAssetSearch(e.target.value)}
+                  placeholder="Search by name or serial number..."
+                  className="pl-9"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleLogMaintenance} className="p-6 space-y-4 text-xs font-sans">
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Search Asset</label>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={assetSearch}
-                    onChange={(e) => setAssetSearch(e.target.value)}
-                    placeholder="Search by name or serial number..."
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="maint-asset">
+                Target Asset <span className="text-destructive">*</span>
+              </Label>
+              <select
+                id="maint-asset"
+                value={selectedAssetId}
+                onChange={(e) => setSelectedAssetId(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md text-xs bg-background text-foreground outline-none"
+                required
+              >
+                <option value="">Select an asset...</option>
+                {assetOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                    {a.serialNumber ? ` (${a.serialNumber})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Asset <span className="text-red-600">*</span></label>
-                <select
-                  value={selectedAssetId}
-                  onChange={(e) => setSelectedAssetId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs bg-white text-gray-900 outline-none"
-                  required
-                >
-                  <option value="">Select an asset...</option>
-                  {assetOptions.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                      {a.serialNumber ? ` (${a.serialNumber})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="maint-desc">
+                Description of Service <span className="text-destructive">*</span>
+              </Label>
+              <textarea
+                id="maint-desc"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Details of the repair, replacement, or calibration work..."
+                className="w-full px-3 py-2 border border-input rounded-md text-xs bg-background text-foreground outline-none resize-none"
+                required
+              />
+            </div>
 
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Description <span className="text-red-600">*</span></label>
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Details of the work performed..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                  required
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="maint-cost">Cost (₹)</Label>
+                <Input
+                  id="maint-cost"
+                  type="number"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="font-mono"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Cost (₹)</label>
-                  <input
-                    type="number"
-                    value={cost}
-                    onChange={(e) => setCost(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs font-mono text-gray-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-gray-800 block mb-1">Performed At</label>
-                  <input
-                    type="date"
-                    value={performedAt}
-                    onChange={(e) => setPerformedAt(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-gray-800 block mb-1">Performed By / Vendor</label>
-                <input
-                  type="text"
-                  value={performedBy}
-                  onChange={(e) => setPerformedBy(e.target.value)}
-                  placeholder="e.g. Vertiv Technical Services"
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 outline-none"
+              <div className="space-y-1.5">
+                <Label htmlFor="maint-date">Date Performed</Label>
+                <Input
+                  id="maint-date"
+                  type="date"
+                  value={performedAt}
+                  onChange={(e) => setPerformedAt(e.target.value)}
                 />
               </div>
+            </div>
 
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E2E0DB]">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded text-xs font-semibold text-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !selectedAssetId || !description.trim()}
-                  className="px-5 py-2 bg-[#A52307] text-white rounded text-xs font-bold hover:bg-red-800 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Log Maintenance'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="space-y-1.5">
+              <Label htmlFor="maint-vendor">Performed By / Vendor</Label>
+              <Input
+                id="maint-vendor"
+                value={performedBy}
+                onChange={(e) => setPerformedBy(e.target.value)}
+                placeholder="e.g. Vertiv Technical Services"
+              />
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving || !selectedAssetId || !description.trim()}>
+                {saving ? 'Saving...' : 'Log Maintenance'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

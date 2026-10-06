@@ -53,7 +53,6 @@ export default function MemberDetailsPage() {
   const [actingId, setActingId] = useState<string | null>(null);
 
   // Modals
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showRelativeModal, setShowRelativeModal] = useState(false);
   const [showAddFineModal, setShowAddFineModal] = useState(false);
   const [fineFormData, setFineFormData] = useState({
@@ -90,10 +89,6 @@ export default function MemberDetailsPage() {
     if (memberId) loadMember();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
-
-  const handleOpenEditModal = () => {
-    setShowEditModal(true);
-  };
 
   const handleDeleteMember = async () => {
     if (!(await confirmDialog({ message: `Are you sure you want to delete member "${member.fullName}" (${member.membershipNumber})? This is only possible for members with no circulation history.`, variant: 'danger' }))) return;
@@ -271,14 +266,14 @@ export default function MemberDetailsPage() {
           <span>Back to Members Directory</span>
         </Link>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleOpenEditModal}
+          <Link
+            prefetch
+            href={`/admin/members/${params.id}/edit`}
             className="px-3.5 py-1.5 bg-white border border-gray-300 rounded text-xs font-semibold hover:bg-black hover:text-white transition-colors flex items-center gap-1.5"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Edit Member</span>
-          </button>
+          </Link>
           <button
             type="button"
             onClick={handleDeleteMember}
@@ -483,7 +478,10 @@ export default function MemberDetailsPage() {
               </div>
 
               {overdueLoans.length === 0 ? (
-                <div className="p-12 text-center text-emerald-700 text-xs font-semibold">✓ No overdue items on this account.</div>
+                <div className="p-12 text-center text-emerald-700 text-xs font-semibold flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>No overdue items on this account.</span>
+                </div>
               ) : (
                 <table className="w-full border-collapse text-left text-xs font-sans">
                   <thead>
@@ -812,14 +810,14 @@ export default function MemberDetailsPage() {
             <div className="bg-white border border-[#E2E0DB] rounded-[2px] p-6 shadow-sm space-y-6 text-xs font-sans">
               <div className="flex justify-between items-center border-b border-[#E2E0DB] pb-3">
                 <h3 className="text-base font-bold text-gray-900">Membership Profile</h3>
-                <button
-                  type="button"
-                  onClick={handleOpenEditModal}
+                <Link
+                  prefetch
+                  href={`/admin/members/${params.id}/edit`}
                   className="px-3 py-1 bg-black text-white rounded text-xs font-semibold hover:bg-[#A52307] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit Profile</span>
-                </button>
+                </Link>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -876,35 +874,6 @@ export default function MemberDetailsPage() {
           )}
         </div>
       </div>
-
-      {/* POPUP MODAL: Edit Member Profile with Unified MemberForm */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl max-w-2xl w-full border border-gray-200 shadow-2xl p-6 sm:p-8 font-sans text-xs my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-6">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#A52307]">Member Registry</p>
-                <h3 className="text-xl font-bold text-gray-900 mt-0.5">Edit Member Profile</h3>
-              </div>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-900 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <MemberForm
-              mode="admin-edit"
-              initialData={member}
-              onCancel={() => setShowEditModal(false)}
-              onSuccess={async () => {
-                setShowEditModal(false);
-                setNotification({ type: 'success', text: `Member profile updated successfully.` });
-                await loadMember();
-                setTimeout(() => setNotification(null), 4000);
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* POPUP MODAL: Add Relative with Unified MemberForm */}
       {showRelativeModal && (

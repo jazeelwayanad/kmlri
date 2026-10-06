@@ -99,6 +99,7 @@ model BibliographicRecord {
   kohaBiblionumber          Int?     @unique // preserved Koha biblio.biblionumber, for traceability of migrated records
   frameworkCode             String?  @default("DEFAULT") // MarcFramework.code applied to this record
   marcXml                   String? // full MARCXML for the record, when catalogued/imported with MARC data
+  customFields              String? // JSON object storing dynamic form fields
   recordType                String   @default("BIBLIO") // BIBLIO, SERIAL_BIBLIO
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
@@ -224,13 +225,49 @@ model MarcFrameworkField {
   @@unique([frameworkId, tag, subfield])
 }
 
+model FormFramework {
+  id          String      @id @default(uuid())
+  code        String      @unique // e.g. ITEM_DEFAULT, SERIAL_DEFAULT, AUTHOR_DEFAULT, PUBLICATION_DEFAULT, MEMBER_DEFAULT, COLLECTION_DEFAULT
+  name        String
+  recordType  String      // ITEM, SERIAL, AUTHORITY, MEMBER, COLLECTION
+  description String?
+  isDefault   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  fields      FormField[]
+}
+
+model FormField {
+  id              String        @id @default(uuid())
+  frameworkId     String
+  name            String        // field identifier / key, e.g. title, author, isbn
+  label           String        // user-facing label
+  type            String        // text, textarea, number, select, multiselect, date, datetime, checkbox, radio, file, url, email, authority, record, member, collection
+  required        Boolean       @default(false)
+  defaultValue    String?
+  options         String?       @default("[]") // JSON string of options [{ label, value }]
+  visibility      String        @default("PUBLIC") // PUBLIC, MEMBERS, ADMIN
+  multiplicity    Boolean       @default(false) // repeat values dynamically
+  referenceSource String?       // AUTHOR, PUBLICATION, LIBRARY_RECORDS, etc.
+  showInTable     Boolean       @default(true)  // display as column in table view
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  framework       FormFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@unique([frameworkId, name])
+}
+
 model AuthorityRecord {
   id          String   @id @default(uuid())
-  headingType String // PERSONAL_NAME, CORPORATE_NAME, SUBJECT, SERIES, UNIFORM_TITLE
+  headingType String // PERSONAL_NAME, CORPORATE_NAME, PUBLISHER, SUBJECT, SERIES, UNIFORM_TITLE
   heading     String // authorized/preferred form of the heading
   seeAlso     String   @default("[]") // JSON array of variant/see-from forms
   notes       String?
   marcXml     String?
+  customFields String?  @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

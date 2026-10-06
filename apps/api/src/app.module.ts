@@ -27,10 +27,8 @@ import { RegistrationsModule } from './registrations/registrations.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MarcFrameworksModule } from './marc-frameworks/marc-frameworks.module';
+import { FormFrameworksModule } from './form-frameworks/form-frameworks.module';
 import { AuthoritiesModule } from './authorities/authorities.module';
-import { LibrariesModule } from './libraries/libraries.module';
-import { ItemTypesModule } from './item-types/item-types.module';
-import { AuthorisedValuesModule } from './authorised-values/authorised-values.module';
 import { MediaModule } from './media/media.module';
 
 @Module({
@@ -63,10 +61,8 @@ import { MediaModule } from './media/media.module';
     UploadsModule,
     NotificationsModule,
     MarcFrameworksModule,
+    FormFrameworksModule,
     AuthoritiesModule,
-    LibrariesModule,
-    ItemTypesModule,
-    AuthorisedValuesModule,
     MediaModule,
   ],
 })

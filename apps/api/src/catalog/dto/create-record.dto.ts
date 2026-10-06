@@ -17,17 +17,17 @@ export class CreateRecordDto {
   @IsString()
   statementOfResponsibility?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
-  authors: string[];
+  authors?: string[];
 
   @IsOptional()
   @IsString()
   scribe?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  shelfmark: string;
+  shelfmark?: string;
 
   @IsOptional()
   @IsString()
@@ -119,6 +119,14 @@ export class CreateRecordDto {
   @IsOptional()
   @IsString()
   initialLocation?: string;
+
+  @IsOptional()
+  @IsString()
+  frameworkCode?: string;
+
+  @IsOptional()
+  @IsString()
+  customFields?: string;
 
   // When true, create() will not run automatic duplicate detection.
   // Defaults to false (i.e. duplicate detection runs) for backward compatibility.
